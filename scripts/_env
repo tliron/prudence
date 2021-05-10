@@ -1,0 +1,15 @@
+_HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+
+. "$_HERE/_functions"
+
+MODULE=github.com/tliron/pruedence
+
+ROOT=$(readlink --canonicalize "$_HERE/..")
+
+GOPATH=${GOPATH:-$HOME/go}
+
+if [ -d /Depot/Temporary ]; then
+    export TMPDIR=/Depot/Temporary
+else
+    export TMPDIR=/tmp
+fi

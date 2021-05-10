@@ -1,0 +1,8 @@
+kind: Resource
+facets:
+- template: {name}
+  representations:
+  - type: application/json
+    representer: person.js
+  - representer: person.js
+- template: {name}/age

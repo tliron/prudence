@@ -1,0 +1,18 @@
+<%
+context.log.info('html!');
+context.maxAge = 100;
+context.autoETag();
+%>
+<!DOCTYPE html>
+<html>
+<%# load a file %>
+<%+ 'fragments/head.html' %>
+<body>
+    Hi! <%= context.variables.name %>
+<% for (var i = 0; i < 10; i++) { %>
+    Index <%= i %>
+<% } %>
+<%# embed another representation %>
+<%& 'fragments/foot.jst' %>
+</body>
+<html>
