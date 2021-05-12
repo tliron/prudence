@@ -11,6 +11,15 @@ import (
 
 var log = logging.GetLogger("prudence.rest")
 
+var logHttp = logging.GetLogger("prudence.rest.http")
+
+type Logger struct{}
+
+// fasthttp.Logger interface
+func (self Logger) Printf(format string, args ...interface{}) {
+	logHttp.Errorf(format, args...)
+}
+
 type CreateFunc func(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error)
 
 var createFuncs = make(map[string]CreateFunc)

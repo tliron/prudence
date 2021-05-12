@@ -1,12 +1,12 @@
 package rest
 
 //
-// HandlerFunc
+// HandleFunc
 //
 
-type HandlerFunc func(context *Context) bool
+type HandleFunc func(context *Context) bool
 
-// HandlerFunc signature
+// HandleFunc signature
 func Handled(context *Context) bool {
 	return true
 }
@@ -19,7 +19,7 @@ type Handler interface {
 	Handle(context *Context) bool
 }
 
-func GetHandler(value interface{}) (HandlerFunc, bool) {
+func GetHandleFunc(value interface{}) (HandleFunc, bool) {
 	if handler, ok := value.(Handler); ok {
 		return handler.Handle, true
 	} else {
@@ -32,8 +32,8 @@ var DefaultNotFound = &defaultNotFound{}
 type defaultNotFound struct{}
 
 // Handler interface
-// HandlerFunc signature
+// HandleFunc signature
 func (self *defaultNotFound) Handle(context *Context) bool {
-	context.RequestContext.NotFound()
+	context.Context.NotFound()
 	return true
 }

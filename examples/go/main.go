@@ -44,6 +44,6 @@ func representJson(context *rest.Context) {
 }
 
 func representDefault(context *rest.Context) {
-	fmt.Fprintf(context.RequestContext, "%s\n", context.RequestContext.Request.Header.ContentType())
-	fmt.Fprintf(context.RequestContext, "%s\n", context.Variables)
+	fmt.Fprintf(context.Context, "%s\n", context.Context.Request.Header.ContentType())
+	fmt.Fprintf(context.Context, "%s\n", context.Variables)
 }

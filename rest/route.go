@@ -20,10 +20,10 @@ func init() {
 type Route struct {
 	Name          string
 	PathTemplates PathTemplates
-	Handler       HandlerFunc
+	Handler       HandleFunc
 }
 
-func NewRoute(name string, paths []string, handler HandlerFunc) *Route {
+func NewRoute(name string, paths []string, handler HandleFunc) *Route {
 	return &Route{
 		Name:          name,
 		PathTemplates: NewPathTemplates(paths),
@@ -40,13 +40,13 @@ func CreateRoute(config ard.StringMap, getRelativeURL common.GetRelativeURL) (in
 	paths, _ := config_.Get("paths").StringList(true)
 	self.PathTemplates = NewPathTemplates(paths)
 	handler := config_.Get("handler").Data
-	self.Handler, _ = GetHandler(handler)
+	self.Handler, _ = GetHandleFunc(handler)
 
 	return &self, nil
 }
 
 // Handler interface
-// HandlerFunc signature
+// HandleFunc signature
 func (self *Route) Handle(context *Context) bool {
 	if matches := self.Match(context.Path); matches != nil {
 		context = context.Copy()

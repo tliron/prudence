@@ -19,10 +19,10 @@ func init() {
 type Server struct {
 	Name    string
 	Address string
-	Handler HandlerFunc
+	Handler HandleFunc
 }
 
-func NewServer(address string, handler HandlerFunc) *Server {
+func NewServer(address string, handler HandleFunc) *Server {
 	return &Server{
 		Name:    "Prudence",
 		Address: address,
@@ -37,7 +37,7 @@ func CreateServer(config ard.StringMap, getRelativeURL common.GetRelativeURL) (i
 	config_ := ard.NewNode(config)
 	self.Address, _ = config_.Get("address").String(false)
 	handler := config_.Get("handler").Data
-	self.Handler, _ = GetHandler(handler)
+	self.Handler, _ = GetHandleFunc(handler)
 	self.Name, _ = config_.Get("name").String(false)
 	if self.Name == "" {
 		self.Name = "Prudence"
@@ -54,15 +54,22 @@ func (self *Server) Start() error {
 	log.Infof("starting server: %s", self.Address)
 
 	if listener, err := self.Listen(); err == nil {
-		return fasthttp.Serve(listener, self.handle)
+		server := fasthttp.Server{
+			Handler:                       self.Handle,
+			Name:                          self.Name,
+			LogAllErrors:                  true,
+			Logger:                        Logger{},
+			DisableHeaderNamesNormalizing: true,
+			NoDefaultContentType:          true,
+		}
+		return server.Serve(listener)
 	} else {
 		return err
 	}
 }
 
 // fasthttp.RequestHandler signature
-func (self *Server) handle(context *fasthttp.RequestCtx) {
-	context.Response.Header.SetServer(self.Name)
+func (self *Server) Handle(context *fasthttp.RequestCtx) {
 	if self.Handler != nil {
 		self.Handler(NewContext(context))
 	}

@@ -18,7 +18,7 @@ func init() {
 
 type Router struct {
 	Name     string
-	Handlers []HandlerFunc
+	Handlers []HandleFunc
 	Routes   []*Route
 }
 
@@ -47,7 +47,7 @@ func CreateRouter(config ard.StringMap, getRelativeURL common.GetRelativeURL) (i
 	return &self, nil
 }
 
-func (self *Router) AddHandler(handler HandlerFunc) {
+func (self *Router) AddHandler(handler HandleFunc) {
 	self.Handlers = append(self.Handlers, handler)
 }
 
@@ -57,7 +57,7 @@ func (self *Router) AddRoute(route *Route) {
 }
 
 // Handler interface
-// HandlerFunc signature
+// HandleFunc signature
 func (self *Router) Handle(context *Context) bool {
 	if self.Name != "" {
 		context = context.Copy()

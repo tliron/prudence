@@ -20,13 +20,13 @@ func init() {
 type Facet struct {
 	*Route
 
-	Representers map[string]Representer
+	Representers map[string]RepresentFunc
 }
 
 func NewFacet(name string, paths []string) *Facet {
 	self := Facet{
 		Route:        NewRoute(name, paths, nil),
-		Representers: make(map[string]Representer),
+		Representers: make(map[string]RepresentFunc),
 	}
 	self.Handler = self.Handle
 	return &self
@@ -35,7 +35,7 @@ func NewFacet(name string, paths []string) *Facet {
 // CreateFunc signature
 func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error) {
 	self := Facet{
-		Representers: make(map[string]Representer),
+		Representers: make(map[string]RepresentFunc),
 	}
 
 	route, _ := CreateRoute(config, getRelativeURL)
@@ -52,6 +52,7 @@ func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (in
 		contentTypes, _ := representation_.Get("contentTypes").StringList(true)
 		representer := representation_.Get("representer").Data.(*js.Hook)
 
+		// RepresenterFunc signature
 		representer_ := func(context *Context) {
 			representer.Call(nil, context)
 		}
@@ -69,36 +70,36 @@ func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (in
 	return &self, nil
 }
 
-func (self *Facet) SetRepresenter(contentType string, representer Representer) {
-	self.Representers[contentType] = representer
+func (self *Facet) SetRepresenter(contentType string, represent RepresentFunc) {
+	self.Representers[contentType] = represent
 }
 
-func (self *Facet) FindRepresenter(context *Context) (Representer, string, bool) {
+func (self *Facet) FindRepresenter(context *Context) (RepresentFunc, string, bool) {
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
-	accept := strings.Split(string(context.RequestContext.Request.Header.Peek("Accept")), ",")
+	accept := strings.Split(string(context.Context.Request.Header.Peek("Accept")), ",")
 	context.Log.Infof("ACCEPT: %s", accept)
 
 	// TODO: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
 
 	for _, contentType := range accept {
-		if representer, ok := self.Representers[contentType]; ok {
-			return representer, contentType, true
+		if represent, ok := self.Representers[contentType]; ok {
+			return represent, contentType, true
 		}
 	}
 
 	// Default representer
-	representer, ok := self.Representers[""]
-	return representer, "", ok
+	represent, ok := self.Representers[""]
+	return represent, "", ok
 }
 
 // Handler interface
-// HandlerFunc signature
+// HandleFunc signature
 func (self *Facet) Handle(context *Context) bool {
-	if context.RequestContext.IsGet() || context.RequestContext.IsHead() {
-		if representer, contentType, ok := self.FindRepresenter(context); ok {
+	if context.Context.IsGet() || context.Context.IsHead() {
+		if represent, contentType, ok := self.FindRepresenter(context); ok {
 			context = context.Copy()
 			context.ContentType = contentType
-			return representer.Handle(context)
+			return represent.Handle(context)
 		}
 	}
 

@@ -52,11 +52,11 @@ func CreateStatic(config ard.StringMap, getRelativeURL common.GetRelativeURL) (i
 }
 
 // Handler interface
-// HandlerFunc signature
+// HandleFunc signature
 func (self *Static) Handle(context *Context) bool {
-	context.RequestContext.Request.Header.Del("__path")
-	context.RequestContext.Request.Header.Add("__path", "/"+context.Path)
-	self.RequestHandler(context.RequestContext)
-	context.RequestContext.Request.Header.Del("__path")
-	return context.RequestContext.Response.StatusCode() != fasthttp.StatusNotFound
+	context.Context.Request.Header.Del("__path")
+	context.Context.Request.Header.Add("__path", "/"+context.Path)
+	self.RequestHandler(context.Context)
+	context.Context.Request.Header.Del("__path")
+	return context.Context.Response.StatusCode() != fasthttp.StatusNotFound
 }

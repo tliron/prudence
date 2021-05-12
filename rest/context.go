@@ -14,33 +14,35 @@ import (
 //
 
 type Context struct {
-	RequestContext *fasthttp.RequestCtx
-	Path           string
-	Method         string
-	Variables      map[string]string
-	ContentType    string
-	LastModified   time.Time
-	ETag           string
-	MaxAge         int
-	Writer         io.Writer
-	Log            logging.Logger
+	Writer io.Writer
+	Log    logging.Logger
+
+	Context       *fasthttp.RequestCtx
+	Path          string
+	Method        string
+	Variables     map[string]string
+	ContentType   string
+	LastModified  time.Time
+	ETag          string
+	WeakETag      bool
+	CacheDuration float64 // seconds
 }
 
-func NewContext(requestContext *fasthttp.RequestCtx) *Context {
+func NewContext(context *fasthttp.RequestCtx) *Context {
 	return &Context{
-		RequestContext: requestContext,
-		Path:           util.BytesToString(requestContext.Path()[1:]), // without initial "/"
-		Method:         util.BytesToString(requestContext.Method()),
-		Variables:      make(map[string]string),
-		MaxAge:         -1,
-		Writer:         requestContext,
-		Log:            log,
+		Writer:    context,
+		Log:       log,
+		Context:   context,
+		Path:      util.BytesToString(context.Path()[1:]), // without initial "/"
+		Method:    util.BytesToString(context.Method()),
+		Variables: make(map[string]string),
 	}
 }
 
 func (self *Context) AutoETag() {
 	self.Log.Info("auto ETag")
-	self.Writer = NewETagBuffer(self.Writer)
+	self.Writer = NewHashWriter(self.Writer)
+	// TODO: if a low priority part of the page changes then set WeakETag=true
 }
 
 // io.Writer
@@ -55,14 +57,16 @@ func (self *Context) Copy() *Context {
 	}
 
 	return &Context{
-		RequestContext: self.RequestContext,
-		Path:           self.Path,
-		Method:         self.Method,
-		Variables:      variables,
-		ContentType:    self.ContentType,
-		ETag:           self.ETag,
-		MaxAge:         self.MaxAge,
-		Writer:         self.Writer,
-		Log:            self.Log,
+		Writer:        self.Writer,
+		Log:           self.Log,
+		Context:       self.Context,
+		Path:          self.Path,
+		Method:        self.Method,
+		Variables:     variables,
+		ContentType:   self.ContentType,
+		LastModified:  self.LastModified,
+		ETag:          self.ETag,
+		WeakETag:      self.WeakETag,
+		CacheDuration: self.CacheDuration,
 	}
 }
