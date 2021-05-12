@@ -1,8 +1,11 @@
 package rest
 
 import (
+	"fmt"
 	"sync"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 // TODO goroutine to prune cache
@@ -64,10 +67,9 @@ func NewCacheKey(context *Context) CacheKey {
 
 type CacheEntry struct {
 	Headers      [][][]byte
-	Body         []byte
+	Body         []byte // TODO: for different encodings?
 	LastModified time.Time
 	Expiration   time.Time
-	// TODO: for different encodings?
 }
 
 func NewCacheEntry(context *Context) *CacheEntry {
@@ -82,6 +84,10 @@ func NewCacheEntry(context *Context) *CacheEntry {
 		// This is an annoying way to get all headers, but unfortunately if we
 		// get the entire header via Header() there is no API to set it correctly
 		// in CacheEntry.Write
+		if string(key) == fasthttp.HeaderCacheControl {
+			return
+		}
+
 		headers = append(headers, [][]byte{copyBytes(key), copyBytes(value)})
 	})
 
@@ -96,11 +102,21 @@ func NewCacheEntry(context *Context) *CacheEntry {
 func (self *CacheEntry) Write(context *Context) {
 	context.Context.Response.Reset()
 
+	// Annoyingly these were re-enabled by Reset above
+	context.Context.Response.Header.DisableNormalizing()
+	context.Context.Response.Header.SetNoDefaultContentType(true)
+
 	// Headers
-	context.Context.Response.Header.DisableNormalizing() // annoyingly this was re-enabled by Reset above
 	for _, header := range self.Headers {
 		context.Context.Response.Header.SetBytesKV(header[0], header[1])
 	}
+
+	// New max-age
+	duration := self.Expiration.Sub(time.Now()).Seconds()
+	if duration < 0 {
+		duration = 0
+	}
+	context.Context.Response.Header.Add(fasthttp.HeaderCacheControl, fmt.Sprintf("max-age=%d", int(duration)))
 
 	// TODO only for debug mode
 	context.Context.Response.Header.Set("X-Prudence-Cached", "true")

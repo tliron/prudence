@@ -20,13 +20,15 @@ func init() {
 type Facet struct {
 	*Route
 
-	Representers map[string]RepresentFunc
+	Describers map[string]RepresentionFunc
+	Presenters map[string]RepresentionFunc
 }
 
 func NewFacet(name string, paths []string) *Facet {
 	self := Facet{
-		Route:        NewRoute(name, paths, nil),
-		Representers: make(map[string]RepresentFunc),
+		Route:      NewRoute(name, paths, nil),
+		Describers: make(map[string]RepresentionFunc),
+		Presenters: make(map[string]RepresentionFunc),
 	}
 	self.Handler = self.Handle
 	return &self
@@ -35,7 +37,8 @@ func NewFacet(name string, paths []string) *Facet {
 // CreateFunc signature
 func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error) {
 	self := Facet{
-		Representers: make(map[string]RepresentFunc),
+		Describers: make(map[string]RepresentionFunc),
+		Presenters: make(map[string]RepresentionFunc),
 	}
 
 	route, _ := CreateRoute(config, getRelativeURL)
@@ -50,19 +53,31 @@ func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (in
 	for _, representation := range representations {
 		representation_ := ard.NewNode(representation)
 		contentTypes, _ := representation_.Get("contentTypes").StringList(true)
-		representer := representation_.Get("representer").Data.(*js.Hook)
-
-		// RepresenterFunc signature
-		representer_ := func(context *Context) {
-			representer.Call(nil, context)
+		var describer RepresentionFunc
+		if describer_ := representation_.Get("describer").Data; describer_ != nil {
+			describer = NewRepresentationFunc(describer_.(*js.Hook))
+		}
+		var presenter RepresentionFunc
+		if presenter_ := representation_.Get("presenter").Data; presenter_ != nil {
+			presenter = NewRepresentationFunc(presenter_.(*js.Hook))
 		}
 
 		if len(contentTypes) == 0 {
-			// Default representer
-			self.SetRepresenter("", representer_)
+			// Defaults
+			if describer != nil {
+				self.SetDescriber("", describer)
+			}
+			if presenter != nil {
+				self.SetPresenter("", presenter)
+			}
 		} else {
 			for _, contentType := range contentTypes {
-				self.SetRepresenter(contentType, representer_)
+				if describer != nil {
+					self.SetDescriber(contentType, describer)
+				}
+				if presenter != nil {
+					self.SetPresenter(contentType, presenter)
+				}
 			}
 		}
 	}
@@ -70,38 +85,64 @@ func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (in
 	return &self, nil
 }
 
-func (self *Facet) SetRepresenter(contentType string, represent RepresentFunc) {
-	self.Representers[contentType] = represent
+func (self *Facet) SetDescriber(contentType string, describer RepresentionFunc) {
+	self.Describers[contentType] = describer
 }
 
-func (self *Facet) FindRepresenter(context *Context) (RepresentFunc, string, bool) {
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
-	accept := strings.Split(string(context.Context.Request.Header.Peek("Accept")), ",")
-	context.Log.Infof("ACCEPT: %s", accept)
+func (self *Facet) SetPresenter(contentType string, presenter RepresentionFunc) {
+	self.Presenters[contentType] = presenter
+}
 
-	// TODO: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
-
-	for _, contentType := range accept {
-		if represent, ok := self.Representers[contentType]; ok {
-			return represent, contentType, true
+func (self *Facet) FindDescriber(context *Context) (RepresentionFunc, string, bool) {
+	for _, contentType := range parseAccept(context) {
+		if describer, ok := self.Describers[contentType]; ok {
+			return describer, contentType, true
 		}
 	}
 
-	// Default representer
-	represent, ok := self.Representers[""]
-	return represent, "", ok
+	// Default describer
+	describer, ok := self.Describers[""]
+	return describer, "", ok
+}
+
+func (self *Facet) FindPresenter(context *Context) (RepresentionFunc, string, bool) {
+	for _, contentType := range parseAccept(context) {
+		if presenter, ok := self.Presenters[contentType]; ok {
+			return presenter, contentType, true
+		}
+	}
+
+	// Default presenter
+	presenter, ok := self.Presenters[""]
+	return presenter, "", ok
 }
 
 // Handler interface
 // HandleFunc signature
 func (self *Facet) Handle(context *Context) bool {
-	if context.Context.IsGet() || context.Context.IsHead() {
-		if represent, contentType, ok := self.FindRepresenter(context); ok {
+	if context.Context.IsHead() {
+		if describer, contentType, ok := self.FindDescriber(context); ok {
 			context = context.Copy()
 			context.ContentType = contentType
-			return represent.Handle(context)
+			describer.Call(context)
+			return true
 		}
 	}
 
+	if presenter, contentType, ok := self.FindPresenter(context); ok {
+		context = context.Copy()
+		context.ContentType = contentType
+		presenter.Call(context)
+		return true
+	}
+
 	return false
+}
+
+func parseAccept(context *Context) []string {
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
+	// TODO: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+	accept := strings.Split(string(context.Context.Request.Header.Peek("Accept")), ",")
+	context.Log.Infof("ACCEPT: %s", accept)
+	return accept
 }

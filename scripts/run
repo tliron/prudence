@@ -5,7 +5,8 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
 "$HERE/build"
-"$GOPATH/bin/prudence" run "$ROOT/examples/js/prudence.js" -vv
+
+prudence run "$ROOT/examples/hello-world/servers.js" -vv
 
 #cd "$ROOT"
 #go run main.go

@@ -7,6 +7,7 @@ MODULE=github.com/tliron/pruedence
 ROOT=$(readlink --canonicalize "$_HERE/..")
 
 GOPATH=${GOPATH:-$HOME/go}
+export PATH=$GOPATH/bin:$PATH
 
 if [ -d /Depot/Temporary ]; then
     export TMPDIR=/Depot/Temporary

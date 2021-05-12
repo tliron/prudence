@@ -20,6 +20,11 @@ func (self Logger) Printf(format string, args ...interface{}) {
 	logHttp.Errorf(format, args...)
 }
 
+type Startable interface {
+	Start() error
+	Stop() error
+}
+
 type CreateFunc func(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error)
 
 var createFuncs = make(map[string]CreateFunc)

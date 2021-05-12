@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<%# insert the contents of a file %>
+<%+ 'fragments/head.html' %>
+<% context.startETag(); %>
+<body>
+    <h1>
+        Chores for: <%= context.variables.name %>
+    </h1>
+<%# embed another representation %>
+<%& 'fragments/list.jst' %>
+</body>
+<% context.endETag(); %>
+</html>
+<% context.cacheDuration = 5.5; // in seconds %>

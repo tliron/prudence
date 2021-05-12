@@ -20,6 +20,8 @@ type Server struct {
 	Name    string
 	Address string
 	Handler HandleFunc
+
+	server fasthttp.Server
 }
 
 func NewServer(address string, handler HandleFunc) *Server {
@@ -50,11 +52,12 @@ func (self *Server) Listen() (net.Listener, error) {
 	return net.Listen("tcp4", self.Address)
 }
 
+// Startable interface
 func (self *Server) Start() error {
 	log.Infof("starting server: %s", self.Address)
 
 	if listener, err := self.Listen(); err == nil {
-		server := fasthttp.Server{
+		self.server = fasthttp.Server{
 			Handler:                       self.Handle,
 			Name:                          self.Name,
 			LogAllErrors:                  true,
@@ -62,10 +65,16 @@ func (self *Server) Start() error {
 			DisableHeaderNamesNormalizing: true,
 			NoDefaultContentType:          true,
 		}
-		return server.Serve(listener)
+		return self.server.Serve(listener)
 	} else {
 		return err
 	}
+}
+
+// Startable interface
+func (self *Server) Stop() error {
+	log.Infof("stopping server: %s", self.Address)
+	return self.server.Shutdown()
 }
 
 // fasthttp.RequestHandler signature

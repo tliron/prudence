@@ -24,11 +24,12 @@ func NewStatic(root string, indexes []string) *Static {
 		Root:               root,
 		IndexNames:         indexes,
 		GenerateIndexPages: true,
-		Compress:           true, // TODO ???
+		Compress:           true,
 		CompressBrotli:     true,
 		PathRewrite: func(context *fasthttp.RequestCtx) []byte {
-			log.Infof(">>> %s", context.Request.Header.Peek("__path"))
-			return context.Request.Header.Peek("__path")
+			path := context.Request.Header.Peek("__path")
+			log.Infof("path: %s", path)
+			return path
 		},
 	}
 
@@ -46,7 +47,7 @@ func CreateStatic(config ard.StringMap, getRelativeURL common.GetRelativeURL) (i
 	} else {
 		return nil, err
 	}
-	indexes, _ := config_.Get("root").StringList(false)
+	indexes, _ := config_.Get("indexes").StringList(false)
 
 	return NewStatic(root, indexes), nil
 }

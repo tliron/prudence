@@ -1,8 +1,7 @@
 package rest
 
 import (
-	"bytes"
-	"crypto/sha1"
+	"crypto/md5"
 	"hash"
 	"io"
 
@@ -16,15 +15,13 @@ import (
 type HashWriter struct {
 	Writer io.Writer
 
-	buffer *bytes.Buffer
-	hash   hash.Hash
+	hash hash.Hash
 }
 
 func NewHashWriter(writer io.Writer) *HashWriter {
 	return &HashWriter{
 		Writer: writer,
-		buffer: bytes.NewBuffer(nil),
-		hash:   sha1.New(),
+		hash:   md5.New(),
 	}
 }
 
@@ -35,11 +32,5 @@ func (self *HashWriter) Hash() string {
 // io.Writer
 func (self *HashWriter) Write(b []byte) (int, error) {
 	self.hash.Write(b)
-	return self.buffer.Write(b)
-}
-
-// io.Closer
-func (self *HashWriter) Close() error {
-	_, err := self.buffer.WriteTo(self.Writer)
-	return err
+	return self.Writer.Write(b)
 }

@@ -11,10 +11,10 @@ var jstRe = regexp.MustCompile(`(?s)<%.*?%>`)
 func RenderJST(content string) (string, error) {
 	var builder strings.Builder
 
-	builder.WriteString("function represent(context) {\n")
+	builder.WriteString("function present(context) {\n")
 
 	last := 0
-	var representers []string
+	var presenters []string
 
 	if matches := jstRe.FindAllStringSubmatchIndex(content, -1); matches != nil {
 		for _, match := range matches {
@@ -50,7 +50,7 @@ func RenderJST(content string) (string, error) {
 					builder.WriteString("));\n")
 
 				case '+':
-					// Load
+					// Insert
 
 					// Render?
 					var renderer string
@@ -77,13 +77,13 @@ func RenderJST(content string) (string, error) {
 					}
 
 				case '&':
-					// Represent
+					// Embed
 					code = code[1:]
-					builder.WriteString("__representer")
-					builder.WriteString(strconv.FormatInt(int64(len(representers)), 10))
+					builder.WriteString("__presenter")
+					builder.WriteString(strconv.FormatInt(int64(len(presenters)), 10))
 					builder.WriteString(".callable(null, context);\n")
 
-					representers = append(representers, strings.Trim(code, " \n"))
+					presenters = append(presenters, strings.Trim(code, " \n"))
 
 				default:
 					// As is
@@ -99,12 +99,12 @@ func RenderJST(content string) (string, error) {
 	builder.WriteString("}\n")
 
 	// Hook representers globally
-	for index, representer := range representers {
-		builder.WriteString("var __representer")
+	for index, representer := range presenters {
+		builder.WriteString("const __presenter")
 		builder.WriteString(strconv.FormatInt(int64(index), 10))
 		builder.WriteString(" = prudence.hook(")
 		builder.WriteString(representer)
-		builder.WriteString(", 'represent');")
+		builder.WriteString(", 'present');")
 	}
 
 	log.Debugf("%s", builder.String())

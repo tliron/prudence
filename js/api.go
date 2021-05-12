@@ -2,16 +2,26 @@ package js
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/beevik/etree"
 	"github.com/dop251/goja"
+	"github.com/mitchellh/hashstructure/v2"
 	"github.com/tliron/kutil/ard"
+	formatpkg "github.com/tliron/kutil/format"
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	urlpkg "github.com/tliron/kutil/url"
+	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/render"
 	"github.com/tliron/prudence/rest"
+	"github.com/tliron/yamlkeys"
 )
 
 //
@@ -32,11 +42,155 @@ func NewAPI(url urlpkg.URL) *API {
 	}
 }
 
-func (self *API) newRuntime() *goja.Runtime {
-	runtime := goja.New()
-	runtime.SetFieldNameMapper(js.CamelCaseMapper)
-	runtime.Set("prudence", self)
-	return runtime
+func (self *API) Sprintf(format string, args ...interface{}) string {
+	return fmt.Sprintf(format, args...)
+}
+
+func (self *API) JoinFilePath(elements ...string) string {
+	return filepath.Join(elements...)
+}
+
+func (self *API) IsType(value ard.Value, type_ string) (bool, error) {
+	// Special case whereby an integer stored as a float type has been optimized to an integer type
+	if (type_ == "!!float") && ard.IsInteger(value) {
+		return true, nil
+	}
+
+	if validate, ok := ard.TypeValidators[ard.TypeName(type_)]; ok {
+		return validate(value), nil
+	} else {
+		return false, fmt.Errorf("unsupported type: %s", type_)
+	}
+}
+
+func (self *API) ValidateFormat(code string, format string) error {
+	return formatpkg.Validate(code, format)
+}
+
+func (self *API) Timestamp() ard.Value {
+	return util.Timestamp(false)
+}
+
+func (self *API) NewXMLDocument() *etree.Document {
+	return etree.NewDocument()
+}
+
+func (self *API) Decode(code string, format string, all bool) (ard.Value, error) {
+	switch format {
+	case "yaml", "":
+		if all {
+			if value, err := yamlkeys.DecodeAll(strings.NewReader(code)); err == nil {
+				value_, _ := ard.MapsToStringMaps(value)
+				return value_, err
+			} else {
+				return nil, err
+			}
+		} else {
+			value, _, err := ard.DecodeYAML(code, false)
+			value, _ = ard.MapsToStringMaps(value)
+			return value, err
+		}
+
+	case "json":
+		value, _, err := ard.DecodeJSON(code, false)
+		value, _ = ard.MapsToStringMaps(value)
+		return value, err
+
+	case "cjson":
+		value, _, err := ard.DecodeCompatibleJSON(code, false)
+		value, _ = ard.MapsToStringMaps(value)
+		return value, err
+
+	case "xml":
+		value, _, err := ard.DecodeCompatibleXML(code, false)
+		value, _ = ard.MapsToStringMaps(value)
+		return value, err
+
+	case "cbor":
+		value, _, err := ard.DecodeCBOR(code, false)
+		value, _ = ard.MapsToStringMaps(value)
+		return value, err
+
+	default:
+		return nil, fmt.Errorf("unsupported format: %s", format)
+	}
+}
+
+func (self *API) Encode(value interface{}, format string, indent string, writer io.Writer) (string, error) {
+	if writer == nil {
+		return formatpkg.Encode(value, format, false)
+	} else {
+		err := formatpkg.Write(value, format, indent, false, writer)
+		return "", err
+	}
+}
+
+func (self *API) Exec(name string, arguments ...string) (string, error) {
+	cmd := exec.Command(name, arguments...)
+	if out, err := cmd.Output(); err == nil {
+		return util.BytesToString(out), nil
+	} else if err_, ok := err.(*exec.ExitError); ok {
+		return "", fmt.Errorf("%s\n%s", err_.Error(), util.BytesToString(err_.Stderr))
+	} else {
+		return "", err
+	}
+}
+
+func (self *API) TemporaryFile(pattern string, directory string) (string, error) {
+	if file, err := os.CreateTemp(directory, pattern); err == nil {
+		name := file.Name()
+		os.Remove(name)
+		return name, nil
+	} else {
+		return "", err
+	}
+}
+
+func (self *API) TemporaryDirectory(pattern string, directory string) (string, error) {
+	return os.MkdirTemp(directory, pattern)
+}
+
+func (self *API) Load(url string) (string, error) {
+	if url_, err := self.getRelativeURL(url); err == nil {
+		return urlpkg.ReadString(url_)
+	} else {
+		return "", err
+	}
+}
+
+func (self *API) Download(sourceUrl string, targetPath string) error {
+	if sourceUrl_, err := self.getRelativeURL(sourceUrl); err == nil {
+		return urlpkg.DownloadTo(sourceUrl_, targetPath)
+	} else {
+		return err
+	}
+}
+
+// Encode bytes as base64
+func (self *API) Btoa(bytes []byte) string {
+	return util.ToBase64(bytes)
+}
+
+// Decode base64 to bytes
+func (self *API) Atob(b64 string) ([]byte, error) {
+	// Note: if you need a string in JavaScript: String.fromCharCode.apply(null, .atob(...))
+	return util.FromBase64(b64)
+}
+
+func (self *API) DeepCopy(value ard.Value) ard.Value {
+	return ard.Copy(value)
+}
+
+func (self *API) DeepEquals(a ard.Value, b ard.Value) bool {
+	return ard.Equals(a, b)
+}
+
+func (self *API) Hash(value interface{}) (string, error) {
+	if hash, err := hashstructure.Hash(value, hashstructure.FormatV2, nil); err == nil {
+		return strconv.FormatUint(hash, 10), nil
+	} else {
+		return "", err
+	}
 }
 
 func (self *API) Create(config ard.StringMap) (interface{}, error) {
@@ -72,16 +226,27 @@ func (self *API) Hook(url string, name string) (*js.Hook, error) {
 	}
 }
 
-func (self *API) Load(url string) (string, error) {
-	if url_, err := self.getRelativeURL(url); err == nil {
-		return urlpkg.ReadString(url_)
-	} else {
-		return "", err
-	}
-}
-
 func (self *API) Render(content string, renderer string) (string, error) {
 	return render.Render(content, renderer, self.getRelativeURL)
+}
+
+func (self *API) Start(startables []interface{}) error {
+	for _, startable := range startables {
+		if startable_, ok := startable.(rest.Startable); ok {
+			go func() {
+				if err := startable_.Start(); err != nil {
+					self.Log.Errorf("%s", err.Error())
+				}
+			}()
+		} else {
+			return fmt.Errorf("object not startable: %T", startable)
+		}
+	}
+
+	// Block forever
+	<-make(chan struct{})
+
+	return nil
 }
 
 // hook.GetRelativeURL signature
@@ -95,6 +260,13 @@ func (self *API) getRelativeURL(url string) (urlpkg.URL, error) {
 	}
 
 	return urlpkg.NewValidURL(url, origins, urlContext)
+}
+
+func (self *API) newRuntime() *goja.Runtime {
+	runtime := goja.New()
+	runtime.SetFieldNameMapper(js.CamelCaseMapper)
+	runtime.Set("prudence", self)
+	return runtime
 }
 
 func (self *API) run(url urlpkg.URL) (*goja.Runtime, interface{}, error) {
