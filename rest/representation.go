@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/tliron/kutil/js"
-	"github.com/tliron/kutil/util"
 	"github.com/valyala/fasthttp"
 )
 
@@ -30,52 +29,30 @@ func NewRepresentationFunc(hook *js.Hook) RepresentionFunc {
 func (self RepresentionFunc) Call(context *Context) {
 	// From cache
 
-	cached := false
 	if cacheEntry, ok := FromCache(context); ok {
 		// Don't use cache entry on GET if there is no body cached
-		if context.Context.IsGet() {
+		if context.context.IsGet() {
 			if cacheEntry.Body == nil {
 				// Don't use cache entry on GET if there is no body cached
 				context.Log.Debugf("cache has no body: %s", context.Path)
 			} else {
 				cacheEntry.Write(context)
-				cached = true
+				return
 			}
 		} else {
 			cacheEntry.Write(context)
-			cached = true
-		}
-	}
-
-	if cached {
-		if eTag := util.BytesToString(context.Context.Response.Header.Peek(fasthttp.HeaderETag)); eTag != "" {
-			ifNoneMatch := util.BytesToString(context.Context.Request.Header.Peek(fasthttp.HeaderIfNoneMatch))
-			if ifNoneMatch == context.ETag {
-				// The following headers should have been set:
-				// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
-				context.Context.NotModified()
-				return
-			}
-		}
-
-		if !context.Context.IfModifiedSince(context.LastModified) {
-			// The following headers should have been set:
-			// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
-			context.Context.NotModified()
 			return
 		}
-
-		return
 	}
 
 	// Writer
 
-	if context.Context.IsHead() {
+	if context.context.IsHead() {
 		// Avoid wasting resources on writing for HEAD
 		context.Writer = io.Discard
-	} else if context.Context.Request.Header.HasAcceptEncoding("gzip") {
+	} else if context.context.Request.Header.HasAcceptEncoding("gzip") {
 		context.Log.Info("gzip!")
-		context.Context.Response.Header.Add(fasthttp.HeaderContentEncoding, "gzip")
+		context.context.Response.Header.Add(fasthttp.HeaderContentEncoding, "gzip")
 		context.Writer = NewGZipWriter(context.Writer)
 	}
 
@@ -83,73 +60,69 @@ func (self RepresentionFunc) Call(context *Context) {
 
 	if err := self(context); err != nil {
 		context.Log.Errorf("%s", err)
-		context.Context.SetStatusCode(fasthttp.StatusInternalServerError)
+		context.context.SetStatusCode(fasthttp.StatusInternalServerError)
 		return
 	}
-
-	context.EndETag()
 
 	if context.LastModified.IsZero() {
 		context.LastModified = time.Now()
 	}
 
-	// Content-Type
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+	context.EndETag()
 
-	if context.ContentType != "" {
-		context.Context.SetContentType(context.ContentType + ";charset=utf-8")
-	}
-
-	if context.CacheDuration > 0.0 {
-
-		// Cache-Control
-		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
-
-		maxAge := int(context.CacheDuration)
-		context.Context.Response.Header.Add(fasthttp.HeaderCacheControl, fmt.Sprintf("max-age=%d", maxAge))
-
-	} else if context.ETag != "" {
-
-		// ETag and If-None-Match
-		// (Has precedence over If-Modified-Since)
-		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
-		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
-
-		var eTag string
+	var eTag string
+	if context.ETag != "" {
 		if context.WeakETag {
 			eTag = "W/\"" + context.ETag + "\""
 		} else {
 			eTag = "\"" + context.ETag + "\""
 		}
+	}
 
-		context.Context.Response.Header.Add(fasthttp.HeaderETag, eTag)
+	if context.CacheDuration > 0.0 {
 
-		ifNoneMatch := util.BytesToString(context.Context.Request.Header.Peek(fasthttp.HeaderIfNoneMatch))
-		if ifNoneMatch == eTag {
-			// The following headers should have been set:
-			// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
-			context.Context.NotModified()
+		// Enabling caching means no conditional checks
+
+		// Cache-Control
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
+		maxAge := int(context.CacheDuration)
+		AddCacheControl(context.context, fmt.Sprintf("max-age=%d", maxAge))
+
+	} else {
+
+		// Conditional
+
+		// If-None-Match
+		// (Has precedence over If-Modified-Since)
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+		if IfNoneMatch(context.context, eTag) {
+			context.context.NotModified()
 			return
 		}
 
-	} else {
-		// Don't store and *also* invalidate the existing client cache
-		context.Context.Response.Header.Add(fasthttp.HeaderCacheControl, "no-store,max-age=0")
+		// If-Modified-Since
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
+		if !context.context.IfModifiedSince(context.LastModified) {
+			context.context.NotModified()
+			return
+		}
+
 	}
 
-	// Last-Modified and If-Modified-Since
+	// Last-Modified
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
+	context.context.Response.Header.SetLastModified(context.LastModified)
 
-	if !context.Context.IfModifiedSince(context.LastModified) {
-		// The following headers should have been set:
-		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
-		context.Context.NotModified()
-		return
+	// Content-Type
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+	if context.ContentType != "" {
+		context.context.SetContentType(context.ContentType + ";charset=utf-8")
 	}
 
-	if !context.LastModified.IsZero() {
-		context.Context.Response.Header.SetLastModified(context.LastModified)
+	// ETag
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
+	if eTag != "" {
+		context.context.Response.Header.Add(fasthttp.HeaderETag, eTag)
 	}
 
 	// GZip

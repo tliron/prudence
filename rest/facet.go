@@ -120,9 +120,11 @@ func (self *Facet) FindPresenter(context *Context) (RepresentionFunc, string, bo
 // Handler interface
 // HandleFunc signature
 func (self *Facet) Handle(context *Context) bool {
-	if context.Context.IsHead() {
+	context = context.Copy()
+	context.CacheKey = context.context.URI().String()
+
+	if context.context.IsHead() {
 		if describer, contentType, ok := self.FindDescriber(context); ok {
-			context = context.Copy()
 			context.ContentType = contentType
 			describer.Call(context)
 			return true
@@ -130,7 +132,6 @@ func (self *Facet) Handle(context *Context) bool {
 	}
 
 	if presenter, contentType, ok := self.FindPresenter(context); ok {
-		context = context.Copy()
 		context.ContentType = contentType
 		presenter.Call(context)
 		return true
@@ -142,7 +143,7 @@ func (self *Facet) Handle(context *Context) bool {
 func parseAccept(context *Context) []string {
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
 	// TODO: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
-	accept := strings.Split(string(context.Context.Request.Header.Peek("Accept")), ",")
+	accept := strings.Split(string(context.context.Request.Header.Peek("Accept")), ",")
 	context.Log.Infof("ACCEPT: %s", accept)
 	return accept
 }

@@ -45,7 +45,7 @@ func representJson(context *rest.Context) error {
 }
 
 func representDefault(context *rest.Context) error {
-	fmt.Fprintf(context.Context, "%s\n", context.Context.Request.Header.ContentType())
-	fmt.Fprintf(context.Context, "%s\n", context.Variables)
+	fmt.Fprintf(context, "%s\n", context.ContentType)
+	fmt.Fprintf(context, "%s\n", context.Variables)
 	return nil
 }

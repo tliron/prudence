@@ -16,7 +16,7 @@ func ToCache(context *Context) {
 	cacheKey := NewCacheKey(context)
 	cacheEntry := NewCacheEntry(context)
 	cache.Store(cacheKey, cacheEntry)
-	context.Log.Debugf("cache store: %s, until %s", cacheKey.Path, cacheEntry.Expiration)
+	context.Log.Debugf("cache store: %s, until %s", cacheKey.Key, cacheEntry.Expiration)
 }
 
 func FromCache(context *Context) (*CacheEntry, bool) {
@@ -24,11 +24,11 @@ func FromCache(context *Context) (*CacheEntry, bool) {
 	if cacheEntry, ok := cache.Load(cacheKey); ok {
 		cacheEntry_ := cacheEntry.(*CacheEntry)
 		if cacheEntry_.Expired() {
-			context.Log.Debugf("cache expired: %s", cacheKey.Path)
+			context.Log.Debugf("cache expired: %s", cacheKey.Key)
 			cache.Delete(cacheKey)
 			return nil, false
 		} else {
-			context.Log.Debugf("cache hit: %s", cacheKey.Path)
+			context.Log.Debugf("cache hit: %s", cacheKey.Key)
 			return cacheEntry_, true
 		}
 	} else {
@@ -50,13 +50,13 @@ func PruneCache() {
 //
 
 type CacheKey struct {
-	Path        string
+	Key         string
 	ContentType string
 }
 
 func NewCacheKey(context *Context) CacheKey {
 	return CacheKey{
-		Path:        context.Path,
+		Key:         context.CacheKey,
 		ContentType: context.ContentType,
 	}
 }
@@ -66,65 +66,95 @@ func NewCacheKey(context *Context) CacheKey {
 //
 
 type CacheEntry struct {
-	Headers      [][][]byte
-	Body         []byte // TODO: for different encodings?
-	LastModified time.Time
-	Expiration   time.Time
+	Headers    [][][]byte
+	Body       []byte // TODO: for different encodings?
+	Expiration time.Time
 }
 
 func NewCacheEntry(context *Context) *CacheEntry {
 	var body []byte
-	if context.Context.Request.Header.IsGet() {
+	if context.context.Request.Header.IsGet() {
 		// Body exists only in GET
-		body = copyBytes(context.Context.Response.Body())
+		body = copyBytes(context.context.Response.Body())
 	}
 
 	var headers [][][]byte
-	context.Context.Response.Header.VisitAll(func(key []byte, value []byte) {
+	context.context.Response.Header.VisitAll(func(key []byte, value []byte) {
 		// This is an annoying way to get all headers, but unfortunately if we
 		// get the entire header via Header() there is no API to set it correctly
 		// in CacheEntry.Write
-		if string(key) == fasthttp.HeaderCacheControl {
+		switch string(key) {
+		case fasthttp.HeaderServer, fasthttp.HeaderCacheControl:
 			return
 		}
 
+		//context.Log.Debugf("header: %s", key)
 		headers = append(headers, [][]byte{copyBytes(key), copyBytes(value)})
 	})
 
 	return &CacheEntry{
-		Body:         body,
-		Headers:      headers,
-		LastModified: context.LastModified,
-		Expiration:   time.Now().Add(time.Duration(context.CacheDuration * 1000000000.0)), // seconds to nanoseconds
+		Body:       body,
+		Headers:    headers,
+		Expiration: time.Now().Add(time.Duration(context.CacheDuration * 1000000000.0)), // seconds to nanoseconds
 	}
 }
 
 func (self *CacheEntry) Write(context *Context) {
-	context.Context.Response.Reset()
+	context.context.Response.Reset()
 
 	// Annoyingly these were re-enabled by Reset above
-	context.Context.Response.Header.DisableNormalizing()
-	context.Context.Response.Header.SetNoDefaultContentType(true)
+	context.context.Response.Header.DisableNormalizing()
+	context.context.Response.Header.SetNoDefaultContentType(true)
 
 	// Headers
 	for _, header := range self.Headers {
-		context.Context.Response.Header.SetBytesKV(header[0], header[1])
+		context.context.Response.Header.AddBytesKV(header[0], header[1])
 	}
+
+	eTag := GetResponseETag(context.context)
 
 	// New max-age
-	duration := self.Expiration.Sub(time.Now()).Seconds()
-	if duration < 0 {
-		duration = 0
-	}
-	context.Context.Response.Header.Add(fasthttp.HeaderCacheControl, fmt.Sprintf("max-age=%d", int(duration)))
+	timeToLive := int(self.TimeToLive())
+	AddCacheControl(context.context, fmt.Sprintf("max-age=%d", timeToLive))
+
+	/*else if eTag == "" {
+		// Don't store and *also* invalidate the existing client cache
+		AddCacheControl(context.context, "no-store,max-age=0")
+	}*/
 
 	// TODO only for debug mode
-	context.Context.Response.Header.Set("X-Prudence-Cached", "true")
+	context.context.Response.Header.Set("X-Prudence-Cached", "true")
 
-	// Body only in GET
-	if context.Context.IsGet() {
-		context.Context.Response.SetBody(self.Body)
+	// Conditional
+
+	if IfNoneMatch(context.context, eTag) {
+		// The following headers should have been set:
+		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
+		context.context.NotModified()
+		return
 	}
+
+	if !context.context.IfModifiedSince(GetResponseLastModified(context.context)) {
+		// The following headers should have been set:
+		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
+		context.context.NotModified()
+		return
+	}
+
+	// Body (only in GET)
+
+	if context.context.IsGet() {
+		context.context.Response.SetBody(self.Body)
+	}
+}
+
+// In seconds
+func (self *CacheEntry) TimeToLive() float64 {
+	duration := self.Expiration.Sub(time.Now()).Seconds()
+	if duration < 0.0 {
+		duration = 0.0
+	}
+	return duration
 }
 
 func (self *CacheEntry) Expired() bool {

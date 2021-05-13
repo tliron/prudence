@@ -18,15 +18,17 @@ type Context struct {
 	Log     logging.Logger
 	Scratch map[string]interface{}
 
-	Context       *fasthttp.RequestCtx
 	Path          string
 	Method        string
 	Variables     map[string]string
 	ContentType   string
-	LastModified  time.Time
+	CacheDuration float64 // seconds
+	CacheKey      string
 	ETag          string
 	WeakETag      bool
-	CacheDuration float64 // seconds
+	LastModified  time.Time
+
+	context *fasthttp.RequestCtx
 }
 
 func NewContext(context *fasthttp.RequestCtx) *Context {
@@ -34,10 +36,10 @@ func NewContext(context *fasthttp.RequestCtx) *Context {
 		Writer:    context,
 		Log:       log,
 		Scratch:   make(map[string]interface{}),
-		Context:   context,
 		Path:      util.BytesToString(context.Path()[1:]), // without initial "/"
 		Method:    util.BytesToString(context.Method()),
 		Variables: make(map[string]string),
+		context:   context,
 	}
 }
 
@@ -78,14 +80,15 @@ func (self *Context) Copy() *Context {
 		Writer:        self.Writer,
 		Log:           self.Log,
 		Scratch:       make(map[string]interface{}),
-		Context:       self.Context,
 		Path:          self.Path,
 		Method:        self.Method,
 		Variables:     variables,
 		ContentType:   self.ContentType,
-		LastModified:  self.LastModified,
+		CacheDuration: self.CacheDuration,
+		CacheKey:      self.CacheKey,
 		ETag:          self.ETag,
 		WeakETag:      self.WeakETag,
-		CacheDuration: self.CacheDuration,
+		LastModified:  self.LastModified,
+		context:       self.context,
 	}
 }

@@ -34,6 +34,6 @@ type defaultNotFound struct{}
 // Handler interface
 // HandleFunc signature
 func (self *defaultNotFound) Handle(context *Context) bool {
-	context.Context.NotFound()
+	context.context.NotFound()
 	return true
 }
