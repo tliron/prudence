@@ -6,6 +6,9 @@
 <body>
     <h1>
         Chores for: <%= context.variables.name %>
+<% if (context.query.scope === 'all') { %>
+        (all of them)
+<% } %>
     </h1>
 <%# embed another representation %>
 <%& 'fragments/list.jst' %>

@@ -226,6 +226,25 @@ func (self *API) Hook(url string, name string) (*js.Hook, error) {
 	}
 }
 
+func (self *API) Hooks(url string) (*js.Hook, error) {
+	if url_, err := self.getRelativeURL(url); err == nil {
+		if runtime, err := self.cachedRun(url_); err == nil {
+			symbols := runtime.GlobalObject().Symbols()
+			fmt.Printf("%s\n", symbols)
+			return nil, nil
+			/*if callable, ok := goja.AssertFunction(value); ok {
+				return js.NewHook(callable, runtime), nil
+			} else {
+				return nil, fmt.Errorf("no \"%s\" function", name)
+			}*/
+		} else {
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+}
+
 func (self *API) Render(content string, renderer string) (string, error) {
 	return render.Render(content, renderer, self.getRelativeURL)
 }

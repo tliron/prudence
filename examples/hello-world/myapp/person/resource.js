@@ -3,23 +3,28 @@ prudence.create({
     type: 'resource',
     name: 'person',
     facets: [{
+        // Main facet
         name: 'main',
         paths: [ '{name}' ],
         representations: [{
             // A single JSON representation with a seperate describer and presenter
-            describer: prudence.hook('main/json.js', 'describe'),
-            presenter: prudence.hook('main/json.js', 'present')
+            hooks: prudence.hooks('main/json.js')
+            //construct: prudence.hook('main/json.js', 'construct'),
+            //describe: prudence.hook('main/json.js', 'describe'),
+            //present: prudence.hook('main/json.js', 'present')
         }]
     }, {
+        // Chores facet
         name: 'chores',
         paths: [ '{name}/chores' ],
         representations: [{
             // HTML representation using JST
             contentTypes: [ 'text/html' ],
-            presenter: prudence.hook('chores/html.jst', 'present')
+            languages: [ 'en', 'he' ],
+            present: prudence.hook('chores/html.jst', 'present')
         }, {
             // Default text representation
-            presenter: prudence.hook('chores/text.js', 'present')
+            present: prudence.hook('chores/text.js', 'present')
         }]
     }]
 });

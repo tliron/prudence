@@ -14,12 +14,12 @@ import (
 //
 
 type Context struct {
-	Writer  io.Writer
 	Log     logging.Logger
 	Scratch map[string]interface{}
 
 	Path          string
 	Method        string
+	Query         map[string]string
 	Variables     map[string]string
 	ContentType   string
 	CacheDuration float64 // seconds
@@ -29,17 +29,25 @@ type Context struct {
 	LastModified  time.Time
 
 	context *fasthttp.RequestCtx
+	writer  io.Writer
 }
 
 func NewContext(context *fasthttp.RequestCtx) *Context {
+	query := make(map[string]string)
+	context.QueryArgs().VisitAll(func(key []byte, value []byte) {
+		log.Debugf("query: %s = %s", key, value)
+		query[util.BytesToString(key)] = util.BytesToString(value)
+	})
+
 	return &Context{
-		Writer:    context,
 		Log:       log,
 		Scratch:   make(map[string]interface{}),
 		Path:      util.BytesToString(context.Path()[1:]), // without initial "/"
 		Method:    util.BytesToString(context.Method()),
+		Query:     query,
 		Variables: make(map[string]string),
 		context:   context,
+		writer:    context,
 	}
 }
 
@@ -50,24 +58,36 @@ func NewContext(context *fasthttp.RequestCtx) *Context {
 // https://www.mnot.net/blog/2007/08/07/etags
 // http://www.tbray.org/ongoing/When/200x/2007/07/31/Design-for-the-Web
 func (self *Context) StartETag() {
-	if _, ok := self.Writer.(*HashWriter); !ok {
+	if _, ok := self.writer.(*HashWriter); !ok {
 		self.Log.Info("start ETag")
-		self.Writer = NewHashWriter(self.Writer)
+		self.writer = NewHashWriter(self.writer)
 	}
 	// TODO: if a low priority part of the page changes then set WeakETag=true
 }
 
 func (self *Context) EndETag() {
-	if hashWriter, ok := self.Writer.(*HashWriter); ok {
+	if hashWriter, ok := self.writer.(*HashWriter); ok {
 		self.Log.Info("end ETag")
 		self.ETag = hashWriter.Hash()
-		self.Writer = hashWriter.Writer
+		self.writer = hashWriter.Writer
+	}
+}
+
+func (self *Context) RenderETag() string {
+	if self.ETag != "" {
+		if self.WeakETag {
+			return "W/\"" + self.ETag + "\""
+		} else {
+			return "\"" + self.ETag + "\""
+		}
+	} else {
+		return ""
 	}
 }
 
 // io.Writer
 func (self *Context) Write(b []byte) (int, error) {
-	return self.Writer.Write(b)
+	return self.writer.Write(b)
 }
 
 func (self *Context) Copy() *Context {
@@ -77,11 +97,11 @@ func (self *Context) Copy() *Context {
 	}
 
 	return &Context{
-		Writer:        self.Writer,
 		Log:           self.Log,
 		Scratch:       make(map[string]interface{}),
 		Path:          self.Path,
 		Method:        self.Method,
+		Query:         self.Query,
 		Variables:     variables,
 		ContentType:   self.ContentType,
 		CacheDuration: self.CacheDuration,
@@ -90,5 +110,6 @@ func (self *Context) Copy() *Context {
 		WeakETag:      self.WeakETag,
 		LastModified:  self.LastModified,
 		context:       self.context,
+		writer:        self.writer,
 	}
 }

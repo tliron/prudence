@@ -28,7 +28,7 @@ func NewStatic(root string, indexes []string) *Static {
 		CompressBrotli:     true,
 		PathRewrite: func(context *fasthttp.RequestCtx) []byte {
 			path := context.Request.Header.Peek("__path")
-			log.Infof("path: %s", path)
+			log.Debugf("path: %s", path)
 			return path
 		},
 	}
@@ -59,5 +59,5 @@ func (self *Static) Handle(context *Context) bool {
 	context.context.Request.Header.Add("__path", "/"+context.Path)
 	self.RequestHandler(context.context)
 	context.context.Request.Header.Del("__path")
-	return context.context.Response.StatusCode() != fasthttp.StatusNotFound
+	return !NotFound(context.context)
 }

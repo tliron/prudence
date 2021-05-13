@@ -79,7 +79,7 @@ func (self *PathTemplate) Match(path string) map[string]string {
 	}
 
 	if matches := self.RegularExpression.FindStringSubmatch(path); matches != nil {
-		log.Debugf("matched: %s", self.RegularExpression.String())
+		//log.Debugf("matched: %s", self.RegularExpression.String())
 		names := self.RegularExpression.SubexpNames()
 		map_ := make(map[string]string)
 		for index, match := range matches {

@@ -2,11 +2,13 @@ package rest
 
 import (
 	"errors"
-	"strings"
+	"fmt"
+	"io"
+	"time"
 
 	"github.com/tliron/kutil/ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/js/common"
+	"github.com/valyala/fasthttp"
 )
 
 func init() {
@@ -20,15 +22,13 @@ func init() {
 type Facet struct {
 	*Route
 
-	Describers map[string]RepresentionFunc
-	Presenters map[string]RepresentionFunc
+	Representations Representations
 }
 
 func NewFacet(name string, paths []string) *Facet {
 	self := Facet{
-		Route:      NewRoute(name, paths, nil),
-		Describers: make(map[string]RepresentionFunc),
-		Presenters: make(map[string]RepresentionFunc),
+		Route:           NewRoute(name, paths, nil),
+		Representations: make(Representations),
 	}
 	self.Handler = self.Handle
 	return &self
@@ -37,8 +37,7 @@ func NewFacet(name string, paths []string) *Facet {
 // CreateFunc signature
 func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error) {
 	self := Facet{
-		Describers: make(map[string]RepresentionFunc),
-		Presenters: make(map[string]RepresentionFunc),
+		Representations: make(Representations),
 	}
 
 	route, _ := CreateRoute(config, getRelativeURL)
@@ -50,100 +49,158 @@ func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (in
 
 	config_ := ard.NewNode(config)
 	representations, _ := config_.Get("representations").List(true)
-	for _, representation := range representations {
-		representation_ := ard.NewNode(representation)
-		contentTypes, _ := representation_.Get("contentTypes").StringList(true)
-		var describer RepresentionFunc
-		if describer_ := representation_.Get("describer").Data; describer_ != nil {
-			describer = NewRepresentationFunc(describer_.(*js.Hook))
-		}
-		var presenter RepresentionFunc
-		if presenter_ := representation_.Get("presenter").Data; presenter_ != nil {
-			presenter = NewRepresentationFunc(presenter_.(*js.Hook))
-		}
-
-		if len(contentTypes) == 0 {
-			// Defaults
-			if describer != nil {
-				self.SetDescriber("", describer)
-			}
-			if presenter != nil {
-				self.SetPresenter("", presenter)
-			}
-		} else {
-			for _, contentType := range contentTypes {
-				if describer != nil {
-					self.SetDescriber(contentType, describer)
-				}
-				if presenter != nil {
-					self.SetPresenter(contentType, presenter)
-				}
-			}
-		}
-	}
+	self.Representations, _ = CreateRepresentations(representations)
 
 	return &self, nil
 }
 
-func (self *Facet) SetDescriber(contentType string, describer RepresentionFunc) {
-	self.Describers[contentType] = describer
-}
-
-func (self *Facet) SetPresenter(contentType string, presenter RepresentionFunc) {
-	self.Presenters[contentType] = presenter
-}
-
-func (self *Facet) FindDescriber(context *Context) (RepresentionFunc, string, bool) {
-	for _, contentType := range parseAccept(context) {
-		if describer, ok := self.Describers[contentType]; ok {
-			return describer, contentType, true
+func (self *Facet) FindRepresentation(context *Context) (*Representation, string, bool) {
+	for _, contentType := range ParseAccept(context) {
+		if functions, ok := self.Representations[contentType]; ok {
+			return functions, contentType, true
 		}
 	}
 
-	// Default describer
-	describer, ok := self.Describers[""]
-	return describer, "", ok
-}
-
-func (self *Facet) FindPresenter(context *Context) (RepresentionFunc, string, bool) {
-	for _, contentType := range parseAccept(context) {
-		if presenter, ok := self.Presenters[contentType]; ok {
-			return presenter, contentType, true
-		}
-	}
-
-	// Default presenter
-	presenter, ok := self.Presenters[""]
-	return presenter, "", ok
+	// Default representation
+	functions, ok := self.Representations[""]
+	return functions, "", ok
 }
 
 // Handler interface
 // HandleFunc signature
 func (self *Facet) Handle(context *Context) bool {
 	context = context.Copy()
+
+	var representation *Representation
+	var ok bool
+	if representation, context.ContentType, ok = self.FindRepresentation(context); !ok {
+		return false
+	}
+
 	context.CacheKey = context.context.URI().String()
 
-	if context.context.IsHead() {
-		if describer, contentType, ok := self.FindDescriber(context); ok {
-			context.ContentType = contentType
-			describer.Call(context)
+	if representation.Construct != nil {
+		if err := representation.Construct(context); err != nil {
+			context.Log.Errorf("%s", err)
+			context.context.SetStatusCode(fasthttp.StatusInternalServerError)
 			return true
 		}
 	}
 
-	if presenter, contentType, ok := self.FindPresenter(context); ok {
-		context.ContentType = contentType
-		presenter.Call(context)
-		return true
+	// Try cache
+
+	if cacheEntry, ok := FromCache(context); ok {
+		if context.context.IsHead() {
+			// HEAD doesn't care if the cacheEntry doesn't have a body
+			cacheEntry.Write(context)
+			return !NotFound(context.context)
+		} else {
+			if cacheEntry.Body == nil {
+				context.Log.Debugf("ignoring cache with no body: %s", context.Path)
+			} else {
+				cacheEntry.Write(context)
+				return !NotFound(context.context)
+			}
+		}
 	}
 
-	return false
-}
+	if context.context.IsHead() {
+		// Avoid wasting resources on writing for HEAD
+		context.writer = io.Discard
+	}
 
-func parseAccept(context *Context) []string {
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
-	// TODO: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
-	accept := strings.Split(string(context.context.Request.Header.Peek("Accept")), ",")
-	context.Log.Infof("ACCEPT: %s", accept)
-	return accept
+	if representation.Describe != nil {
+		if err := representation.Describe(context); err != nil {
+			context.Log.Errorf("%s", err)
+			context.context.SetStatusCode(fasthttp.StatusInternalServerError)
+			return true
+		}
+	}
+
+	if !context.context.IsHead() {
+		if context.context.Request.Header.HasAcceptEncoding("gzip") {
+			context.Log.Info("gzip!")
+			AddContentEncoding(context.context, "gzip")
+			context.writer = NewGZipWriter(context.writer)
+		}
+
+		if representation.Present != nil {
+			if err := representation.Present(context); err != nil {
+				context.Log.Errorf("%s", err)
+				context.context.SetStatusCode(fasthttp.StatusInternalServerError)
+				return true
+			}
+		}
+	}
+
+	if context.LastModified.IsZero() {
+		context.LastModified = time.Now()
+	}
+
+	context.EndETag()
+
+	eTag := context.RenderETag()
+
+	if context.CacheDuration > 0.0 {
+
+		// Enabling caching means no conditional checks
+
+		// Cache-Control
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
+		maxAge := int(context.CacheDuration)
+		AddCacheControl(context.context, fmt.Sprintf("max-age=%d", maxAge))
+
+	} else {
+
+		// Conditional
+
+		// If-None-Match
+		// (Has precedence over If-Modified-Since)
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+		if IfNoneMatch(context.context, eTag) {
+			context.context.NotModified()
+			return true
+		}
+
+		// If-Modified-Since
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
+		if !context.context.IfModifiedSince(context.LastModified) {
+			context.context.NotModified()
+			return true
+		}
+
+	}
+
+	// Last-Modified
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
+	context.context.Response.Header.SetLastModified(context.LastModified)
+
+	// Content-Type
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+	if context.ContentType != "" {
+		context.context.SetContentType(context.ContentType + ";charset=utf-8")
+	}
+
+	// ETag
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
+	if eTag != "" {
+		AddETag(context.context, eTag)
+	}
+
+	// GZip
+
+	if gzipWriter, ok := context.writer.(*GZipWriter); ok {
+		if err := gzipWriter.Close(); err != nil {
+			context.Log.Errorf("%s", err)
+		}
+		context.writer = gzipWriter.Writer
+	}
+
+	// To cache
+
+	if context.CacheDuration > 0.0 {
+		ToCache(context)
+	}
+
+	return !NotFound(context.context)
 }

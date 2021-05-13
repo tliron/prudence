@@ -21,7 +21,7 @@ func RenderJST(content string) (string, error) {
 			start := match[0]
 			end := match[1]
 
-			//log.Infof("match: %s", content[match[0]:match[1]])
+			//log.Debugf("match: %s", content[match[0]:match[1]])
 			writeLiteral(&builder, content[last:start])
 
 			code := content[start+2 : end-2]

@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 	"time"
@@ -16,22 +17,24 @@ func ToCache(context *Context) {
 	cacheKey := NewCacheKey(context)
 	cacheEntry := NewCacheEntry(context)
 	cache.Store(cacheKey, cacheEntry)
-	context.Log.Debugf("cache store: %s, until %s", cacheKey.Key, cacheEntry.Expiration)
+	context.Log.Debugf("cache stored: %s", cacheKey)
 }
 
 func FromCache(context *Context) (*CacheEntry, bool) {
 	cacheKey := NewCacheKey(context)
+	context.Log.Debugf("trying cache: %s", cacheKey)
 	if cacheEntry, ok := cache.Load(cacheKey); ok {
 		cacheEntry_ := cacheEntry.(*CacheEntry)
 		if cacheEntry_.Expired() {
-			context.Log.Debugf("cache expired: %s", cacheKey.Key)
+			context.Log.Debugf("cache expired: %s", cacheKey)
 			cache.Delete(cacheKey)
 			return nil, false
 		} else {
-			context.Log.Debugf("cache hit: %s", cacheKey.Key)
+			context.Log.Debugf("cache hit: %s", cacheKey)
 			return cacheEntry_, true
 		}
 	} else {
+		context.Log.Debugf("not cached: %s", cacheKey)
 		return nil, false
 	}
 }
@@ -61,21 +64,26 @@ func NewCacheKey(context *Context) CacheKey {
 	}
 }
 
+// fmt.Stringer interface
+func (self CacheKey) String() string {
+	return fmt.Sprintf("%s, %s", self.Key, self.ContentType)
+}
+
 //
 // CacheEntry
 //
 
 type CacheEntry struct {
 	Headers    [][][]byte
-	Body       []byte // TODO: for different encodings?
+	Body       map[string][]byte
 	Expiration time.Time
 }
 
 func NewCacheEntry(context *Context) *CacheEntry {
-	var body []byte
+	body := make(map[string][]byte)
 	if context.context.Request.Header.IsGet() {
 		// Body exists only in GET
-		body = copyBytes(context.context.Response.Body())
+		body[GetContentEncoding(context.context)] = copyBytes(context.context.Response.Body())
 	}
 
 	var headers [][][]byte
@@ -111,11 +119,11 @@ func (self *CacheEntry) Write(context *Context) {
 		context.context.Response.Header.AddBytesKV(header[0], header[1])
 	}
 
-	eTag := GetResponseETag(context.context)
+	eTag := GetETag(context.context)
 
 	// New max-age
-	timeToLive := int(self.TimeToLive())
-	AddCacheControl(context.context, fmt.Sprintf("max-age=%d", timeToLive))
+	maxAge := int(self.TimeToLive())
+	AddCacheControl(context.context, fmt.Sprintf("max-age=%d", maxAge))
 
 	/*else if eTag == "" {
 		// Don't store and *also* invalidate the existing client cache
@@ -123,7 +131,7 @@ func (self *CacheEntry) Write(context *Context) {
 	}*/
 
 	// TODO only for debug mode
-	context.context.Response.Header.Set("X-Prudence-Cached", "true")
+	context.context.Response.Header.Set("X-Prudence-Cached", context.CacheKey)
 
 	// Conditional
 
@@ -134,18 +142,30 @@ func (self *CacheEntry) Write(context *Context) {
 		return
 	}
 
-	if !context.context.IfModifiedSince(GetResponseLastModified(context.context)) {
+	if !context.context.IfModifiedSince(GetLastModified(context.context)) {
 		// The following headers should have been set:
 		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
 		context.context.NotModified()
 		return
 	}
 
-	// Body (only in GET)
+	// Body (not for HEAD)
 
-	if context.context.IsGet() {
-		context.context.Response.SetBody(self.Body)
+	if !context.context.IsHead() {
+		var body []byte
+
+		if context.context.Request.Header.HasAcceptEncoding("gzip") {
+			body = self.GetBody("gzip")
+		} else {
+			body = self.GetBody("")
+		}
+
+		context.context.Response.SetBody(body)
 	}
+}
+
+func (self *CacheEntry) Expired() bool {
+	return time.Now().After(self.Expiration)
 }
 
 // In seconds
@@ -157,8 +177,35 @@ func (self *CacheEntry) TimeToLive() float64 {
 	return duration
 }
 
-func (self *CacheEntry) Expired() bool {
-	return time.Now().After(self.Expiration)
+func (self *CacheEntry) GetBody(encoding string) []byte {
+	var body []byte
+
+	var ok bool
+	switch encoding {
+	case "gzip":
+		if body, ok = self.Body["gzip"]; !ok {
+			if plain, ok := self.Body[""]; ok {
+				log.Debug("creating gzip body")
+				buffer := bytes.NewBuffer(nil)
+				fasthttp.WriteGzip(buffer, plain)
+				body = buffer.Bytes()
+				self.Body["gzip"] = body
+			}
+		}
+
+	case "":
+		if body, ok = self.Body[""]; !ok {
+			if gzip, ok := self.Body["gzip"]; ok {
+				log.Debug("creating plain body")
+				buffer := bytes.NewBuffer(nil)
+				fasthttp.WriteGunzip(buffer, gzip)
+				body = buffer.Bytes()
+				self.Body[""] = body
+			}
+		}
+	}
+
+	return body
 }
 
 func copyBytes(bytes []byte) []byte {
