@@ -34,6 +34,20 @@ type Representation struct {
 
 func CreateRepresentation(node *ard.Node) (*Representation, error) {
 	var self Representation
+
+	if hooks := node.Get("hooks").Data; hooks != nil {
+		hooks_ := hooks.(map[string]*js.Hook)
+		if construct, ok := hooks_["construct"]; ok {
+			self.Construct = NewRepresentationFunc(construct)
+		}
+		if describe, ok := hooks_["describe"]; ok {
+			self.Describe = NewRepresentationFunc(describe)
+		}
+		if present, ok := hooks_["present"]; ok {
+			self.Present = NewRepresentationFunc(present)
+		}
+	}
+
 	if construct := node.Get("construct").Data; construct != nil {
 		self.Construct = NewRepresentationFunc(construct.(*js.Hook))
 	}
@@ -43,6 +57,7 @@ func CreateRepresentation(node *ard.Node) (*Representation, error) {
 	if present := node.Get("present").Data; present != nil {
 		self.Present = NewRepresentationFunc(present.(*js.Hook))
 	}
+
 	return &self, nil
 }
 
@@ -52,14 +67,18 @@ func CreateRepresentation(node *ard.Node) (*Representation, error) {
 
 type Representations map[string]*Representation
 
-func CreateRepresentations(configs ard.List) (Representations, error) {
+func CreateRepresentations(config ard.Value) (Representations, error) {
 	self := make(Representations)
 
-	for _, representation := range configs {
+	representations := asConfigList(config)
+	for _, representation := range representations {
 		representation_ := ard.NewNode(representation)
 		representation__, _ := CreateRepresentation(representation_)
+		contentTypes := asStringList(representation_.Get("contentTypes").Data)
+		// TODO:
+		//charSets := asStringList(representation_.Get("charSets").Data)
+		//languages := asStringList(representation_.Get("languages").Data)
 
-		contentTypes, _ := representation_.Get("contentTypes").StringList(true)
 		if len(contentTypes) == 0 {
 			// Default representation
 			self[""] = representation__

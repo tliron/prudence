@@ -22,6 +22,8 @@ type Context struct {
 	Query         map[string]string
 	Variables     map[string]string
 	ContentType   string
+	CharSet       string
+	Language      string
 	CacheDuration float64 // seconds
 	CacheKey      string
 	ETag          string
@@ -104,6 +106,8 @@ func (self *Context) Copy() *Context {
 		Query:         self.Query,
 		Variables:     variables,
 		ContentType:   self.ContentType,
+		CharSet:       self.CharSet,
+		Language:      self.Language,
 		CacheDuration: self.CacheDuration,
 		CacheKey:      self.CacheKey,
 		ETag:          self.ETag,

@@ -48,8 +48,7 @@ func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (in
 	self.Handler = self.Handle
 
 	config_ := ard.NewNode(config)
-	representations, _ := config_.Get("representations").List(true)
-	self.Representations, _ = CreateRepresentations(representations)
+	self.Representations, _ = CreateRepresentations(config_.Get("representations").Data)
 
 	return &self, nil
 }
@@ -69,16 +68,17 @@ func (self *Facet) FindRepresentation(context *Context) (*Representation, string
 // Handler interface
 // HandleFunc signature
 func (self *Facet) Handle(context *Context) bool {
-	context = context.Copy()
-
 	var representation *Representation
 	var ok bool
 	if representation, context.ContentType, ok = self.FindRepresentation(context); !ok {
 		return false
 	}
 
+	context = context.Copy()
 	context.CacheKey = context.context.URI().String()
+	context.CharSet = "utf-8"
 
+	// Construct
 	if representation.Construct != nil {
 		if err := representation.Construct(context); err != nil {
 			context.Log.Errorf("%s", err)
@@ -88,7 +88,6 @@ func (self *Facet) Handle(context *Context) bool {
 	}
 
 	// Try cache
-
 	if cacheEntry, ok := FromCache(context); ok {
 		if context.context.IsHead() {
 			// HEAD doesn't care if the cacheEntry doesn't have a body
@@ -109,6 +108,7 @@ func (self *Facet) Handle(context *Context) bool {
 		context.writer = io.Discard
 	}
 
+	// Describe
 	if representation.Describe != nil {
 		if err := representation.Describe(context); err != nil {
 			context.Log.Errorf("%s", err)
@@ -118,12 +118,14 @@ func (self *Facet) Handle(context *Context) bool {
 	}
 
 	if !context.context.IsHead() {
+		// GZip
 		if context.context.Request.Header.HasAcceptEncoding("gzip") {
 			context.Log.Info("gzip!")
 			AddContentEncoding(context.context, "gzip")
 			context.writer = NewGZipWriter(context.writer)
 		}
 
+		// Present
 		if representation.Present != nil {
 			if err := representation.Present(context); err != nil {
 				context.Log.Errorf("%s", err)
@@ -178,7 +180,11 @@ func (self *Facet) Handle(context *Context) bool {
 	// Content-Type
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
 	if context.ContentType != "" {
-		context.context.SetContentType(context.ContentType + ";charset=utf-8")
+		if context.CharSet != "" {
+			context.context.SetContentType(context.ContentType + ";charset=" + context.CharSet)
+		} else {
+			context.context.SetContentType(context.ContentType)
+		}
 	}
 
 	// ETag
@@ -188,7 +194,6 @@ func (self *Facet) Handle(context *Context) bool {
 	}
 
 	// GZip
-
 	if gzipWriter, ok := context.writer.(*GZipWriter); ok {
 		if err := gzipWriter.Close(); err != nil {
 			context.Log.Errorf("%s", err)
@@ -197,7 +202,6 @@ func (self *Facet) Handle(context *Context) bool {
 	}
 
 	// To cache
-
 	if context.CacheDuration > 0.0 {
 		ToCache(context)
 	}

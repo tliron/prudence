@@ -27,6 +27,10 @@ func GetHandleFunc(value interface{}) (HandleFunc, bool) {
 	}
 }
 
+//
+// DefaultNotFound
+//
+
 var DefaultNotFound = &defaultNotFound{}
 
 type defaultNotFound struct{}

@@ -33,7 +33,7 @@ func CreateResource(config ard.StringMap, getRelativeURL common.GetRelativeURL) 
 	self.Router = router.(*Router)
 
 	config_ := ard.NewNode(config)
-	facets, _ := config_.Get("facets").List(true)
+	facets := asConfigList(config_.Get("facets").Data)
 	for _, facet := range facets {
 		if facet_, ok := facet.(ard.StringMap); ok {
 			facet__, _ := CreateFacet(facet_, getRelativeURL)

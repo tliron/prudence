@@ -41,13 +41,14 @@ func NewStatic(root string, indexes []string) *Static {
 // CreateFunc signature
 func CreateStatic(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error) {
 	config_ := ard.NewNode(config)
+
 	root, _ := config_.Get("root").String(false)
 	if rootUrl, err := getRelativeURL(root); err == nil {
 		root = rootUrl.(*urlpkg.FileURL).Path
 	} else {
 		return nil, err
 	}
-	indexes, _ := config_.Get("indexes").StringList(false)
+	indexes := asStringList(config_.Get("indexes").Data)
 
 	return NewStatic(root, indexes), nil
 }

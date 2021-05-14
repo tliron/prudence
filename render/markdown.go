@@ -8,6 +8,7 @@ import (
 
 func init() {
 	Register("markdown", RenderMarkdown)
+	Register("md", RenderMarkdown)
 }
 
 // RenderFunc signature

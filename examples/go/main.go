@@ -14,13 +14,21 @@ import (
 func main() {
 	logging.Configure(2, nil)
 
+	jsonRepresentation := &rest.Representation{
+		Present: presentJson,
+	}
+
+	defaultRepresentation := &rest.Representation{
+		Present: presentDefault,
+	}
+
 	main := rest.NewFacet("main", []string{"{name}"})
-	main.SetPresenter("application/json", representJson)
-	main.SetPresenter("", representDefault)
+	main.Representations["application/json"] = jsonRepresentation
+	main.Representations[""] = defaultRepresentation
 
 	age := rest.NewFacet("age", []string{"{name}/age"})
-	main.SetPresenter("application/json", representJson)
-	main.SetPresenter("", representDefault)
+	age.Representations["application/json"] = jsonRepresentation
+	age.Representations[""] = defaultRepresentation
 
 	person := rest.NewResource("person")
 	person.AddFacet(main)
@@ -36,7 +44,7 @@ func main() {
 	util.FailOnError(err)
 }
 
-func representJson(context *rest.Context) error {
+func presentJson(context *rest.Context) error {
 	person := map[string]string{"name": context.Variables["name"]}
 	bytes, _ := json.Marshal(person)
 	context.Write(bytes)
@@ -44,7 +52,7 @@ func representJson(context *rest.Context) error {
 	return nil
 }
 
-func representDefault(context *rest.Context) error {
+func presentDefault(context *rest.Context) error {
 	fmt.Fprintf(context, "%s\n", context.ContentType)
 	fmt.Fprintf(context, "%s\n", context.Variables)
 	return nil

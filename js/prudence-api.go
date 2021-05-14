@@ -226,17 +226,18 @@ func (self *API) Hook(url string, name string) (*js.Hook, error) {
 	}
 }
 
-func (self *API) Hooks(url string) (*js.Hook, error) {
+func (self *API) Hooks(url string) (map[string]*js.Hook, error) {
 	if url_, err := self.getRelativeURL(url); err == nil {
 		if runtime, err := self.cachedRun(url_); err == nil {
-			symbols := runtime.GlobalObject().Symbols()
-			fmt.Printf("%s\n", symbols)
-			return nil, nil
-			/*if callable, ok := goja.AssertFunction(value); ok {
-				return js.NewHook(callable, runtime), nil
-			} else {
-				return nil, fmt.Errorf("no \"%s\" function", name)
-			}*/
+			hooks := make(map[string]*js.Hook)
+			global := runtime.GlobalObject()
+			for _, key := range global.Keys() {
+				value := global.Get(key)
+				if callable, ok := goja.AssertFunction(value); ok {
+					hooks[key] = js.NewHook(callable, runtime)
+				}
+			}
+			return hooks, nil
 		} else {
 			return nil, err
 		}
@@ -249,8 +250,14 @@ func (self *API) Render(content string, renderer string) (string, error) {
 	return render.Render(content, renderer, self.getRelativeURL)
 }
 
-func (self *API) Start(startables []interface{}) error {
-	for _, startable := range startables {
+func (self *API) Start(startables interface{}) error {
+	var startables_ ard.List
+	var ok bool
+	if startables_, ok = startables.(ard.List); !ok {
+		startables_ = ard.List{startables}
+	}
+
+	for _, startable := range startables_ {
 		if startable_, ok := startable.(rest.Startable); ok {
 			go func() {
 				if err := startable_.Start(); err != nil {

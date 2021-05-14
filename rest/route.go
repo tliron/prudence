@@ -37,7 +37,7 @@ func CreateRoute(config ard.StringMap, getRelativeURL common.GetRelativeURL) (in
 
 	config_ := ard.NewNode(config)
 	self.Name, _ = config_.Get("name").String(true)
-	paths, _ := config_.Get("paths").StringList(true)
+	paths := asStringList(config_.Get("paths").Data)
 	self.PathTemplates = NewPathTemplates(paths)
 	handler := config_.Get("handler").Data
 	self.Handler, _ = GetHandleFunc(handler)
