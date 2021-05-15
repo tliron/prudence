@@ -57,3 +57,12 @@ func ParseAccept(context *Context) []string {
 	//context.Log.Debugf("ACCEPT: %s", accept)
 	return accept
 }
+
+func GetQuery(context *fasthttp.RequestCtx) map[string]string {
+	query := make(map[string]string)
+	context.QueryArgs().VisitAll(func(key []byte, value []byte) {
+		log.Debugf("query: %s = %s", key, value)
+		query[util.BytesToString(key)] = util.BytesToString(value)
+	})
+	return query
+}

@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+const PATH_VARIABLE = "__path"
+
+const PATH_VARIABLE_RE = `(?P<` + PATH_VARIABLE + `>.*)`
+
 //
 // PathTemplate
 //
@@ -56,7 +60,7 @@ func NewPathTemplate(path string) *PathTemplate {
 				builder.WriteString(`(?P<`)
 
 			case '*':
-				builder.WriteString(`(?P<PATH>.*)`)
+				builder.WriteString(PATH_VARIABLE_RE)
 
 			default:
 				builder.WriteString(regexp.QuoteMeta(string(rune_)))

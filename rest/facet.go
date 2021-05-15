@@ -88,17 +88,19 @@ func (self *Facet) Handle(context *Context) bool {
 	}
 
 	// Try cache
-	if cacheEntry, ok := FromCache(context); ok {
-		if context.context.IsHead() {
-			// HEAD doesn't care if the cacheEntry doesn't have a body
-			cacheEntry.Write(context)
-			return !NotFound(context.context)
-		} else {
-			if cacheEntry.Body == nil {
-				context.Log.Debugf("ignoring cache with no body: %s", context.Path)
-			} else {
-				cacheEntry.Write(context)
+	if context.CacheKey != "" {
+		if cacheEntry, ok := CacheLoad(context); ok {
+			if context.context.IsHead() {
+				// HEAD doesn't care if the cacheEntry doesn't have a body
+				cacheEntry.ToContext(context)
 				return !NotFound(context.context)
+			} else {
+				if len(cacheEntry.Body) == 0 {
+					context.Log.Debugf("ignoring cache with no body: %s", context.Path)
+				} else {
+					cacheEntry.ToContext(context)
+					return !NotFound(context.context)
+				}
 			}
 		}
 	}
@@ -118,11 +120,16 @@ func (self *Facet) Handle(context *Context) bool {
 	}
 
 	if !context.context.IsHead() {
-		// GZip
-		if context.context.Request.Header.HasAcceptEncoding("gzip") {
-			context.Log.Info("gzip!")
+		// Encode
+		if context.context.Request.Header.HasAcceptEncoding("br") {
+			AddContentEncoding(context.context, "br")
+			context.writer = NewEncodeWriter(context.writer, "br")
+		} else if context.context.Request.Header.HasAcceptEncoding("gzip") {
 			AddContentEncoding(context.context, "gzip")
-			context.writer = NewGZipWriter(context.writer)
+			context.writer = NewEncodeWriter(context.writer, "gzip")
+		} else if context.context.Request.Header.HasAcceptEncoding("deflate") {
+			AddContentEncoding(context.context, "deflate")
+			context.writer = NewEncodeWriter(context.writer, "deflate")
 		}
 
 		// Present
@@ -139,11 +146,16 @@ func (self *Facet) Handle(context *Context) bool {
 		context.LastModified = time.Now()
 	}
 
-	context.EndETag()
+	context.EndSignature()
 
-	eTag := context.RenderETag()
+	eTag := context.ETag()
 
-	if context.CacheDuration > 0.0 {
+	if context.CacheDuration < 0.0 {
+
+		// Don't store and *also* invalidate the existing client cache
+		AddCacheControl(context.context, "no-store,max-age=0")
+
+	} else if context.CacheDuration > 0.0 {
 
 		// Enabling caching means no conditional checks
 
@@ -173,10 +185,6 @@ func (self *Facet) Handle(context *Context) bool {
 
 	}
 
-	// Last-Modified
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
-	context.context.Response.Header.SetLastModified(context.LastModified)
-
 	// Content-Type
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
 	if context.ContentType != "" {
@@ -187,23 +195,27 @@ func (self *Facet) Handle(context *Context) bool {
 		}
 	}
 
+	// Last-Modified
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
+	context.context.Response.Header.SetLastModified(context.LastModified)
+
 	// ETag
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
 	if eTag != "" {
 		AddETag(context.context, eTag)
 	}
 
-	// GZip
-	if gzipWriter, ok := context.writer.(*GZipWriter); ok {
-		if err := gzipWriter.Close(); err != nil {
+	// Encode
+	if encodeWriter, ok := context.writer.(*EncodeWriter); ok {
+		if err := encodeWriter.Close(); err != nil {
 			context.Log.Errorf("%s", err)
 		}
-		context.writer = gzipWriter.Writer
+		context.writer = encodeWriter.Writer
 	}
 
 	// To cache
-	if context.CacheDuration > 0.0 {
-		ToCache(context)
+	if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
+		CacheStore(context)
 	}
 
 	return !NotFound(context.context)

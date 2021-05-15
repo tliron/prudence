@@ -45,7 +45,7 @@ func main() {
 }
 
 func presentJson(context *rest.Context) error {
-	person := map[string]string{"name": context.Variables["name"]}
+	person := map[string]interface{}{"name": context.Variables["name"]}
 	bytes, _ := json.Marshal(person)
 	context.Write(bytes)
 	context.Write([]byte("\n"))

@@ -57,7 +57,7 @@ func (self *Route) Handle(context *Context) bool {
 
 		for key, value := range matches {
 			switch key {
-			case "PATH":
+			case PATH_VARIABLE:
 				context.Path = value
 				context.Log.Debugf("set path = %s", value)
 

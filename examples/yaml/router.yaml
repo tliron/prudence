@@ -1,5 +1,0 @@
-kind: Router
-routes:
-- templates: [ persons/* ]
-  handler: person.yaml
-- handler: DefaultNotFound

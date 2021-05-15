@@ -14,7 +14,8 @@ func RenderJST(content string) (string, error) {
 	builder.WriteString("function present(context) {\n")
 
 	last := 0
-	var presenters []string
+	var embedIndex int64
+	//var presenters []string
 
 	if matches := jstRe.FindAllStringSubmatchIndex(content, -1); matches != nil {
 		for _, match := range matches {
@@ -31,6 +32,7 @@ func RenderJST(content string) (string, error) {
 				switch code[0] {
 				case '=':
 					// Don't ignore trailing newline
+
 				default:
 					// Ignore trailing newline
 					if content[end] == '\n' {
@@ -52,38 +54,73 @@ func RenderJST(content string) (string, error) {
 				case '+':
 					// Insert
 
-					// Render?
-					var renderer string
-					if code[1] != ' ' {
-						code = code[1:]
-						if space := strings.IndexRune(code, ' '); space != -1 {
-							renderer = code[:space]
-							code = code[space+1:]
-						}
-					} else {
-						code = code[1:]
-					}
+					code = code[1:]
+					suffix := strconv.FormatInt(embedIndex, 10)
+					embedIndex++
 
-					if renderer != "" {
-						builder.WriteString("context.write(prudence.render(prudence.load(")
-						builder.WriteString(strings.Trim(code, " \n"))
-						builder.WriteString("), '")
-						builder.WriteString(renderer)
-						builder.WriteString("'));\n")
-					} else {
-						builder.WriteString("context.write(prudence.load(")
-						builder.WriteString(strings.Trim(code, " \n"))
-						builder.WriteString("));\n")
-					}
+					builder.WriteString("const __args")
+					builder.WriteString(suffix)
+					builder.WriteString(" = [")
+					builder.WriteString(strings.Trim(code, " \n"))
+					builder.WriteString("];\n")
+
+					builder.WriteString("var __insert")
+					builder.WriteString(suffix)
+					builder.WriteString(" = prudence.load(__args")
+					builder.WriteString(suffix)
+					builder.WriteString("[0]);\n")
+
+					builder.WriteString("if (__args")
+					builder.WriteString(suffix)
+					builder.WriteString(".length > 1) ")
+					builder.WriteString("__insert")
+					builder.WriteString(suffix)
+					builder.WriteString(" = prudence.render(__insert")
+					builder.WriteString(suffix)
+					builder.WriteString(", __args")
+					builder.WriteString(suffix)
+					builder.WriteString("[1]);\n")
+
+					builder.WriteString("context.write(__insert")
+					builder.WriteString(suffix)
+					builder.WriteString(");\n")
 
 				case '&':
 					// Embed
-					code = code[1:]
-					builder.WriteString("__presenter")
-					builder.WriteString(strconv.FormatInt(int64(len(presenters)), 10))
-					builder.WriteString(".callable(null, context);\n")
 
-					presenters = append(presenters, strings.Trim(code, " \n"))
+					code = code[1:]
+					suffix := strconv.FormatInt(embedIndex, 10)
+					embedIndex++
+
+					builder.WriteString("const __args")
+					builder.WriteString(suffix)
+					builder.WriteString(" = [")
+					builder.WriteString(strings.Trim(code, " \n"))
+					builder.WriteString("];\n")
+
+					builder.WriteString("const __hook")
+					builder.WriteString(suffix)
+					builder.WriteString(" = prudence.hook(__args")
+					builder.WriteString(suffix)
+					builder.WriteString("[0], 'present');\n")
+
+					builder.WriteString("const __context")
+					builder.WriteString(suffix)
+					builder.WriteString(" = context.copy();\n")
+
+					builder.WriteString("__context")
+					builder.WriteString(suffix)
+					builder.WriteString(".cacheKey = __args")
+					builder.WriteString(suffix)
+					builder.WriteString("[1] || (context.cacheKey + '|")
+					builder.WriteString(suffix)
+					builder.WriteString("');\n")
+
+					builder.WriteString("__context")
+					builder.WriteString(suffix)
+					builder.WriteString(".embed(__hook")
+					builder.WriteString(suffix)
+					builder.WriteString(");\n")
 
 				default:
 					// As is
@@ -95,17 +132,7 @@ func RenderJST(content string) (string, error) {
 	}
 
 	writeLiteral(&builder, content[last:])
-
 	builder.WriteString("}\n")
-
-	// Hook representers globally
-	for index, representer := range presenters {
-		builder.WriteString("const __presenter")
-		builder.WriteString(strconv.FormatInt(int64(index), 10))
-		builder.WriteString(" = prudence.hook(")
-		builder.WriteString(representer)
-		builder.WriteString(", 'present');")
-	}
 
 	log.Debugf("%s", builder.String())
 

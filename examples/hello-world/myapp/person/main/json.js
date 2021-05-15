@@ -32,7 +32,7 @@ function construct(context) {
 // OPTIONAL HOOK:
 // "describe" optimizes for client-side caching
 // It should be a fast function
-// We can set the ETag or lastModified signatures here
+// We can set the signature or lastModified here
 // Safely assume that "construct" has already been called (if it exists)
 //
 // For this to be a meaningful optimization it must be *less expensive* then "present"
@@ -43,7 +43,7 @@ function construct(context) {
 // * Thus it would be much cheaper to access this table here in getSignature
 // * The signature *does not* have to reflect the actual data, it just has to
 //   be different every time the data changes
-// * Thus it can be as simple as a random value (ETag) or a last-modified timestamp
+// * Thus it can be as simple as a random value or a last-modified timestamp
 // * But the big challenge is that the backend would need to make sure to delete
 //   these signatures if *any of the dependent rows change*
 // * If it's difficult to catch such changes it may be possible to err on the side of
@@ -53,7 +53,7 @@ function construct(context) {
 //   not be meaningful
 function describe(context) {
     context.log.info('describe');
-    context.ETag = getSignature(context);
+    context.signature = getSignature(context);
 }
 
 // REQUIRED HOOK:

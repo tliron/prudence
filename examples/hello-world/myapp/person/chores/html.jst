@@ -1,18 +1,25 @@
 <!DOCTYPE html>
 <html>
+
 <%# insert the contents of a file %>
 <%+ 'fragments/head.html' %>
-<% context.startETag(); %>
+
 <body>
+
+<%# we'll automatically create a weak signautre based on the following section %>
+<% context.startSignature(); context.weakSignature = true; %>
+
     <h1>
         Chores for: <%= context.variables.name %>
-<% if (context.query.scope === 'all') { %>
-        (all of them)
-<% } %>
+        <% if (context.query.scope === 'all') { %>(all of them)<% } %>
     </h1>
-<%# embed another representation %>
-<%& 'fragments/list.jst' %>
+
+<% context.endSignature(); %>
+
+<%# embed another cacheable representation (and optionally set a custom cache key) %>
+<%& 'fragments/list.jst', 'list:' + context.variables.name %>
+
 </body>
-<% context.endETag(); %>
 </html>
-<% context.cacheDuration = 5.5; // in seconds %>
+
+<% context.cacheDuration = 5; // in seconds %>
