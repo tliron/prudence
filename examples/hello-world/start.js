@@ -5,6 +5,8 @@
 prudence.start(prudence.create({
     type: 'server',
     //name: 'MyPrudence',
-    address: ':8080',
+    address: 'localhost:8080',
+    // protocol: 'http2',
+    // secure: true,
     handler: prudence.import('myapp/router.js')
 }));
