@@ -46,10 +46,50 @@ func RenderJST(content string) (string, error) {
 
 				case '=':
 					// Write expression
+
 					code = code[1:]
 					builder.WriteString("context.write(String(")
 					builder.WriteString(strings.Trim(code, " \n"))
 					builder.WriteString("));\n")
+
+				case '*':
+					// Cache duration
+
+					code = code[1:]
+					builder.WriteString("context.cacheDuration = ")
+					builder.WriteString(strings.Trim(code, " \n"))
+					builder.WriteString(";\n")
+
+				case '^':
+					// Render
+
+					code = code[1:]
+					if code == "^" {
+						// End render
+						builder.WriteString("context.endRender()\n")
+					} else {
+						// Start render
+						builder.WriteString("context.startRender(")
+						builder.WriteString(strings.Trim(code, " \n"))
+						builder.WriteString(", prudence);\n")
+					}
+
+				case '$':
+					// Signature
+
+					code = code[1:]
+					if code == "$" {
+						// End signature
+						builder.WriteString("context.endSignature()\n")
+					} else {
+						// Start signature
+						builder.WriteString("context.startSignature()\n")
+						if weak := strings.Trim(code, " \n"); weak != "" {
+							builder.WriteString("if (")
+							builder.WriteString(weak)
+							builder.WriteString(") context.weakSignature = true;\n")
+						}
+					}
 
 				case '+':
 					// Insert

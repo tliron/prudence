@@ -1,4 +1,4 @@
-<% context.startSignature(); %>
+<%$%>
 
 <% for (var i = 0; i < 10; i++) { %>
     <p>
@@ -6,7 +6,7 @@
     </p>
 <% } %>
 
-<%# render and insert the contents of a file %>
+<%# insert the contents of a file after rendering it %>
 <%+ 'footer.md', 'markdown' %>
 
-<% context.cacheDuration = 10; %>
+<%* 10 %>

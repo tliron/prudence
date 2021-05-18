@@ -2,6 +2,7 @@ package rest
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/util"
+	"github.com/tliron/prudence/js/common"
 	"github.com/valyala/fasthttp"
 )
 
@@ -48,6 +50,27 @@ func NewContext(context *fasthttp.RequestCtx) *Context {
 	}
 }
 
+func (self *Context) StartRender(renderer string, hasGetRelativeURL common.HasGetRelativeURL) error {
+	if renderWriter, err := NewRenderWriter(self.writer, renderer, hasGetRelativeURL.GetRelativeURL); err == nil {
+		self.Log.Debugf("start render: %s", renderer)
+		self.writer = renderWriter
+		return nil
+	} else {
+		return err
+	}
+}
+
+func (self *Context) EndRender() error {
+	if renderWriter, ok := self.writer.(*RenderWriter); ok {
+		self.Log.Debug("end render")
+		err := renderWriter.Close()
+		self.writer = renderWriter.Writer
+		return err
+	} else {
+		return errors.New("did not call startRender()")
+	}
+}
+
 // Calculating a signature from the body is not that great. It saves bandwidth but not computing
 // resources, as we still need to generate the body in order to calculate the signature. Ideally,
 // the signature should be based on the data sources used to generate the page.
@@ -61,11 +84,14 @@ func (self *Context) StartSignature() {
 	}
 }
 
-func (self *Context) EndSignature() {
+func (self *Context) EndSignature() error {
 	if hashWriter, ok := self.writer.(*HashWriter); ok {
 		self.Log.Debug("end signature")
 		self.Signature = hashWriter.Hash()
 		self.writer = hashWriter.Writer
+		return nil
+	} else {
+		return errors.New("did not call startSignature()")
 	}
 }
 
@@ -137,6 +163,8 @@ func (self *Context) Embed(hook *js.Hook) {
 	self.writer = buffer
 
 	hook.Call(nil, self)
+
+	self.EndSignature()
 
 	body := buffer.Bytes()
 

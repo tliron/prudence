@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<%# render a section (we *must* end the section later) %>
+<%^ 'minhtml' %>
 <html>
 
 <%# insert the contents of a file %>
@@ -7,19 +9,23 @@
 <body>
 
 <%# we'll automatically create a weak signature based on the following section %>
-<% context.startSignature(); context.weakSignature = true; %>
+<%$ true %>
 
     <h1>
         Chores for: <%= context.variables.name %>
         <% const scope = context.query.scope; if (scope && scope.includes('all')) { %>(all of them)<% } %>
     </h1>
 
-<% context.endSignature(); %>
+<%# end signature section %>
+<%$$%>
 
 <%# embed another cacheable representation (and optionally set a custom cache key) %>
 <%& 'fragments/list.jst', 'list:' + context.variables.name %>
 
 </body>
 </html>
+<%# end render %>
+<%^^%>
 
-<% context.cacheDuration = 5; // in seconds %>
+<%# set cache duration (in seconds) %>
+<%* 5 %>

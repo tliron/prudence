@@ -17,10 +17,26 @@ func Register(renderer string, renderFunc RenderFunc) {
 	renderFuncs[renderer] = renderFunc
 }
 
-func Render(content string, renderer string, getRelativeURL common.GetRelativeURL) (string, error) {
-	if render, ok := renderFuncs[renderer]; ok {
-		return render(content, getRelativeURL)
+func GetRenderer(renderer string) (RenderFunc, error) {
+	if renderer == "" {
+		// Empty string means nil renderer
+		return nil, nil
+	} else if render, ok := renderFuncs[renderer]; ok {
+		return render, nil
 	} else {
-		return "", fmt.Errorf("unsupported renderer: %s", renderer)
+		return nil, fmt.Errorf("unsupported renderer: %s", renderer)
+	}
+}
+
+func Render(content string, renderer string, getRelativeURL common.GetRelativeURL) (string, error) {
+	if render, err := GetRenderer(renderer); err == nil {
+		if render == nil {
+			// Renderer can be nil
+			return content, nil
+		} else {
+			return render(content, getRelativeURL)
+		}
+	} else {
+		return "", err
 	}
 }
