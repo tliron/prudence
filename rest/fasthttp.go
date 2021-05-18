@@ -49,20 +49,23 @@ func NotFound(context *fasthttp.RequestCtx) bool {
 	return context.Response.StatusCode() == fasthttp.StatusNotFound
 }
 
-// TODO: not good enough
 func ParseAccept(context *Context) []string {
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
 	// TODO: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
-	accept := strings.Split(util.BytesToString(context.context.Request.Header.Peek("Accept")), ",")
+	// TODO: sorted by preference
+	accept := strings.Split(util.BytesToString(context.context.Request.Header.Peek(fasthttp.HeaderAccept)), ",")
 	//context.Log.Debugf("ACCEPT: %s", accept)
 	return accept
 }
 
-func GetQuery(context *fasthttp.RequestCtx) map[string]string {
-	query := make(map[string]string)
+func GetQuery(context *fasthttp.RequestCtx) map[string][]string {
+	query := make(map[string][]string)
 	context.QueryArgs().VisitAll(func(key []byte, value []byte) {
 		log.Debugf("query: %s = %s", key, value)
-		query[util.BytesToString(key)] = util.BytesToString(value)
+		key_ := util.BytesToString(key)
+		list, _ := query[key_]
+		list = append(list, util.BytesToString(value))
+		query[key_] = list
 	})
 	return query
 }

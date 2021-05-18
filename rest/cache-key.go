@@ -24,5 +24,5 @@ func NewCacheKey(context *Context) CacheKey {
 
 // fmt.Stringer interface
 func (self CacheKey) String() string {
-	return fmt.Sprintf("%s, %s, %s, %s", self.Key, self.ContentType, self.CharSet, self.Language)
+	return fmt.Sprintf("%s|%s|%s|%s", self.Key, self.ContentType, self.CharSet, self.Language)
 }

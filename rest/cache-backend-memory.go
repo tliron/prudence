@@ -37,15 +37,14 @@ func (self *CacheBackendMemory) Load(cacheKey CacheKey) (*CacheEntry, bool) {
 	if cacheEntry, ok := self.cache.Load(cacheKey); ok {
 		cacheEntry_ := cacheEntry.(*CacheEntry)
 		if cacheEntry_.Expired() {
-			logMemoryBackend.Debugf("cache entry expired: %s", cacheKey)
+			logMemoryBackend.Debugf("cache expired: %s|%s", cacheKey, cacheEntry)
+			// TODO: this should be a CAS
 			self.cache.Delete(cacheKey)
 			return nil, false
 		} else {
-			logMemoryBackend.Debugf("cache hit: %s", cacheKey)
 			return cacheEntry_, true
 		}
 	} else {
-		logMemoryBackend.Debugf("not cached: %s", cacheKey)
 		return nil, false
 	}
 }
@@ -63,7 +62,8 @@ func (self *CacheBackendMemory) Delete(cacheKey CacheKey) {
 func (self *CacheBackendMemory) Prune() {
 	self.cache.Range(func(key interface{}, value interface{}) bool {
 		if value.(*CacheEntry).Expired() {
-			logMemoryBackend.Debugf("pruning cache entry: %s", key.(CacheKey))
+			logMemoryBackend.Debugf("pruning cache: %s", key.(CacheKey))
+			// TODO: this should be a CAS
 			self.cache.Delete(key)
 		}
 		return true

@@ -21,7 +21,7 @@ type Context struct {
 	Variables   ard.StringMap
 	Path        string
 	Method      string
-	Query       map[string]string
+	Query       map[string][]string
 	ContentType string
 	CharSet     string
 	Language    string
@@ -81,6 +81,11 @@ func (self *Context) ETag() string {
 	}
 }
 
+func (self *Context) Error(err error) {
+	self.Log.Errorf("%s", err)
+	self.context.SetStatusCode(fasthttp.StatusInternalServerError)
+}
+
 // io.Writer
 func (self *Context) Write(b []byte) (int, error) {
 	return self.writer.Write(b)
@@ -137,7 +142,7 @@ func (self *Context) Embed(hook *js.Hook) {
 
 	// To cache
 	if (self.CacheDuration > 0.0) && (self.CacheKey != "") {
-		CacheStoreBody(self, "", body)
+		CacheStoreBody(self, EncodingTypePlain, body)
 	}
 
 	self.writer = writer

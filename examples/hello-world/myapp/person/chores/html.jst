@@ -6,12 +6,12 @@
 
 <body>
 
-<%# we'll automatically create a weak signautre based on the following section %>
+<%# we'll automatically create a weak signature based on the following section %>
 <% context.startSignature(); context.weakSignature = true; %>
 
     <h1>
         Chores for: <%= context.variables.name %>
-        <% if (context.query.scope === 'all') { %>(all of them)<% } %>
+        <% const scope = context.query.scope; if (scope && scope.includes('all')) { %>(all of them)<% } %>
     </h1>
 
 <% context.endSignature(); %>

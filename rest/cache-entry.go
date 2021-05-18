@@ -13,16 +13,21 @@ import (
 //
 
 type CacheEntry struct {
-	Headers    [][][]byte        // list of key, value tuples
-	Body       map[string][]byte // encoding -> body
+	Headers    [][][]byte              // list of key, value tuples
+	Body       map[EncodingType][]byte // encoding type -> body
 	Expiration time.Time
 }
 
 func NewCacheEntry(context *Context) *CacheEntry {
-	body := make(map[string][]byte)
+	body := make(map[EncodingType][]byte)
 	if context.context.Request.Header.IsGet() {
 		// Body exists only in GET
-		body[GetContentEncoding(context.context)] = copyBytes(context.context.Response.Body())
+		contentEncoding := GetContentEncoding(context.context)
+		if encodingType := GetEncodingType(contentEncoding); encodingType != EncodingTypeUnsupported {
+			body[encodingType] = copyBytes(context.context.Response.Body())
+		} else {
+			log.Warningf("unsupported encoding: %s", contentEncoding)
+		}
 	}
 
 	// This is an annoying way to get all headers, but unfortunately if we
@@ -46,12 +51,108 @@ func NewCacheEntry(context *Context) *CacheEntry {
 	}
 }
 
-func NewCacheBody(context *Context, encoding string, body []byte) *CacheEntry {
+func NewCacheEntryBody(context *Context, encoding EncodingType, body []byte) *CacheEntry {
 	return &CacheEntry{
-		Body:       map[string][]byte{encoding: body},
+		Body:       map[EncodingType][]byte{encoding: body},
 		Headers:    nil,
 		Expiration: time.Now().Add(time.Duration(context.CacheDuration * 1000000000.0)), // seconds to nanoseconds
 	}
+}
+
+// fmt.Stringer interface
+func (self *CacheEntry) String() string {
+	keys := make([]string, 0, len(self.Body))
+	for key := range self.Body {
+		keys = append(keys, key.String())
+	}
+	return fmt.Sprintf("%s", keys)
+}
+
+func (self *CacheEntry) Expired() bool {
+	return time.Now().After(self.Expiration)
+}
+
+// In seconds
+func (self *CacheEntry) TimeToLive() float64 {
+	duration := self.Expiration.Sub(time.Now()).Seconds()
+	if duration < 0.0 {
+		duration = 0.0
+	}
+	return duration
+}
+
+func (self *CacheEntry) GetBestBody(context *Context) []byte {
+	if context.context.Request.Header.HasAcceptEncoding("br") {
+		return self.GetBody(EncodingTypeBrotli)
+	} else if context.context.Request.Header.HasAcceptEncoding("gzip") {
+		return self.GetBody(EncodingTypeGZip)
+	} else if context.context.Request.Header.HasAcceptEncoding("deflate") {
+		return self.GetBody(EncodingTypeDeflate)
+	} else {
+		return self.GetBody(EncodingTypePlain)
+	}
+}
+
+func (self *CacheEntry) GetBody(type_ EncodingType) []byte {
+	var body []byte
+
+	// TODO: we need to update the backend if we change the entry!
+
+	var ok bool
+	if body, ok = self.Body[type_]; !ok {
+		switch type_ {
+		case EncodingTypeBrotli:
+			if plain := self.GetBody(EncodingTypePlain); plain != nil {
+				log.Debug("creating brotli body from plain")
+				buffer := bytes.NewBuffer(nil)
+				fasthttp.WriteBrotli(buffer, plain)
+				body = buffer.Bytes()
+				self.Body[EncodingTypeBrotli] = body
+			}
+
+		case EncodingTypeGZip:
+			if plain := self.GetBody(EncodingTypePlain); plain != nil {
+				log.Debug("creating gzip body from plain")
+				buffer := bytes.NewBuffer(nil)
+				fasthttp.WriteGzip(buffer, plain)
+				body = buffer.Bytes()
+				self.Body[EncodingTypeGZip] = body
+			}
+
+		case EncodingTypeDeflate:
+			if plain := self.GetBody(EncodingTypePlain); plain != nil {
+				log.Debug("creating deflate body from plain")
+				buffer := bytes.NewBuffer(nil)
+				fasthttp.WriteDeflate(buffer, plain)
+				body = buffer.Bytes()
+				self.Body[EncodingTypeDeflate] = body
+			}
+
+		case EncodingTypePlain:
+			// Try decoding an existing body
+			if deflate, ok := self.Body[EncodingTypeDeflate]; ok {
+				log.Debug("creating plain body from default")
+				buffer := bytes.NewBuffer(nil)
+				fasthttp.WriteInflate(buffer, deflate)
+				body = buffer.Bytes()
+				self.Body[EncodingTypePlain] = body
+			} else if gzip, ok := self.Body[EncodingTypeGZip]; ok {
+				log.Debug("creating plain body from gzip")
+				buffer := bytes.NewBuffer(nil)
+				fasthttp.WriteGunzip(buffer, gzip)
+				body = buffer.Bytes()
+				self.Body[EncodingTypePlain] = body
+			} else if brotli, ok := self.Body[EncodingTypeBrotli]; ok {
+				log.Debug("creating plain body from brotli")
+				buffer := bytes.NewBuffer(nil)
+				fasthttp.WriteUnbrotli(buffer, brotli)
+				body = buffer.Bytes()
+				self.Body[EncodingTypePlain] = body
+			}
+		}
+	}
+
+	return body
 }
 
 func (self *CacheEntry) ToContext(context *Context) {
@@ -94,66 +195,20 @@ func (self *CacheEntry) ToContext(context *Context) {
 	// Body (not for HEAD)
 
 	if !context.context.IsHead() {
-		var body []byte
-
-		if context.context.Request.Header.HasAcceptEncoding("gzip") {
-			body = self.GetBody("gzip")
-		} else {
-			body = self.GetBody("")
-		}
-
+		body := self.GetBestBody(context)
 		context.context.Response.SetBody(body)
 	}
 }
 
 func (self *CacheEntry) Write(context *Context) (int, error) {
-	body := self.GetBody("")
-	return context.Write(body)
-}
-
-func (self *CacheEntry) Expired() bool {
-	return time.Now().After(self.Expiration)
-}
-
-// In seconds
-func (self *CacheEntry) TimeToLive() float64 {
-	duration := self.Expiration.Sub(time.Now()).Seconds()
-	if duration < 0.0 {
-		duration = 0.0
+	if body := self.GetBody(EncodingTypePlain); body != nil {
+		return context.Write(body)
+	} else {
+		return 0, nil
 	}
-	return duration
 }
 
-func (self *CacheEntry) GetBody(encoding string) []byte {
-	var body []byte
-
-	var ok bool
-	switch encoding {
-	case "gzip":
-		if body, ok = self.Body["gzip"]; !ok {
-			if plain, ok := self.Body[""]; ok {
-				log.Debug("creating gzip body")
-				buffer := bytes.NewBuffer(nil)
-				fasthttp.WriteGzip(buffer, plain)
-				body = buffer.Bytes()
-				self.Body["gzip"] = body
-			}
-		}
-
-	case "":
-		if body, ok = self.Body[""]; !ok {
-			if gzip, ok := self.Body["gzip"]; ok {
-				log.Debug("creating plain body")
-				buffer := bytes.NewBuffer(nil)
-				fasthttp.WriteGunzip(buffer, gzip)
-				body = buffer.Bytes()
-				self.Body[""] = body
-			}
-		}
-	}
-
-	return body
-}
+// Util
 
 func copyBytes(bytes []byte) []byte {
 	bytes_ := make([]byte, len(bytes))

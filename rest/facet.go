@@ -8,7 +8,6 @@ import (
 
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/prudence/js/common"
-	"github.com/valyala/fasthttp"
 )
 
 func init() {
@@ -81,8 +80,7 @@ func (self *Facet) Handle(context *Context) bool {
 	// Construct
 	if representation.Construct != nil {
 		if err := representation.Construct(context); err != nil {
-			context.Log.Errorf("%s", err)
-			context.context.SetStatusCode(fasthttp.StatusInternalServerError)
+			context.Error(err)
 			return true
 		}
 	}
@@ -113,30 +111,19 @@ func (self *Facet) Handle(context *Context) bool {
 	// Describe
 	if representation.Describe != nil {
 		if err := representation.Describe(context); err != nil {
-			context.Log.Errorf("%s", err)
-			context.context.SetStatusCode(fasthttp.StatusInternalServerError)
+			context.Error(err)
 			return true
 		}
 	}
 
 	if !context.context.IsHead() {
-		// Encode
-		if context.context.Request.Header.HasAcceptEncoding("br") {
-			AddContentEncoding(context.context, "br")
-			context.writer = NewEncodeWriter(context.writer, "br")
-		} else if context.context.Request.Header.HasAcceptEncoding("gzip") {
-			AddContentEncoding(context.context, "gzip")
-			context.writer = NewEncodeWriter(context.writer, "gzip")
-		} else if context.context.Request.Header.HasAcceptEncoding("deflate") {
-			AddContentEncoding(context.context, "deflate")
-			context.writer = NewEncodeWriter(context.writer, "deflate")
-		}
+		// Encoding
+		SetBestEncodeWriter(context)
 
 		// Present
 		if representation.Present != nil {
 			if err := representation.Present(context); err != nil {
-				context.Log.Errorf("%s", err)
-				context.context.SetStatusCode(fasthttp.StatusInternalServerError)
+				context.Error(err)
 				return true
 			}
 		}
@@ -208,7 +195,7 @@ func (self *Facet) Handle(context *Context) bool {
 	// Encode
 	if encodeWriter, ok := context.writer.(*EncodeWriter); ok {
 		if err := encodeWriter.Close(); err != nil {
-			context.Log.Errorf("%s", err)
+			context.Error(err)
 		}
 		context.writer = encodeWriter.Writer
 	}
