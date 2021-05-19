@@ -24,7 +24,7 @@ function getSignature(context) {
 // contentType defaults to that of the accepted representation
 function construct(context) {
     context.log.info('construct');
-    context.cacheKey += '-test'
+    context.cacheKey = 'person.' + context.variables.name;
     context.cacheDuration = 5;
     context.contentType = 'application/json';
 }

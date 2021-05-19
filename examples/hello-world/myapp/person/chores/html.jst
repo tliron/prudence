@@ -4,7 +4,9 @@
 <html>
 
 <%# insert the contents of a file %>
-<%+ 'fragments/head.html' %>
+<%# by default all scriptlets (that are not '=') will skip a trailing newline after the end delimiter %>
+<%# but if we put a slash just before it the newline will remain %>
+<%+ 'fragments/head.html' /%>
 
 <body>
 

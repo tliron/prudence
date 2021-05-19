@@ -3,6 +3,7 @@ package rest
 import (
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
+	"github.com/tliron/prudence/platform"
 )
 
 //
@@ -70,11 +71,11 @@ type Representations map[string]*Representation
 func CreateRepresentations(config ard.Value) (Representations, error) {
 	self := make(Representations)
 
-	representations := asConfigList(config)
+	representations := platform.AsConfigList(config)
 	for _, representation := range representations {
 		representation_ := ard.NewNode(representation)
 		representation__, _ := CreateRepresentation(representation_)
-		contentTypes := asStringList(representation_.Get("contentTypes").Data)
+		contentTypes := platform.AsStringList(representation_.Get("contentTypes").Data)
 		// TODO:
 		//charSets := asStringList(representation_.Get("charSets").Data)
 		//languages := asStringList(representation_.Get("languages").Data)

@@ -5,8 +5,7 @@ import (
 	"io"
 
 	"github.com/tliron/kutil/util"
-	"github.com/tliron/prudence/js/common"
-	"github.com/tliron/prudence/render"
+	"github.com/tliron/prudence/platform"
 )
 
 //
@@ -15,14 +14,14 @@ import (
 
 type RenderWriter struct {
 	Writer         io.Writer
-	Render         render.RenderFunc
-	GetRelativeURL common.GetRelativeURL
+	Render         platform.RenderFunc
+	GetRelativeURL platform.GetRelativeURL
 
 	buffer *bytes.Buffer
 }
 
-func NewRenderWriter(writer io.Writer, renderer string, getRelativeURL common.GetRelativeURL) (*RenderWriter, error) {
-	if render_, err := render.GetRenderer(renderer); err == nil {
+func NewRenderWriter(writer io.Writer, renderer string, getRelativeURL platform.GetRelativeURL) (*RenderWriter, error) {
+	if render_, err := platform.GetRenderer(renderer); err == nil {
 		// Note: renderer can be nil
 		return &RenderWriter{
 			Writer:         writer,

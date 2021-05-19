@@ -38,7 +38,7 @@ func main() {
 	router.AddRoute(rest.NewRoute("", []string{"persons/*"}, person.Handle))
 	router.AddRoute(rest.NewRoute("", nil, rest.DefaultNotFound.Handle))
 
-	server := rest.NewServer("127.0.0.1:8080", router.Handle)
+	server := rest.NewServer("localhost:8080", router.Handle)
 
 	err := server.Start()
 	util.FailOnError(err)

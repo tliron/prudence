@@ -10,7 +10,7 @@ import (
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/util"
-	"github.com/tliron/prudence/js/common"
+	"github.com/tliron/prudence/platform"
 	"github.com/valyala/fasthttp"
 )
 
@@ -50,7 +50,7 @@ func NewContext(context *fasthttp.RequestCtx) *Context {
 	}
 }
 
-func (self *Context) StartRender(renderer string, hasGetRelativeURL common.HasGetRelativeURL) error {
+func (self *Context) StartRender(renderer string, hasGetRelativeURL platform.HasGetRelativeURL) error {
 	if renderWriter, err := NewRenderWriter(self.writer, renderer, hasGetRelativeURL.GetRelativeURL); err == nil {
 		self.Log.Debugf("start render: %s", renderer)
 		self.writer = renderWriter
@@ -145,13 +145,13 @@ func (self *Context) Embed(hook *js.Hook) {
 		if cacheEntry, ok := CacheLoad(self); ok {
 			if self.context.IsHead() {
 				// HEAD doesn't care if the cacheEntry doesn't have a body
-				cacheEntry.Write(self)
+				CacheEntryWritePlain(cacheEntry, self)
 				return
 			} else {
 				if len(cacheEntry.Body) == 0 {
 					self.Log.Debugf("ignoring cache with no body: %s", self.Path)
 				} else {
-					cacheEntry.Write(self)
+					CacheEntryWritePlain(cacheEntry, self)
 					return
 				}
 			}
@@ -170,7 +170,7 @@ func (self *Context) Embed(hook *js.Hook) {
 
 	// To cache
 	if (self.CacheDuration > 0.0) && (self.CacheKey != "") {
-		CacheStoreBody(self, EncodingTypePlain, body)
+		CacheStoreBody(self, platform.EncodingTypePlain, body)
 	}
 
 	self.writer = writer

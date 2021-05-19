@@ -3,11 +3,11 @@ package rest
 import (
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/logging"
-	"github.com/tliron/prudence/js/common"
+	"github.com/tliron/prudence/platform"
 )
 
 func init() {
-	Register("router", CreateRouter)
+	platform.RegisterCreator("router", CreateRouter)
 }
 
 //
@@ -29,12 +29,12 @@ func NewRouter(name string) *Router {
 }
 
 // CreateFunc signature
-func CreateRouter(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error) {
+func CreateRouter(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
 	var self Router
 
 	config_ := ard.NewNode(config)
 	self.Name, _ = config_.Get("name").String(true)
-	routes := asConfigList(config_.Get("routes").Data)
+	routes := platform.AsConfigList(config_.Get("routes").Data)
 	for _, route := range routes {
 		if route_, ok := route.(ard.StringMap); ok {
 			route__, _ := CreateRoute(route_, getRelativeURL)

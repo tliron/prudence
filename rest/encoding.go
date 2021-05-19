@@ -4,51 +4,22 @@ import (
 	"bytes"
 	"io"
 
+	"github.com/tliron/prudence/platform"
 	"github.com/valyala/fasthttp"
 )
 
-//
-// EncodingType
-//
-
-type EncodingType int
-
-const (
-	EncodingTypeUnsupported = EncodingType(-1)
-	EncodingTypePlain       = EncodingType(0)
-	EncodingTypeBrotli      = EncodingType(1)
-	EncodingTypeGZip        = EncodingType(2)
-	EncodingTypeDeflate     = EncodingType(3)
-)
-
-// fmt.Stringer interface
-func (self EncodingType) String() string {
-	switch self {
-	case EncodingTypePlain:
-		return "plain"
-	case EncodingTypeBrotli:
-		return "brotli"
-	case EncodingTypeGZip:
-		return "gzip"
-	case EncodingTypeDeflate:
-		return "deflate"
-	default:
-		return "unsupported"
-	}
-}
-
-func GetEncodingType(name string) EncodingType {
+func GetEncodingType(name string) platform.EncodingType {
 	switch name {
 	case "":
-		return EncodingTypePlain
+		return platform.EncodingTypePlain
 	case "br":
-		return EncodingTypeBrotli
+		return platform.EncodingTypeBrotli
 	case "gzip":
-		return EncodingTypeGZip
+		return platform.EncodingTypeGZip
 	case "deflate":
-		return EncodingTypeDeflate
+		return platform.EncodingTypeDeflate
 	default:
-		return EncodingTypeUnsupported
+		return platform.EncodingTypeUnsupported
 	}
 }
 
@@ -58,12 +29,12 @@ func GetEncodingType(name string) EncodingType {
 
 type EncodeWriter struct {
 	Writer io.Writer
-	Type   EncodingType
+	Type   platform.EncodingType
 
 	buffer *bytes.Buffer
 }
 
-func NewEncodeWriter(writer io.Writer, type_ EncodingType) *EncodeWriter {
+func NewEncodeWriter(writer io.Writer, type_ platform.EncodingType) *EncodeWriter {
 	return &EncodeWriter{
 		Writer: writer,
 		Type:   type_,
@@ -74,13 +45,13 @@ func NewEncodeWriter(writer io.Writer, type_ EncodingType) *EncodeWriter {
 func SetBestEncodeWriter(context *Context) {
 	if context.context.Request.Header.HasAcceptEncoding("br") {
 		AddContentEncoding(context.context, "br")
-		context.writer = NewEncodeWriter(context.writer, EncodingTypeBrotli)
+		context.writer = NewEncodeWriter(context.writer, platform.EncodingTypeBrotli)
 	} else if context.context.Request.Header.HasAcceptEncoding("gzip") {
 		AddContentEncoding(context.context, "gzip")
-		context.writer = NewEncodeWriter(context.writer, EncodingTypeGZip)
+		context.writer = NewEncodeWriter(context.writer, platform.EncodingTypeGZip)
 	} else if context.context.Request.Header.HasAcceptEncoding("deflate") {
 		AddContentEncoding(context.context, "deflate")
-		context.writer = NewEncodeWriter(context.writer, EncodingTypeDeflate)
+		context.writer = NewEncodeWriter(context.writer, platform.EncodingTypeDeflate)
 	}
 }
 
@@ -92,15 +63,15 @@ func (self *EncodeWriter) Write(b []byte) (int, error) {
 // io.Close
 func (self *EncodeWriter) Close() error {
 	switch self.Type {
-	case EncodingTypeBrotli:
+	case platform.EncodingTypeBrotli:
 		_, err := fasthttp.WriteBrotli(self.Writer, self.buffer.Bytes())
 		return err
 
-	case EncodingTypeGZip:
+	case platform.EncodingTypeGZip:
 		_, err := fasthttp.WriteGzip(self.Writer, self.buffer.Bytes())
 		return err
 
-	case EncodingTypeDeflate:
+	case platform.EncodingTypeDeflate:
 		_, err := fasthttp.WriteDeflate(self.Writer, self.buffer.Bytes())
 		return err
 

@@ -5,7 +5,7 @@ prudence.create({
     routes: [{ // can be a list or a single route
         // Person resource
         paths: 'person/*', // can also be a list
-        handler: prudence.import('person/resource.js')
+        handler: prudence.run('person/resource.js')
     }, {
         // Static files
         handler: prudence.create({

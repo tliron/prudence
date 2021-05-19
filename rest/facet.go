@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/tliron/kutil/ard"
-	"github.com/tliron/prudence/js/common"
+	"github.com/tliron/prudence/platform"
 )
 
 func init() {
-	Register("facet", CreateFacet)
+	platform.RegisterCreator("facet", CreateFacet)
 }
 
 //
@@ -34,7 +34,7 @@ func NewFacet(name string, paths []string) *Facet {
 }
 
 // CreateFunc signature
-func CreateFacet(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error) {
+func CreateFacet(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
 	self := Facet{
 		Representations: make(Representations),
 	}
@@ -90,13 +90,13 @@ func (self *Facet) Handle(context *Context) bool {
 		if cacheEntry, ok := CacheLoad(context); ok {
 			if context.context.IsHead() {
 				// HEAD doesn't care if the cacheEntry doesn't have a body
-				cacheEntry.ToContext(context)
+				CacheEntryToContext(cacheEntry, context)
 				return !NotFound(context.context)
 			} else {
 				if len(cacheEntry.Body) == 0 {
 					context.Log.Debugf("ignoring cache with no body: %s", context.Path)
 				} else {
-					cacheEntry.ToContext(context)
+					CacheEntryToContext(cacheEntry, context)
 					return !NotFound(context.context)
 				}
 			}
@@ -202,7 +202,7 @@ func (self *Facet) Handle(context *Context) bool {
 
 	// To cache
 	if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
-		CacheStore(context)
+		CacheStoreContext(context)
 	}
 
 	return !NotFound(context.context)

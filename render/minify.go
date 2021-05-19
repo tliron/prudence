@@ -10,7 +10,7 @@ import (
 	"github.com/tdewolff/minify/v2/json"
 	"github.com/tdewolff/minify/v2/svg"
 	"github.com/tdewolff/minify/v2/xml"
-	"github.com/tliron/prudence/js/common"
+	"github.com/tliron/prudence/platform"
 )
 
 var minify_ *minify.M
@@ -27,40 +27,40 @@ func init() {
 	minify_.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	minify_.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
-	Register("mincss", RenderMinifyCSS)
-	Register("minhtml", RenderMinifyHTML)
-	Register("minsvg", RenderMinifySVG)
-	Register("minjs", RenderMinifyJavaScript)
-	Register("minjson", RenderMinifyJSON)
-	Register("minxml", RenderMinifyXML)
+	platform.RegisterRenderer("mincss", RenderMinifyCSS)
+	platform.RegisterRenderer("minhtml", RenderMinifyHTML)
+	platform.RegisterRenderer("minsvg", RenderMinifySVG)
+	platform.RegisterRenderer("minjs", RenderMinifyJavaScript)
+	platform.RegisterRenderer("minjson", RenderMinifyJSON)
+	platform.RegisterRenderer("minxml", RenderMinifyXML)
 }
 
 // RenderFunc signature
-func RenderMinifyCSS(content string, getRelativeURL common.GetRelativeURL) (string, error) {
+func RenderMinifyCSS(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
 	return minify_.String("text/css", content)
 }
 
 // RenderFunc signature
-func RenderMinifyHTML(content string, getRelativeURL common.GetRelativeURL) (string, error) {
+func RenderMinifyHTML(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
 	return minify_.String("text/html", content)
 }
 
 // RenderFunc signature
-func RenderMinifySVG(content string, getRelativeURL common.GetRelativeURL) (string, error) {
+func RenderMinifySVG(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
 	return minify_.String("image/svg+xml", content)
 }
 
 // RenderFunc signature
-func RenderMinifyJavaScript(content string, getRelativeURL common.GetRelativeURL) (string, error) {
+func RenderMinifyJavaScript(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
 	return minify_.String("text/javascript", content)
 }
 
 // RenderFunc signature
-func RenderMinifyJSON(content string, getRelativeURL common.GetRelativeURL) (string, error) {
+func RenderMinifyJSON(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
 	return minify_.String("application/json", content)
 }
 
 // RenderFunc signature
-func RenderMinifyXML(content string, getRelativeURL common.GetRelativeURL) (string, error) {
+func RenderMinifyXML(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
 	return minify_.String("application/xml", content)
 }

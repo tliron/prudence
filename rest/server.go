@@ -12,12 +12,12 @@ import (
 
 	"github.com/fasthttp/http2"
 	"github.com/tliron/kutil/ard"
-	"github.com/tliron/prudence/js/common"
+	"github.com/tliron/prudence/platform"
 	"github.com/valyala/fasthttp"
 )
 
 func init() {
-	Register("server", CreateServer)
+	platform.RegisterCreator("server", CreateServer)
 }
 
 //
@@ -43,7 +43,7 @@ func NewServer(address string, handler HandleFunc) *Server {
 }
 
 // CreateFunc signature
-func CreateServer(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error) {
+func CreateServer(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
 	var self Server
 
 	config_ := ard.NewNode(config)

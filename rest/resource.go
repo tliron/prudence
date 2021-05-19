@@ -2,11 +2,11 @@ package rest
 
 import (
 	"github.com/tliron/kutil/ard"
-	"github.com/tliron/prudence/js/common"
+	"github.com/tliron/prudence/platform"
 )
 
 func init() {
-	Register("resource", CreateResource)
+	platform.RegisterCreator("resource", CreateResource)
 }
 
 //
@@ -26,14 +26,14 @@ func NewResource(name string) *Resource {
 }
 
 // CreateFunc signature
-func CreateResource(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error) {
+func CreateResource(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
 	var self Resource
 
 	router, _ := CreateRouter(config, getRelativeURL)
 	self.Router = router.(*Router)
 
 	config_ := ard.NewNode(config)
-	facets := asConfigList(config_.Get("facets").Data)
+	facets := platform.AsConfigList(config_.Get("facets").Data)
 	for _, facet := range facets {
 		if facet_, ok := facet.(ard.StringMap); ok {
 			facet__, _ := CreateFacet(facet_, getRelativeURL)

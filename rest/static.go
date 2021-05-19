@@ -3,12 +3,12 @@ package rest
 import (
 	"github.com/tliron/kutil/ard"
 	urlpkg "github.com/tliron/kutil/url"
-	"github.com/tliron/prudence/js/common"
+	"github.com/tliron/prudence/platform"
 	"github.com/valyala/fasthttp"
 )
 
 func init() {
-	Register("static", CreateStatic)
+	platform.RegisterCreator("static", CreateStatic)
 }
 
 //
@@ -39,7 +39,7 @@ func NewStatic(root string, indexes []string) *Static {
 }
 
 // CreateFunc signature
-func CreateStatic(config ard.StringMap, getRelativeURL common.GetRelativeURL) (interface{}, error) {
+func CreateStatic(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
 	config_ := ard.NewNode(config)
 
 	root, _ := config_.Get("root").String(false)
@@ -48,7 +48,7 @@ func CreateStatic(config ard.StringMap, getRelativeURL common.GetRelativeURL) (i
 	} else {
 		return nil, err
 	}
-	indexes := asStringList(config_.Get("indexes").Data)
+	indexes := platform.AsStringList(config_.Get("indexes").Data)
 
 	return NewStatic(root, indexes), nil
 }

@@ -15,7 +15,7 @@ var runCommand = &cobra.Command{
 	Short: "Run",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		_, err := js.NewAPI(nil).Import(args[0])
+		_, err := js.NewPrudenceAPI(nil).Run(args[0])
 		util.FailOnError(err)
 	},
 }
