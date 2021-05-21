@@ -50,7 +50,7 @@ func NewCacheEntryFromBody(context *Context, encoding platform.EncodingType, bod
 	}
 }
 
-func CacheEntryGetBestBody(cacheEntry *platform.CacheEntry, context *Context) []byte {
+func CacheEntryGetBestBody(cacheEntry *platform.CacheEntry, context *Context) ([]byte, bool) {
 	if context.context.Request.Header.HasAcceptEncoding("br") {
 		return CacheEntryGetBody(cacheEntry, platform.EncodingTypeBrotli)
 	} else if context.context.Request.Header.HasAcceptEncoding("gzip") {
@@ -62,39 +62,39 @@ func CacheEntryGetBestBody(cacheEntry *platform.CacheEntry, context *Context) []
 	}
 }
 
-func CacheEntryGetBody(cacheEntry *platform.CacheEntry, encoding platform.EncodingType) []byte {
-	var body []byte
-
-	// TODO: we need to update the backend if we change the entry!
-
-	var ok bool
-	if body, ok = cacheEntry.Body[encoding]; !ok {
+func CacheEntryGetBody(cacheEntry *platform.CacheEntry, encoding platform.EncodingType) ([]byte, bool) {
+	if body, ok := cacheEntry.Body[encoding]; ok {
+		return body, false
+	} else {
 		switch encoding {
 		case platform.EncodingTypeBrotli:
-			if plain := CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain); plain != nil {
+			if plain, _ := CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain); plain != nil {
 				log.Debug("creating brotli body from plain")
 				buffer := bytes.NewBuffer(nil)
 				fasthttp.WriteBrotli(buffer, plain)
 				body = buffer.Bytes()
 				cacheEntry.Body[platform.EncodingTypeBrotli] = body
+				return body, true
 			}
 
 		case platform.EncodingTypeGZip:
-			if plain := CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain); plain != nil {
+			if plain, _ := CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain); plain != nil {
 				log.Debug("creating gzip body from plain")
 				buffer := bytes.NewBuffer(nil)
 				fasthttp.WriteGzip(buffer, plain)
 				body = buffer.Bytes()
 				cacheEntry.Body[platform.EncodingTypeGZip] = body
+				return body, true
 			}
 
 		case platform.EncodingTypeDeflate:
-			if plain := CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain); plain != nil {
+			if plain, _ := CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain); plain != nil {
 				log.Debug("creating deflate body from plain")
 				buffer := bytes.NewBuffer(nil)
 				fasthttp.WriteDeflate(buffer, plain)
 				body = buffer.Bytes()
 				cacheEntry.Body[platform.EncodingTypeDeflate] = body
+				return body, true
 			}
 
 		case platform.EncodingTypePlain:
@@ -105,26 +105,29 @@ func CacheEntryGetBody(cacheEntry *platform.CacheEntry, encoding platform.Encodi
 				fasthttp.WriteInflate(buffer, deflate)
 				body = buffer.Bytes()
 				cacheEntry.Body[platform.EncodingTypePlain] = body
+				return body, true
 			} else if gzip, ok := cacheEntry.Body[platform.EncodingTypeGZip]; ok {
 				log.Debug("creating plain body from gzip")
 				buffer := bytes.NewBuffer(nil)
 				fasthttp.WriteGunzip(buffer, gzip)
 				body = buffer.Bytes()
 				cacheEntry.Body[platform.EncodingTypePlain] = body
+				return body, true
 			} else if brotli, ok := cacheEntry.Body[platform.EncodingTypeBrotli]; ok {
 				log.Debug("creating plain body from brotli")
 				buffer := bytes.NewBuffer(nil)
 				fasthttp.WriteUnbrotli(buffer, brotli)
 				body = buffer.Bytes()
 				cacheEntry.Body[platform.EncodingTypePlain] = body
+				return body, true
 			}
 		}
-	}
 
-	return body
+		return nil, false
+	}
 }
 
-func CacheEntryToContext(cacheEntry *platform.CacheEntry, context *Context) {
+func CacheEntryToContext(cacheEntry *platform.CacheEntry, context *Context) bool {
 	context.context.Response.Reset()
 
 	// Annoyingly these were re-enabled by Reset above
@@ -151,29 +154,33 @@ func CacheEntryToContext(cacheEntry *platform.CacheEntry, context *Context) {
 		// The following headers should have been set:
 		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
 		context.context.NotModified()
-		return
+		return false
 	}
 
 	if !context.context.IfModifiedSince(GetLastModified(context.context)) {
 		// The following headers should have been set:
 		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
 		context.context.NotModified()
-		return
+		return false
 	}
 
 	// Body (not for HEAD)
 
 	if !context.context.IsHead() {
-		body := CacheEntryGetBestBody(cacheEntry, context)
+		body, changed := CacheEntryGetBestBody(cacheEntry, context)
 		context.context.Response.SetBody(body)
+		return changed
 	}
+
+	return false
 }
 
-func CacheEntryWritePlain(cacheEntry *platform.CacheEntry, context *Context) (int, error) {
-	if body := CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain); body != nil {
-		return context.Write(body)
+func CacheEntryWritePlain(cacheEntry *platform.CacheEntry, context *Context) (bool, int, error) {
+	if body, changed := CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain); body != nil {
+		n, err := context.Write(body)
+		return changed, n, err
 	} else {
-		return 0, nil
+		return false, 0, nil
 	}
 }
 

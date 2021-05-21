@@ -2,18 +2,25 @@ package rest
 
 import "github.com/tliron/prudence/platform"
 
-func CacheLoad(context *Context) (*platform.CacheEntry, bool) {
+func CacheLoad(context *Context) (platform.CacheKey, *platform.CacheEntry, bool) {
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
 		cacheKey := NewCacheKey(context)
 		if cacheEntry, ok := cacheBackend.Load(cacheKey); ok {
 			context.Log.Debugf("cache hit: %s|%s", cacheKey, cacheEntry)
-			return cacheEntry, true
+			return cacheKey, cacheEntry, true
 		} else {
 			context.Log.Debugf("cache miss: %s", cacheKey)
-			return nil, false
+			return platform.CacheKey{}, nil, false
 		}
 	} else {
-		return nil, false
+		return platform.CacheKey{}, nil, false
+	}
+}
+
+func CacheUpdate(cacheKey platform.CacheKey, cacheEntry *platform.CacheEntry) {
+	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
+		cacheBackend.Store(cacheKey, cacheEntry)
+		log.Debugf("cache updated: %s|%s", cacheKey, cacheEntry)
 	}
 }
 

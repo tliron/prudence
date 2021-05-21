@@ -31,9 +31,8 @@ You should see a successful response with a 200 status code.
 Some more detail:
 
 * The "prudence.create" function's argument is an object that at the very least has a
-  "type" property. Prudence comes with various essential types, such as "server" used here,
-  and can be extended with plugins that provide additional types. If no error is thrown
-  then the return value should be the object you created.
+  "type" property. Prudence comes with various essential types, such as the "server" used here,
+  and can be extended with your own custom types. The return value is the object you created.
 * The "prudence.start" function's argument is either a single startable object or a list of
   startable objects. So, you can start several servers at the same time, e.g. to listen on
   different ports or interfaces.
@@ -153,7 +152,7 @@ browsers, which are different yet again. Generic JavaScript code will work, but 
 relies on platform-specific APIs will not.
 
 Prudence provides you with an alternative solution: the ability to use almost any Go library
-as-is in JavaScript. To learn how to do so see the [plugin guide](PLUGINS.md).
+as-is in JavaScript. To learn how to do so see the [extension guide](platform/README.md).
 
 Now, edit your `myapp/router.js` with this code:
 
@@ -431,9 +430,16 @@ requests, and compared against the signature the client already has during condi
 requests. The reason this is separated from "present" is exactly because we might not
 have to call "present" at all in case the signatures match.
 
-Note that there is no time limit on client-side caching. If the signature never changes,
-then conditional requests (from those clients who have the representation cached) will
-always return a 304: Not Modified.
+Note that clients normally cache a resource with the *complete URL* as the key, which
+includes all the `?` query parameters. This means that any change to a query parameter
+will *not* use a chached representation for different query parameters. Thus adding a
+query parameter, which is not processed by the server, is sometimes used as a way to
+"punch" through the cache. It works, but be aware that it will leave the other, unused
+representations still cached on the client, which could be a waste of space.
+
+Also note that there is no time limit on client-side caching. If the signature never
+changes, then conditional requests (from those clients who have the representation
+cached) will always return a 304: Not Modified.
 
 The way to succeed here, of course, is to have a cheap way to get these signatures.
 In this simple example we are reusing our (server-side) cache key that we created in

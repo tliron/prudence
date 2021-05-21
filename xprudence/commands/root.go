@@ -20,7 +20,7 @@ func init() {
 
 var rootCommand = &cobra.Command{
 	Use:   toolName,
-	Short: "The Prudence web framework",
+	Short: "Customizer for the Prudence web framework",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		err := terminal.ProcessColorizeFlag(colorize)
 		util.FailOnError(err)

@@ -6,4 +6,5 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 "$HERE/build"
 
-prudence run "$ROOT/examples/hello-world/start.js" -vv
+cd "$ROOT/examples/go"
+go run main.go

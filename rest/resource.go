@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	platform.RegisterCreator("resource", CreateResource)
+	platform.RegisterType("resource", CreateResource)
 }
 
 //

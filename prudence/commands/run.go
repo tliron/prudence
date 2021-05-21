@@ -6,8 +6,11 @@ import (
 	"github.com/tliron/prudence/js"
 )
 
+var arguments map[string]string
+
 func init() {
 	rootCommand.AddCommand(runCommand)
+	runCommand.Flags().StringToStringVarP(&arguments, "argument", "a", make(map[string]string), "arguments (format is name=value)")
 }
 
 var runCommand = &cobra.Command{

@@ -59,7 +59,7 @@ func (self *PrudenceAPI) Decode(code string, format string, all bool) (ard.Value
 
 func (self *PrudenceAPI) Encode(value interface{}, format string, indent string, writer io.Writer) (string, error) {
 	if writer == nil {
-		return formatpkg.Encode(value, format, false)
+		return formatpkg.Encode(value, format, indent, false)
 	} else {
 		err := formatpkg.Write(value, format, indent, false, writer)
 		return "", err

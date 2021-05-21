@@ -35,7 +35,7 @@ func main() {
 	person.AddFacet(age)
 
 	router := rest.NewRouter("myapp")
-	router.AddRoute(rest.NewRoute("", []string{"persons/*"}, person.Handle))
+	router.AddRoute(rest.NewRoute("", []string{"person/*"}, person.Handle))
 	router.AddRoute(rest.NewRoute("", nil, rest.DefaultNotFound.Handle))
 
 	server := rest.NewServer("localhost:8080", router.Handle)

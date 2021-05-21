@@ -11,7 +11,7 @@ type CreateFunc func(config ard.StringMap, getRelativeURL GetRelativeURL) (inter
 
 var creators = make(map[string]CreateFunc)
 
-func RegisterCreator(type_ string, create CreateFunc) {
+func RegisterType(type_ string, create CreateFunc) {
 	creators[type_] = create
 }
 

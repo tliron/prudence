@@ -1,4 +1,0 @@
-Prudence: Plugins Guide
-=======================
-
-TODO

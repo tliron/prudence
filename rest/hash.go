@@ -13,14 +13,13 @@ import (
 //
 
 type HashWriter struct {
-	Writer io.Writer
-
-	hash hash.Hash
+	writer io.Writer
+	hash   hash.Hash
 }
 
 func NewHashWriter(writer io.Writer) *HashWriter {
 	return &HashWriter{
-		Writer: writer,
+		writer: writer,
 		hash:   md5.New(),
 	}
 }
@@ -29,8 +28,18 @@ func (self *HashWriter) Hash() string {
 	return util.ToBase64(self.hash.Sum(nil))
 }
 
-// io.Writer
+// io.Writer interface
 func (self *HashWriter) Write(b []byte) (int, error) {
 	self.hash.Write(b)
-	return self.Writer.Write(b)
+	return self.writer.Write(b)
+}
+
+// io.Closer interface
+func (self *HashWriter) Close() error {
+	return nil
+}
+
+// WrappingWriter interface
+func (self *HashWriter) GetWrappedWriter() io.Writer {
+	return self.writer
 }

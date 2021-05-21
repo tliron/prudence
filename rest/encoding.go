@@ -28,16 +28,15 @@ func GetEncodingType(name string) platform.EncodingType {
 //
 
 type EncodeWriter struct {
-	Writer io.Writer
-	Type   platform.EncodingType
-
+	writer io.Writer
+	type_  platform.EncodingType
 	buffer *bytes.Buffer
 }
 
 func NewEncodeWriter(writer io.Writer, type_ platform.EncodingType) *EncodeWriter {
 	return &EncodeWriter{
-		Writer: writer,
-		Type:   type_,
+		writer: writer,
+		type_:  type_,
 		buffer: bytes.NewBuffer(nil),
 	}
 }
@@ -55,27 +54,32 @@ func SetBestEncodeWriter(context *Context) {
 	}
 }
 
-// io.Writer
+// io.Writer interface
 func (self *EncodeWriter) Write(b []byte) (int, error) {
 	return self.buffer.Write(b)
 }
 
-// io.Close
+// io.Closer interface
 func (self *EncodeWriter) Close() error {
-	switch self.Type {
+	switch self.type_ {
 	case platform.EncodingTypeBrotli:
-		_, err := fasthttp.WriteBrotli(self.Writer, self.buffer.Bytes())
+		_, err := fasthttp.WriteBrotli(self.writer, self.buffer.Bytes())
 		return err
 
 	case platform.EncodingTypeGZip:
-		_, err := fasthttp.WriteGzip(self.Writer, self.buffer.Bytes())
+		_, err := fasthttp.WriteGzip(self.writer, self.buffer.Bytes())
 		return err
 
 	case platform.EncodingTypeDeflate:
-		_, err := fasthttp.WriteDeflate(self.Writer, self.buffer.Bytes())
+		_, err := fasthttp.WriteDeflate(self.writer, self.buffer.Bytes())
 		return err
 
 	default:
 		return nil
 	}
+}
+
+// WrappingWriter interface
+func (self *EncodeWriter) GetWrappedWriter() io.Writer {
+	return self.writer
 }

@@ -1,5 +1,13 @@
 package memory
 
+// TODO:
+// https://github.com/coocood/freecache
+// https://github.com/allegro/bigcache
+// https://github.com/muesli/cache2go
+// https://github.com/bluele/gcache
+
+// https://github.com/golang/groupcache
+
 import (
 	"sync"
 	"time"
@@ -13,7 +21,7 @@ import (
 var log = logging.GetLogger("prudence.memory")
 
 func init() {
-	platform.RegisterCreator("cache.memory", CreateMemoryCacheBackend)
+	platform.RegisterType("cache.memory", CreateMemoryCacheBackend)
 }
 
 //

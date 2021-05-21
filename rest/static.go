@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	platform.RegisterCreator("static", CreateStatic)
+	platform.RegisterType("static", CreateStatic)
 }
 
 //

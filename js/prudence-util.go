@@ -18,6 +18,14 @@ func (self *PrudenceAPI) DeepEquals(a ard.Value, b ard.Value) bool {
 	return ard.Equals(a, b)
 }
 
+func (self *PrudenceAPI) StringToBytes(string_ string) []byte {
+	return util.StringToBytes(string_)
+}
+
+func (self *PrudenceAPI) BytesToString(bytes []byte) string {
+	return util.BytesToString(bytes)
+}
+
 func (self *PrudenceAPI) Hash(value ard.Value) (string, error) {
 	if hash, err := hashstructure.Hash(value, hashstructure.FormatV2, nil); err == nil {
 		return strconv.FormatUint(hash, 10), nil

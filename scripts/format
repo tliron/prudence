@@ -12,4 +12,6 @@ gofmt -w -s -e \
 	"$ROOT/prudence" \
 	"$ROOT/prudence/commands" \
 	"$ROOT/render" \
-	"$ROOT/rest"
+	"$ROOT/rest" \
+	"$ROOT/xprudence" \
+	"$ROOT/xprudence/commands"

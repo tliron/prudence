@@ -2,10 +2,11 @@ module github.com/tliron/prudence
 
 go 1.16
 
-// replace github.com/tliron/kutil => /Depot/Projects/RedHat/kutil
+replace github.com/tliron/kutil => /Depot/Projects/RedHat/kutil
 
 require (
 	github.com/beevik/etree v1.1.0
+	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dop251/goja v0.0.0-20210427212725-462d53687b0d
 	github.com/fasthttp/http2 v0.0.0-20210213224216-7aa640389961
 	github.com/gomarkdown/markdown v0.0.0-20210408062403-ad838ccf8cdd

@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	platform.RegisterCreator("router", CreateRouter)
+	platform.RegisterType("router", CreateRouter)
 }
 
 //

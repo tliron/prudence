@@ -5,8 +5,18 @@ import (
 	"os"
 	"os/exec"
 
+	urlpkg "github.com/tliron/kutil/url"
 	"github.com/tliron/kutil/util"
 )
+
+func (self *PrudenceAPI) Here() (string, error) {
+	origin := self.Url.Origin()
+	if origin_, ok := origin.(*urlpkg.FileURL); ok {
+		return origin_.Path, nil
+	} else {
+		return "", fmt.Errorf("not a file: %s", origin)
+	}
+}
 
 func (self *PrudenceAPI) Exec(name string, arguments ...string) (string, error) {
 	cmd := exec.Command(name, arguments...)

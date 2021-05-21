@@ -12,9 +12,9 @@ caching capabilities. Suitable for building frontend user interfaces and backend
 
 Prudence itself is distributed as a single, compact executable file with no external dependencies.
 
-A great place to start is the [quickstart guide](QUICKSTART.md)!
-
 [![Download](assets/media/download.png "Download")](https://github.com/tliron/prudence-go/releases)
+
+Start with the detailed [quickstart guide](QUICKSTART.md)!
 
 
 Highlights
@@ -29,8 +29,9 @@ Highlights
   architecture.
 * Pluggable server-side cache backends. Store your generated representations in scalable, fast
   stores such as [Memcached](https://memcached.org/), [Redis](https://redis.io/), etc.
-* Fully extensible via the xprudence tool, which allows you to create custom builds of Prudence
-  bundled with the plugins, modules, and APIs required by your application. (Inspired by
-  [xcaddy](https://github.com/caddyserver/xcaddy).)
-* Uses [fasthttp](https://github.com/valyala/fasthttp) for high-performance handling of HTTP
+* [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you
+  to create custom builds of Prudence bundled with the plugins, modules, and APIs required by your
+  applications. Even when extended, Prudence is still distributed as a single, compact executable
+  file.
+* Builds on [fasthttp](https://github.com/valyala/fasthttp) for high-performance handling of HTTP
   requests, including serving static files.

@@ -88,7 +88,7 @@ func (self *Context) EndSignature() error {
 	if hashWriter, ok := self.writer.(*HashWriter); ok {
 		self.Log.Debug("end signature")
 		self.Signature = hashWriter.Hash()
-		self.writer = hashWriter.Writer
+		self.writer = hashWriter.writer
 		return nil
 	} else {
 		return errors.New("did not call startSignature()")
@@ -117,6 +117,10 @@ func (self *Context) Write(b []byte) (int, error) {
 	return self.writer.Write(b)
 }
 
+func (self *Context) WriteString(s string) (int, error) {
+	return self.writer.Write(util.StringToBytes(s))
+}
+
 func (self *Context) Copy() *Context {
 	variables := ard.Copy(self.Variables).(ard.StringMap)
 
@@ -142,18 +146,18 @@ func (self *Context) Copy() *Context {
 func (self *Context) Embed(hook *js.Hook) {
 	// Try cache
 	if self.CacheKey != "" {
-		if cacheEntry, ok := CacheLoad(self); ok {
-			if self.context.IsHead() {
-				// HEAD doesn't care if the cacheEntry doesn't have a body
-				CacheEntryWritePlain(cacheEntry, self)
-				return
+		if cacheKey, cacheEntry, ok := CacheLoad(self); ok {
+			if len(cacheEntry.Body) == 0 {
+				self.Log.Debugf("ignoring cache with no body: %s", self.Path)
 			} else {
-				if len(cacheEntry.Body) == 0 {
-					self.Log.Debugf("ignoring cache with no body: %s", self.Path)
-				} else {
-					CacheEntryWritePlain(cacheEntry, self)
-					return
+				changed, _, err := CacheEntryWritePlain(cacheEntry, self)
+				if err != nil {
+					self.Log.Errorf("%s", err.Error())
 				}
+				if changed {
+					CacheUpdate(cacheKey, cacheEntry)
+				}
+				return
 			}
 		}
 	}
