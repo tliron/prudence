@@ -3,12 +3,17 @@ package js
 import (
 	"fmt"
 
+	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/prudence/platform"
 )
 
-func (self *PrudenceAPI) Create(config ard.StringMap) (interface{}, error) {
-	return platform.Create(config, self.GetRelativeURL)
+func (self *PrudenceAPI) Create(value goja.Value) (interface{}, error) {
+	if config, ok := value.Export().(ard.StringMap); ok {
+		return platform.Create(config, self.GetRelativeURL)
+	} else {
+		return nil, nil
+	}
 }
 
 func (self *PrudenceAPI) Render(content string, renderer string) (string, error) {

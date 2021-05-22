@@ -7,8 +7,9 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 "$HERE/build"
 
 xprudence build -v \
-    --plugin=github.com/tliron/prudence/examples/plugin \
-    --replace=github.com/tliron/prudence=/Depot/Projects/Three\ Crickets/prudence-go \
+    --plugin=myplugin \
+    --replace=myplugin="$ROOT/examples/plugin" \
+    --replace=github.com/tliron/prudence="$ROOT" \
     --replace=github.com/tliron/kutil=/Depot/Projects/RedHat/kutil
 
 prudence run "$ROOT/examples/plugin/start.js" -vv

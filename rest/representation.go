@@ -1,12 +1,13 @@
 package rest
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"time"
 
+	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -16,14 +17,17 @@ import (
 
 type RepresentionFunc func(context *Context) error
 
-func NewRepresentationFunc(hook *js.Hook) RepresentionFunc {
-	if hook != nil {
+func NewRepresentationFunc(function interface{}, runtime *goja.Runtime) (RepresentionFunc, error) {
+	if call, ok := function.(func(goja.FunctionCall) goja.Value); ok {
 		return func(context *Context) error {
-			_, err := hook.Call(nil, context)
-			return err
-		}
+			call(goja.FunctionCall{
+				This:      nil,
+				Arguments: []goja.Value{runtime.ToValue(context)},
+			})
+			return nil
+		}, nil
 	} else {
-		return nil
+		return nil, fmt.Errorf("not a function: %T", function)
 	}
 }
 
@@ -39,28 +43,60 @@ type Representation struct {
 
 func CreateRepresentation(node *ard.Node) (*Representation, error) {
 	var self Representation
+	var err error
 
-	if hooks := node.Get("hooks").Data; hooks != nil {
-		hooks_ := hooks.(map[string]*js.Hook)
-		if construct, ok := hooks_["construct"]; ok {
-			self.Construct = NewRepresentationFunc(construct)
-		}
-		if describe, ok := hooks_["describe"]; ok {
-			self.Describe = NewRepresentationFunc(describe)
-		}
-		if present, ok := hooks_["present"]; ok {
-			self.Present = NewRepresentationFunc(present)
+	if functions, ok := node.Get("functions").StringMap(false); ok {
+		if runtime, ok := functions["runtime"]; ok {
+			if runtime_, ok := runtime.(*goja.Runtime); ok {
+				if construct, ok := functions["construct"]; ok {
+					if self.Construct, err = NewRepresentationFunc(construct, runtime_); err != nil {
+						return nil, err
+					}
+				}
+				if describe, ok := functions["describe"]; ok {
+					if self.Describe, err = NewRepresentationFunc(describe, runtime_); err != nil {
+						return nil, err
+					}
+				}
+				if present, ok := functions["present"]; ok {
+					if self.Present, err = NewRepresentationFunc(present, runtime_); err != nil {
+						return nil, err
+					}
+				}
+			} else {
+				return nil, errors.New("invalid \"runtime\" property in \"functions\"")
+			}
+		} else {
+			return nil, errors.New("no \"runtime\" property in \"functions\"")
 		}
 	}
 
 	if construct := node.Get("construct").Data; construct != nil {
-		self.Construct = NewRepresentationFunc(construct.(*js.Hook))
+		if runtime, ok := node.Get("runtime").Data.(*goja.Runtime); ok {
+			if self.Construct, err = NewRepresentationFunc(construct, runtime); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, errors.New("no valid \"runtime\" property")
+		}
 	}
 	if describe := node.Get("describe").Data; describe != nil {
-		self.Describe = NewRepresentationFunc(describe.(*js.Hook))
+		if runtime, ok := node.Get("runtime").Data.(*goja.Runtime); ok {
+			if self.Describe, err = NewRepresentationFunc(describe, runtime); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, errors.New("no valid \"runtime\" property")
+		}
 	}
 	if present := node.Get("present").Data; present != nil {
-		self.Present = NewRepresentationFunc(present.(*js.Hook))
+		if runtime, ok := node.Get("runtime").Data.(*goja.Runtime); ok {
+			if self.Present, err = NewRepresentationFunc(present, runtime); err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, errors.New("no valid \"runtime\" property")
+		}
 	}
 
 	return &self, nil

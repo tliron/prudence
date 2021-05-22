@@ -3,11 +3,12 @@ package rest
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
+	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
@@ -143,7 +144,7 @@ func (self *Context) Copy() *Context {
 	}
 }
 
-func (self *Context) Embed(hook *js.Hook) {
+func (self *Context) Embed(present interface{}, runtime *goja.Runtime) error {
 	// Try cache
 	if self.CacheKey != "" {
 		if cacheKey, cacheEntry, ok := CacheLoad(self); ok {
@@ -157,7 +158,7 @@ func (self *Context) Embed(hook *js.Hook) {
 				if changed {
 					CacheUpdate(cacheKey, cacheEntry)
 				}
-				return
+				return nil
 			}
 		}
 	}
@@ -166,7 +167,14 @@ func (self *Context) Embed(hook *js.Hook) {
 	writer := self.writer
 	self.writer = buffer
 
-	hook.Call(nil, self)
+	if call, ok := present.(func(goja.FunctionCall) goja.Value); ok {
+		call(goja.FunctionCall{
+			This:      nil,
+			Arguments: []goja.Value{runtime.ToValue(self)},
+		})
+	} else {
+		return fmt.Errorf("not a function: %T", present)
+	}
 
 	self.EndSignature()
 
@@ -179,4 +187,6 @@ func (self *Context) Embed(hook *js.Hook) {
 
 	self.writer = writer
 	self.Write(body)
+
+	return nil
 }

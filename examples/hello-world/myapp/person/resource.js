@@ -7,12 +7,12 @@ prudence.create({
         name: 'main',
         paths: '{name}',
         representations: { // can also be a list
-            // A single JSON representation with a seperate describer and presenter
-            hooks: prudence.hooks('main/json.js')
-            // Can also set hooks individually, like so:
-            //construct: prudence.hook('main/json.js', 'construct'),
-            //describe: prudence.hook('main/json.js', 'describe'),
-            //present: prudence.hook('main/json.js', 'present')
+            // A single JSON representation with all functions in a separate file
+            functions: prudence.require('main/json.js'),
+            // We can also set functions individually, like so:
+            // runtime: runtime,
+            // construct: prudence.require('main/json.js').construct,
+            // present: function(context) { context.write('example'); }
         }
     }, {
         // Chores facet
@@ -22,10 +22,10 @@ prudence.create({
             // HTML representation using JST
             contentTypes: 'text/html', // can also be a list
             languages: [ 'en', 'he' ], // can be a list or a single language
-            hooks: prudence.hooks('chores/html.jst')
+            functions: prudence.require('chores/html.jst')
         }, {
-            // Default text representation
-            hooks: prudence.hooks('chores/text.js')
+            // Default representation (JSON)
+            functions: prudence.require('chores/json.js')
         }]
     }]
 });

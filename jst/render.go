@@ -77,7 +77,7 @@ func RenderJST(content string, getRelativeURL platform.GetRelativeURL) (string, 
 	context.Builder.WriteString("}\n")
 
 	string_ := context.Builder.String()
-	log.Debugf("%s", string_)
+	//log.Debugf("%s", string_)
 
 	return string_, nil
 }

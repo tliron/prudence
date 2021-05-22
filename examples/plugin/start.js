@@ -6,7 +6,7 @@ const resource = prudence.create({
     type: 'resource',
     facets: {
         representations: {
-            hooks: prudence.hooks('count.js')
+            functions: prudence.require('count.js')
         }
     }
 });

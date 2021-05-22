@@ -1,5 +1,5 @@
 
-// A badger database
+// A Badger database
 // See: https://pkg.go.dev/github.com/dgraph-io/badger/v3#section-documentation
 const db = myplugin.badger(prudence.here() + '/db');
 

@@ -1,7 +1,6 @@
 package js
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 
@@ -34,48 +33,6 @@ func (self *PrudenceAPI) Run(url string) (interface{}, error) {
 	}
 }
 
-// Returns a hook to one function (cached)
-func (self *PrudenceAPI) Hook(url string, name string) (*js.Hook, error) {
-	if url_, err := self.GetRelativeURL(url); err == nil {
-		if runtime, err := self.cachedRun(url_); err == nil {
-			if name == "" {
-				name = "hook"
-			}
-			value := runtime.Get(name)
-			if callable, ok := goja.AssertFunction(value); ok {
-				return js.NewHook(callable, runtime), nil
-			} else {
-				return nil, fmt.Errorf("no \"%s\" function", name)
-			}
-		} else {
-			return nil, err
-		}
-	} else {
-		return nil, err
-	}
-}
-
-// Returns hooks for all functions in the global object (cached)
-func (self *PrudenceAPI) Hooks(url string) (map[string]*js.Hook, error) {
-	if url_, err := self.GetRelativeURL(url); err == nil {
-		if runtime, err := self.cachedRun(url_); err == nil {
-			hooks := make(map[string]*js.Hook)
-			global := runtime.GlobalObject()
-			for _, key := range global.Keys() {
-				value := global.Get(key)
-				if callable, ok := goja.AssertFunction(value); ok {
-					hooks[key] = js.NewHook(callable, runtime)
-				}
-			}
-			return hooks, nil
-		} else {
-			return nil, err
-		}
-	} else {
-		return nil, err
-	}
-}
-
 //var registry = require.NewRegistry(require.WithGlobalFolders("npm"))
 
 func (self *PrudenceAPI) newRuntime() *goja.Runtime {
@@ -83,8 +40,8 @@ func (self *PrudenceAPI) newRuntime() *goja.Runtime {
 	//registry.Enable(runtime)
 	runtime.SetFieldNameMapper(js.CamelCaseMapper)
 
+	runtime.Set("runtime", runtime)
 	runtime.Set("prudence", self)
-	runtime.Set("require", self.Require)
 
 	platform.OnAPIs(func(name string, api interface{}) bool {
 		runtime.Set(name, api)

@@ -1,8 +1,12 @@
 <%$%>
 
-<% for (var i = 0; i < 10; i++) { %>
+<% 
+const backend = prudence.require('../../backend.js');
+const chores = backend.getData(context.variables.name).chores;
+for (var i = 0; i < chores.length; i++) {
+%>
     <p>
-        Chore: <%= i %>
+        Chore: <%= chores[i] %>
     </p>
 <% } %>
 

@@ -117,7 +117,7 @@ code:
         facets: {
             paths: '{name}',
             representations: {
-                hooks: prudence.hooks('json.js')
+                functions: prudence.require('json.js')
             }
         }
     });
@@ -139,20 +139,21 @@ Now let's create the representation, `myapp/person/json.js`:
         context.contentType = 'application/json';
     }
 
-The name of this function, "present", is required by Prudence. The call to "prudence.hooks"
-in `resource.js` will run this file and specifically "hook" this function to the
-representation. (There are optional hooks available in addition to "present", which we'll get
-to later on.)
+The name of this function, "present", is required by Prudence. The "functions" property in
+the representation in `resource.js` uses a call to "prudence.require" to import it (and any
+other hooks) from another file. (We'll get to the other optional hooks later on in this guide.)
 
 You might be wondering at this point what APIs are available for your JavaScript code. Can
-you use libraries downloaded from [npm](https://www.npmjs.com/)? The answer is: a qualified no.
+you use libraries downloaded from [npm](https://www.npmjs.com/)? The answer is a qualified no.
 Most of those libraries are designed to work with [Node.js](https://nodejs.org/), which is a
 JavaScipt environment that is very different from Prudence's. And some are designed for web
 browsers, which are different yet again. Generic JavaScript code will work, but anything that
 relies on platform-specific APIs will not.
 
 Prudence provides you with an alternative solution: the ability to use almost any Go library
-as-is in JavaScript. To learn how to do so see the [extension guide](platform/README.md).
+as-is in JavaScript. There's a growing ecosystem of great Go libraries that can help you write
+your application, including database drivers. To learn how to use them see the
+[extension guide](platform/README.md).
 
 Now, edit your `myapp/router.js` with this code:
 
@@ -215,19 +216,11 @@ Our application is more complex now, so let's follow a request one step at a tim
 
 Some more detail:
 
-* The "prudence.hooks" function runs a JavaScript file and returns an object of all the
-  global functions wrapped as "hooks". A "hook" allows Prudence's Go code to call the
-  JavaScript function.
-* A variant, "prudence.hook", is similar but returns just one named function as a hook.
-* Note that "prudence.hooks" and "prudence.hook" cache their results, and thus never run
-  the same JavaScript file more than once per run of Prudence. This is in order to allow
-  the exact same hook to be reused mutiple times in your Prudence program. This is different
-  from "prudence.run", which will re-run the JavaScript code every time it is called on the
-  same file.
-* Thus there's also "prudence.require", which works like Node.js's "require" (and you can
-  indeed use "require" as a shortcut to "prudence.require"). Like "prudence.hooks", this
-  function will run the JavaScript code only once and return a cached object of all the
-  globals. This makes "require" useful for loading reusable libraries.
+* The "prudence.require" function runs a JavaScript file and returns the global object.
+  The "functions" property in the representation will then look for specifically-named
+  hooks. Note that unlike "prudence.require" caches its results, so that the code will
+  only ever be run once in your program's lifetime. This is different from "prudence.run"
+  which will always run the file when called.
 
 OK, so we know how to create a dynamic resource. But there has to be an easier way to
 generate HTML other than JavaScript calls to "context.write", right?
@@ -250,9 +243,9 @@ Let's start simple and add another representation to our `resource.js`:
             paths: '{name}',
             representations: [{
                 contentTypes: 'text/html',
-                hooks: prudence.hooks('html.jst')
+                functions: prudence.require('html.jst')
             }, {
-                hooks: prudence.hooks('json.js')
+                functions: prudence.require('json.js')
             }]
         }
     });
@@ -288,7 +281,7 @@ see the [JST documentation](jst/README.md). It is even possible to extend JST
 with your own custom sugar.
 
 Behind the scenes the the entire JST file is translated into JavaScript code and
-wrapped in a "present" function, allowing it to be used with "prudence.hooks" in the same
+wrapped in a "present" function, allowing it to be used with "prudence.require" in the same
 way we hooked `json.js`.
 
 If you check the [`http://localhost:8080/person/linus`](http://localhost:8080/person/linus)
@@ -296,6 +289,12 @@ URL in your web browser, it will indeed default to this HTML representation, bec
 what web browsers perfer. In the CLI you need to explicitly ask for HTML:
 
     curl localhost:8080/person/linus -v --header 'Accept: text/html'
+
+
+Rendering
+---------
+
+TODO
 
 This covers all the basics! Let's move on to more advanced functionality.
 
@@ -387,9 +386,8 @@ otherwise you might be mixing cache entries from other parts of the application,
 indeed from other applications using the same cache backend.
 
 You might be wondering how we can add a "construct" hook when using a JST file, which
-only has a "present" function. We can simply use the "prudence.hook" function instead
-of "prudence.hooks" and use multiple files. `resource.js` could look something like
-this:
+only has a "present" function. Instead of the "functions" property we can use properties
+named for the individual hooks. `resource.js` could look something like this:
 
     prudence.create({
         type: 'resource',
@@ -397,11 +395,21 @@ this:
             paths: '{name}',
             representations: {
                 contentTypes: 'text/html',
-                present: prudence.hook('html.jst', 'present'),
-                construct: prudence.hook('html.js', 'construct')
+                construct: prudence.require('html.js').construct,
+                present: prudence.require('html.jst').present,
+                runtime: runtime
             }
         }
     });
+
+Note that when specifying individual hooks we also have to set the "runtime" property
+to the current runtime: `runtime: runtime`. This allows Prudence to properly call
+JavaScript code. (You don't need to set "runtime" when using the "functions" property.)
+
+Also note that you don't have to use "prudence.require" and even an inline function would
+work:
+
+    present: function(context) { context.write('Hello'); }
 
 
 Client-Side Caching
@@ -423,12 +431,15 @@ add a "describe" function to our `json.js`:
         context.signature = prudence.hash(context.cacheKey);
     }
 
-The main responsibiliy of the "describe" hook is to set the signature. This signature
-is sent to the client as an
+The main responsibiliy of the "describe" hook is to set either "signature" and/or
+"lastModified". The signature is sent to the client as an
 [ETag](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag) during normal
 requests, and compared against the signature the client already has during conditional
-requests. The reason this is separated from "present" is exactly because we might not
-have to call "present" at all in case the signatures match.
+requests. The reason Prudence has separate hooks for "describe" from "present" is exactly
+because we might not need to call "present" at all in case the signatures match. Thus,
+for this to be a meaningful optimization "describe" must be *much less expensive* than
+"present". This can be challenging and even impossible to achieve in some cases. It all
+depends on whether there is a cheap way to get a signature from your data backend.
 
 Note that clients normally cache a resource with the *complete URL* as the key, which
 includes all the `?` query parameters. This means that any change to a query parameter
@@ -441,13 +452,9 @@ Also note that there is no time limit on client-side caching. If the signature n
 changes, then conditional requests (from those clients who have the representation
 cached) will always return a 304: Not Modified.
 
-The way to succeed here, of course, is to have a cheap way to get these signatures.
-In this simple example we are reusing our (server-side) cache key that we created in
+In this trivial example we are reusing our (server-side) cache key that we created in
 in the "construct" function. We can do this only because we know for sure that the
-resulting representation depends entirely and only on that "name" variable. However, if
-we were accessing an external data source, e.g. a database, for more data about this
-person that we would need in order to generate the presentation, the the "name" itself
-would not be enough.
+resulting representation depends entirely and only on that "name" variable.
 
 Now that we covered all three hooks, let's follow a request through them:
 
@@ -472,8 +479,3 @@ Now that we covered all three hooks, let's follow a request through them:
 If you've followed the above carefully you can see that in "present" you can always
 assume that "describe" was previously called and that in "describe" you can always assume
 that "construct" was previously called.
-
-
-
-
-TODO last modified

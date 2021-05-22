@@ -21,11 +21,11 @@ func EncodeEmbed(context *platform.Context, code string) bool {
 	context.Builder.WriteString(strings.Trim(code, " \n"))
 	context.Builder.WriteString("];\n")
 
-	context.Builder.WriteString("const __hook")
+	context.Builder.WriteString("const __present")
 	context.Builder.WriteString(suffix)
-	context.Builder.WriteString(" = prudence.hook(__args")
+	context.Builder.WriteString(" = prudence.require(__args")
 	context.Builder.WriteString(suffix)
-	context.Builder.WriteString("[0], 'present');\n")
+	context.Builder.WriteString("[0]).present;\n")
 
 	context.Builder.WriteString("const __context")
 	context.Builder.WriteString(suffix)
@@ -41,9 +41,9 @@ func EncodeEmbed(context *platform.Context, code string) bool {
 
 	context.Builder.WriteString("__context")
 	context.Builder.WriteString(suffix)
-	context.Builder.WriteString(".embed(__hook")
+	context.Builder.WriteString(".embed(__present")
 	context.Builder.WriteString(suffix)
-	context.Builder.WriteString(");\n")
+	context.Builder.WriteString(", runtime);\n")
 
 	return false
 }

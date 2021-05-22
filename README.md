@@ -31,7 +31,7 @@ Highlights
   stores such as [Memcached](https://memcached.org/), [Redis](https://redis.io/), etc.
 * [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you
   to create custom builds of Prudence bundled with the plugins, modules, and APIs required by your
-  applications. Even when extended, Prudence is still distributed as a single, compact executable
-  file.
+  applications. Even when extended in this way, Prudence is still distributed as a single, compact
+  executable file.
 * Builds on [fasthttp](https://github.com/valyala/fasthttp) for high-performance handling of HTTP
   requests, including serving static files.
