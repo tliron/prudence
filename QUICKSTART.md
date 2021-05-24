@@ -1,7 +1,7 @@
 Prudence: Quickstart Guide
 ==========================
 
-Let's learn by example and make a web application using Prudence.
+Let's learn by example and build a web application using Prudence.
 
 
 The Server
@@ -17,7 +17,7 @@ environment. So, let's create a `start.js` file with the simplest code possible:
 
 And then run it from a terminal:
 
-    prudence run start.js
+    prudence run start.js -v
 
 If there were no errors then you should see a log message about the server being up and
 running. The command will now block until you kill it, e.g. by pressing CTRL+C.
@@ -294,9 +294,29 @@ what web browsers perfer. In the CLI you need to explicitly ask for HTML:
 Rendering
 ---------
 
-TODO
+Prudence allows for pluggable "renderers" that can transform text in various ways, including
+rendering markup languages, such as
+[Markdown](https://daringfireball.net/projects/markdown/).
 
-This covers all the basics! Let's move on to more advanced functionality.
+Programmatic use of "prudence.render":
+
+    var content = prudence.load('readme.md');
+    content = prudence.render(content, 'markdown');
+    context.write(content);
+
+In JST you can do the same with the "include" sugar, `<%+`:
+
+    <%+ 'readme.md', 'markdown' %>
+
+Or just render an area of the JST with the "render" sugar, `<%^`:
+
+    <%^ 'minhtml' %>
+      <div>
+        Minimize!
+      </div>
+    <%^^%>
+
+This covers all the basics. Let's move on to more advanced Prudence functionality.
 
 
 Server-Side Caching

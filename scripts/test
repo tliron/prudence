@@ -4,4 +4,6 @@ set -e
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
-curl localhost:8080/person/Tal/chores?scope=all --header 'Accept: text/html' --header 'Accept-Encoding: gzip' | gunzip
+curl localhost:8080/person/Tal/chores?scope=all \
+    --header 'Accept: text/html' \
+    --header 'Accept-Encoding: gzip' | gunzip

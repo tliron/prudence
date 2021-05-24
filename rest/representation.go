@@ -24,6 +24,7 @@ func NewRepresentationFunc(function interface{}, runtime *goja.Runtime) (Represe
 				This:      nil,
 				Arguments: []goja.Value{runtime.ToValue(context)},
 			})
+			// TODO: exceptions??
 			return nil
 		}, nil
 	} else {
@@ -39,28 +40,24 @@ type Representation struct {
 	Construct RepresentionFunc
 	Describe  RepresentionFunc
 	Present   RepresentionFunc
+	Erase     RepresentionFunc
+	Change    RepresentionFunc
 }
 
 func CreateRepresentation(node *ard.Node) (*Representation, error) {
 	var self Representation
-	var err error
+
+	var get func(name string) (RepresentionFunc, error)
 
 	if functions, ok := node.Get("functions").StringMap(false); ok {
+		// "functions" property
 		if runtime, ok := functions["runtime"]; ok {
 			if runtime_, ok := runtime.(*goja.Runtime); ok {
-				if construct, ok := functions["construct"]; ok {
-					if self.Construct, err = NewRepresentationFunc(construct, runtime_); err != nil {
-						return nil, err
-					}
-				}
-				if describe, ok := functions["describe"]; ok {
-					if self.Describe, err = NewRepresentationFunc(describe, runtime_); err != nil {
-						return nil, err
-					}
-				}
-				if present, ok := functions["present"]; ok {
-					if self.Present, err = NewRepresentationFunc(present, runtime_); err != nil {
-						return nil, err
+				get = func(name string) (RepresentionFunc, error) {
+					if f, ok := functions[name]; ok {
+						return NewRepresentationFunc(f, runtime_)
+					} else {
+						return nil, nil
 					}
 				}
 			} else {
@@ -69,34 +66,36 @@ func CreateRepresentation(node *ard.Node) (*Representation, error) {
 		} else {
 			return nil, errors.New("no \"runtime\" property in \"functions\"")
 		}
+	} else {
+		// Individual function properties
+		get = func(name string) (RepresentionFunc, error) {
+			if f := node.Get(name).Data; f != nil {
+				if runtime, ok := node.Get("runtime").Data.(*goja.Runtime); ok {
+					return NewRepresentationFunc(f, runtime)
+				} else {
+					return nil, errors.New("no valid \"runtime\" property")
+				}
+			} else {
+				return nil, nil
+			}
+		}
 	}
 
-	if construct := node.Get("construct").Data; construct != nil {
-		if runtime, ok := node.Get("runtime").Data.(*goja.Runtime); ok {
-			if self.Construct, err = NewRepresentationFunc(construct, runtime); err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, errors.New("no valid \"runtime\" property")
-		}
+	var err error
+	if self.Construct, err = get("construct"); err != nil {
+		return nil, err
 	}
-	if describe := node.Get("describe").Data; describe != nil {
-		if runtime, ok := node.Get("runtime").Data.(*goja.Runtime); ok {
-			if self.Describe, err = NewRepresentationFunc(describe, runtime); err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, errors.New("no valid \"runtime\" property")
-		}
+	if self.Describe, err = get("describe"); err != nil {
+		return nil, err
 	}
-	if present := node.Get("present").Data; present != nil {
-		if runtime, ok := node.Get("runtime").Data.(*goja.Runtime); ok {
-			if self.Present, err = NewRepresentationFunc(present, runtime); err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, errors.New("no valid \"runtime\" property")
-		}
+	if self.Present, err = get("present"); err != nil {
+		return nil, err
+	}
+	if self.Erase, err = get("erase"); err != nil {
+		return nil, err
+	}
+	if self.Change, err = get("change"); err != nil {
+		return nil, err
 	}
 
 	return &self, nil
@@ -113,6 +112,24 @@ func (self *Representation) Handle(context *Context) bool {
 		if err := self.Construct(context); err != nil {
 			context.Error(err)
 			return true
+		}
+	}
+
+	if context.context.IsDelete() {
+		// Erase
+		if self.Erase != nil {
+			if err := self.Erase(context); err != nil {
+				context.Error(err)
+				return true
+			}
+		}
+	} else if context.context.IsPut() {
+		// Change
+		if self.Change != nil {
+			if err := self.Change(context); err != nil {
+				context.Error(err)
+				return true
+			}
 		}
 	}
 

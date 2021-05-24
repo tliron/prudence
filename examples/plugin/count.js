@@ -1,7 +1,7 @@
 
 // A Badger database
 // See: https://pkg.go.dev/github.com/dgraph-io/badger/v3#section-documentation
-const db = myplugin.badger(prudence.here() + '/db');
+const db = myplugin.badger(prudence.joinFilePath(prudence.directory(), 'db'));
 
 function present(context) {
     var counter;
@@ -21,5 +21,6 @@ function present(context) {
         return null;
     });
 
-    context.write('Counter is ' + counter + '\n');
+    context.contentType = 'application/json'
+    context.write('{"counter": ' + counter + '}\n');
 }

@@ -26,7 +26,15 @@ function describe(context) {
 // Safely assume that "describe" has already been called (if it exists)
 function present(context) {
     context.log.info('present');
-    prudence.encode(backend.getData(context.variables.name), 'json', '  ', context);
+    prudence.encode(backend.getPerson(context.variables.name), 'json', '  ', context);
     // The above is equivalent to this:
-    //context.write(JSON.stringify(backend.getData(context), null, '  ')+'\n');
+    //context.write(JSON.stringify(backend.getPerson(context), null, '  ')+'\n');
+}
+
+function erase(context) {
+    context.log.info('erase');
+}
+
+function change(context) {
+    context.log.info('change');
 }

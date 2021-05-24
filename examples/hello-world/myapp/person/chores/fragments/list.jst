@@ -2,7 +2,7 @@
 
 <% 
 const backend = prudence.require('../../backend.js');
-const chores = backend.getData(context.variables.name).chores;
+const chores = backend.getPerson(context.variables.name).chores;
 for (var i = 0; i < chores.length; i++) {
 %>
     <p>
