@@ -130,6 +130,10 @@ func (self *Context) Error(err error) {
 	self.Context.SetStatusCode(fasthttp.StatusInternalServerError)
 }
 
+func (self *Context) Request() string {
+	return util.BytesToString(self.Context.Request.Body())
+}
+
 // io.Writer
 func (self *Context) Write(b []byte) (int, error) {
 	return self.writer.Write(b)

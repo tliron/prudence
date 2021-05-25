@@ -130,22 +130,24 @@ func (self *Representation) Handle(context *Context) bool {
 	}
 
 	// Try cache
-	if context.CacheKey != "" {
-		if cacheKey, cacheEntry, ok := CacheLoad(context); ok {
-			if context.Context.IsHead() {
-				// HEAD doesn't care if the cacheEntry doesn't have a body
-				if changed := CacheEntryToContext(cacheEntry, context); changed {
-					CacheUpdate(cacheKey, cacheEntry)
-				}
-				return !NotFound(context.Context)
-			} else {
-				if len(cacheEntry.Body) == 0 {
-					context.Log.Debugf("ignoring cache with no body: %s", context.Path)
-				} else {
+	if context.Context.IsHead() || context.Context.IsGet() {
+		if context.CacheKey != "" {
+			if cacheKey, cacheEntry, ok := CacheLoad(context); ok {
+				if context.Context.IsHead() {
+					// HEAD doesn't care if the cacheEntry doesn't have a body
 					if changed := CacheEntryToContext(cacheEntry, context); changed {
 						CacheUpdate(cacheKey, cacheEntry)
 					}
 					return !NotFound(context.Context)
+				} else {
+					if len(cacheEntry.Body) == 0 {
+						context.Log.Debugf("ignoring cache with no body: %s", context.Path)
+					} else {
+						if changed := CacheEntryToContext(cacheEntry, context); changed {
+							CacheUpdate(cacheKey, cacheEntry)
+						}
+						return !NotFound(context.Context)
+					}
 				}
 			}
 		}
@@ -164,7 +166,7 @@ func (self *Representation) Handle(context *Context) bool {
 		}
 	}
 
-	if !context.Context.IsHead() {
+	if context.Context.IsGet() {
 		// Encoding
 		SetBestEncodeWriter(context)
 
@@ -253,7 +255,7 @@ func (self *Representation) Handle(context *Context) bool {
 	}
 
 	// To cache
-	if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
+	if (context.CacheDuration > 0.0) && (context.CacheKey != "") && (context.Context.IsHead() || context.Context.IsGet()) {
 		CacheStoreContext(context)
 	}
 

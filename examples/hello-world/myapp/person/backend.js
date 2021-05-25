@@ -21,7 +21,7 @@ function getPerson(name) {
         if (!data) {
             data = {
                 name: name,
-                chores: [ 'cleaning', 'shopping', 'cooking' ]
+                chores: [ 'sleeping' ]
             };
             db[name] = data;
         }

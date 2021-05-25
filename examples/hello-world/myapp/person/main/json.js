@@ -30,11 +30,3 @@ function present(context) {
     // The above is equivalent to this:
     //context.write(JSON.stringify(backend.getPerson(context), null, '  ')+'\n');
 }
-
-function erase(context) {
-    context.log.info('erase');
-}
-
-function change(context) {
-    context.log.info('change');
-}
