@@ -16,10 +16,10 @@ func EncodeSignature(context *platform.Context, code string) bool {
 
 	if code == "$" {
 		// End signature
-		context.Builder.WriteString("context.endSignature()\n")
+		context.Builder.WriteString("context.endSignature();\n")
 	} else {
 		// Start signature
-		context.Builder.WriteString("context.startSignature()\n")
+		context.Builder.WriteString("context.startSignature();\n")
 		if weak := strings.Trim(code, " \n"); weak != "" {
 			context.Builder.WriteString("if (")
 			context.Builder.WriteString(weak)

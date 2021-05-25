@@ -5,9 +5,10 @@ import (
 	"strings"
 )
 
-const PATH_VARIABLE = "__path"
-
-const PATH_VARIABLE_RE = `(?P<` + PATH_VARIABLE + `>.*)`
+const (
+	PATH_VARIABLE    = "__path"
+	PATH_VARIABLE_RE = `(?P<` + PATH_VARIABLE + `>.*)`
+)
 
 //
 // PathTemplate

@@ -277,8 +277,8 @@ Now, let's create `myapp/person/html.jst`
 As you can see, we embed arbitrary JavaScript code using the `<%` and `%>` delimiters.
 The first character right after the opening delimiter is used for sugar. In this case
 the `<%=` sugar will simply write the JavaScript expression in-place. For more JST sugar
-see the [JST documentation](jst/README.md). It is even possible to extend JST
-with your own custom sugar.
+see the [JST documentation](jst/README.md). It is even possible to extend JST with your
+own custom sugar.
 
 Behind the scenes the the entire JST file is translated into JavaScript code and
 wrapped in a "present" function, allowing it to be used with "prudence.require" in the same
@@ -452,7 +452,7 @@ add a "describe" function to our `json.js`:
     }
 
 The main responsibiliy of the "describe" hook is to set either "signature" and/or
-"lastModified". The signature is sent to the client as an
+"timestamp". The signature is sent to the client as an
 [ETag](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag) during normal
 requests, and compared against the signature the client already has during conditional
 requests. The reason Prudence has separate hooks for "describe" from "present" is exactly

@@ -18,17 +18,13 @@ import (
 type RepresentionFunc func(context *Context) error
 
 func NewRepresentationFunc(function interface{}, runtime *goja.Runtime) (RepresentionFunc, error) {
-	if call, ok := function.(func(goja.FunctionCall) goja.Value); ok {
+	if function_, ok := function.(JavaScriptFunc); ok {
 		return func(context *Context) error {
-			call(goja.FunctionCall{
-				This:      nil,
-				Arguments: []goja.Value{runtime.ToValue(context)},
-			})
-			// TODO: exceptions??
+			CallJavaScript(runtime, function_, context)
 			return nil
 		}, nil
 	} else {
-		return nil, fmt.Errorf("not a function: %T", function)
+		return nil, fmt.Errorf("not a JavaScript function: %T", function)
 	}
 }
 
@@ -104,7 +100,7 @@ func CreateRepresentation(node *ard.Node) (*Representation, error) {
 // Handler interface
 // HandleFunc signature
 func (self *Representation) Handle(context *Context) bool {
-	context.CacheKey = context.context.URI().String()
+	context.CacheKey = context.Context.URI().String()
 	context.CharSet = "utf-8"
 
 	// Construct
@@ -115,7 +111,7 @@ func (self *Representation) Handle(context *Context) bool {
 		}
 	}
 
-	if context.context.IsDelete() {
+	if context.Context.IsDelete() {
 		// Erase
 		if self.Erase != nil {
 			if err := self.Erase(context); err != nil {
@@ -123,7 +119,7 @@ func (self *Representation) Handle(context *Context) bool {
 				return true
 			}
 		}
-	} else if context.context.IsPut() {
+	} else if context.Context.IsPut() {
 		// Change
 		if self.Change != nil {
 			if err := self.Change(context); err != nil {
@@ -136,12 +132,12 @@ func (self *Representation) Handle(context *Context) bool {
 	// Try cache
 	if context.CacheKey != "" {
 		if cacheKey, cacheEntry, ok := CacheLoad(context); ok {
-			if context.context.IsHead() {
+			if context.Context.IsHead() {
 				// HEAD doesn't care if the cacheEntry doesn't have a body
 				if changed := CacheEntryToContext(cacheEntry, context); changed {
 					CacheUpdate(cacheKey, cacheEntry)
 				}
-				return !NotFound(context.context)
+				return !NotFound(context.Context)
 			} else {
 				if len(cacheEntry.Body) == 0 {
 					context.Log.Debugf("ignoring cache with no body: %s", context.Path)
@@ -149,13 +145,13 @@ func (self *Representation) Handle(context *Context) bool {
 					if changed := CacheEntryToContext(cacheEntry, context); changed {
 						CacheUpdate(cacheKey, cacheEntry)
 					}
-					return !NotFound(context.context)
+					return !NotFound(context.Context)
 				}
 			}
 		}
 	}
 
-	if context.context.IsHead() {
+	if context.Context.IsHead() {
 		// Avoid wasting resources on writing for HEAD
 		context.writer = io.Discard
 	}
@@ -168,7 +164,7 @@ func (self *Representation) Handle(context *Context) bool {
 		}
 	}
 
-	if !context.context.IsHead() {
+	if !context.Context.IsHead() {
 		// Encoding
 		SetBestEncodeWriter(context)
 
@@ -181,8 +177,8 @@ func (self *Representation) Handle(context *Context) bool {
 		}
 	}
 
-	if context.LastModified.IsZero() {
-		context.LastModified = time.Now()
+	if context.Timestamp.IsZero() {
+		context.Timestamp = time.Now()
 	}
 
 	context.EndSignature()
@@ -192,7 +188,7 @@ func (self *Representation) Handle(context *Context) bool {
 	if context.CacheDuration < 0.0 {
 
 		// Don't store and *also* invalidate the existing client cache
-		AddCacheControl(context.context, "no-store,max-age=0")
+		AddCacheControl(context.Context, "no-store,max-age=0")
 
 	} else if context.CacheDuration > 0.0 {
 
@@ -201,7 +197,7 @@ func (self *Representation) Handle(context *Context) bool {
 		// Cache-Control
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
 		maxAge := int(context.CacheDuration)
-		AddCacheControl(context.context, fmt.Sprintf("max-age=%d", maxAge))
+		AddCacheControl(context.Context, fmt.Sprintf("max-age=%d", maxAge))
 
 	} else {
 
@@ -210,15 +206,15 @@ func (self *Representation) Handle(context *Context) bool {
 		// If-None-Match
 		// (Has precedence over If-Modified-Since)
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
-		if IfNoneMatch(context.context, eTag) {
-			context.context.NotModified()
+		if IfNoneMatch(context.Context, eTag) {
+			context.Context.NotModified()
 			return true
 		}
 
 		// If-Modified-Since
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
-		if !context.context.IfModifiedSince(context.LastModified) {
-			context.context.NotModified()
+		if !context.Context.IfModifiedSince(context.Timestamp) {
+			context.Context.NotModified()
 			return true
 		}
 
@@ -228,20 +224,20 @@ func (self *Representation) Handle(context *Context) bool {
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
 	if context.ContentType != "" {
 		if context.CharSet != "" {
-			context.context.SetContentType(context.ContentType + ";charset=" + context.CharSet)
+			context.Context.SetContentType(context.ContentType + ";charset=" + context.CharSet)
 		} else {
-			context.context.SetContentType(context.ContentType)
+			context.Context.SetContentType(context.ContentType)
 		}
 	}
 
 	// Last-Modified
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
-	context.context.Response.Header.SetLastModified(context.LastModified)
+	context.Context.Response.Header.SetLastModified(context.Timestamp)
 
 	// ETag
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
 	if eTag != "" {
-		AddETag(context.context, eTag)
+		AddETag(context.Context, eTag)
 	}
 
 	// Unwrap writers
@@ -261,7 +257,7 @@ func (self *Representation) Handle(context *Context) bool {
 		CacheStoreContext(context)
 	}
 
-	return !NotFound(context.context)
+	return !NotFound(context.Context)
 }
 
 //
@@ -276,19 +272,22 @@ func CreateRepresentations(config ard.Value) (Representations, error) {
 	representations := platform.AsConfigList(config)
 	for _, representation := range representations {
 		representation_ := ard.NewNode(representation)
-		representation__, _ := CreateRepresentation(representation_)
-		contentTypes := platform.AsStringList(representation_.Get("contentTypes").Data)
-		// TODO:
-		//charSets := asStringList(representation_.Get("charSets").Data)
-		//languages := asStringList(representation_.Get("languages").Data)
+		if representation__, err := CreateRepresentation(representation_); err == nil {
+			contentTypes := platform.AsStringList(representation_.Get("contentTypes").Data)
+			// TODO:
+			//charSets := asStringList(representation_.Get("charSets").Data)
+			//languages := asStringList(representation_.Get("languages").Data)
 
-		if len(contentTypes) == 0 {
-			// Default representation
-			self[""] = representation__
-		} else {
-			for _, contentType := range contentTypes {
-				self[contentType] = representation__
+			if len(contentTypes) == 0 {
+				// Default representation
+				self[""] = representation__
+			} else {
+				for _, contentType := range contentTypes {
+					self[contentType] = representation__
+				}
 			}
+		} else {
+			return nil, err
 		}
 	}
 

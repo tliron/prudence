@@ -15,7 +15,7 @@ function construct(context) {
 
 // The "describe" hook (optional) optimizes for client-side caching
 // It should be a fast function
-// We can set the signature or lastModified here
+// We can set "signature" or "timestamp" here
 // Safely assume that "construct" has already been called (if it exists)
 function describe(context) {
     context.log.info('describe');

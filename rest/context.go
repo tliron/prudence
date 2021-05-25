@@ -20,6 +20,7 @@ import (
 //
 
 type Context struct {
+	Context     *fasthttp.RequestCtx
 	Log         logging.Logger
 	Variables   ard.StringMap
 	Path        string
@@ -33,21 +34,37 @@ type Context struct {
 	CacheKey      string
 	Signature     string
 	WeakSignature bool
-	LastModified  time.Time
+	Timestamp     time.Time
 
-	context *fasthttp.RequestCtx
-	writer  io.Writer
+	writer io.Writer
 }
 
 func NewContext(context *fasthttp.RequestCtx) *Context {
 	return &Context{
+		Context:   context,
 		Log:       log,
 		Variables: make(ard.StringMap),
 		Path:      util.BytesToString(context.Path()[1:]), // without initial "/"
 		Method:    util.BytesToString(context.Method()),
 		Query:     GetQuery(context),
-		context:   context,
 		writer:    context,
+	}
+}
+
+func (self *Context) StartCapture(name string) {
+	self.writer = NewCaptureWriter(self.writer, name, func(name string, value string) {
+		self.Variables[name] = value
+	})
+}
+
+func (self *Context) EndCapture() error {
+	if captureWriter, ok := self.writer.(*CaptureWriter); ok {
+		self.Log.Debug("end capture")
+		err := captureWriter.Close()
+		self.writer = captureWriter.GetWrappedWriter()
+		return err
+	} else {
+		return errors.New("did not call startCapture()")
 	}
 }
 
@@ -65,7 +82,7 @@ func (self *Context) EndRender() error {
 	if renderWriter, ok := self.writer.(*RenderWriter); ok {
 		self.Log.Debug("end render")
 		err := renderWriter.Close()
-		self.writer = renderWriter.Writer
+		self.writer = renderWriter.GetWrappedWriter()
 		return err
 	} else {
 		return errors.New("did not call startRender()")
@@ -110,7 +127,7 @@ func (self *Context) ETag() string {
 
 func (self *Context) Error(err error) {
 	self.Log.Errorf("%s", err)
-	self.context.SetStatusCode(fasthttp.StatusInternalServerError)
+	self.Context.SetStatusCode(fasthttp.StatusInternalServerError)
 }
 
 // io.Writer
@@ -126,6 +143,7 @@ func (self *Context) Copy() *Context {
 	variables := ard.Copy(self.Variables).(ard.StringMap)
 
 	return &Context{
+		Context:       self.Context,
 		Log:           self.Log,
 		Variables:     variables,
 		Path:          self.Path,
@@ -138,8 +156,7 @@ func (self *Context) Copy() *Context {
 		CacheKey:      self.CacheKey,
 		Signature:     self.Signature,
 		WeakSignature: self.WeakSignature,
-		LastModified:  self.LastModified,
-		context:       self.context,
+		Timestamp:     self.Timestamp,
 		writer:        self.writer,
 	}
 }

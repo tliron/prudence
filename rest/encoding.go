@@ -42,14 +42,14 @@ func NewEncodeWriter(writer io.Writer, type_ platform.EncodingType) *EncodeWrite
 }
 
 func SetBestEncodeWriter(context *Context) {
-	if context.context.Request.Header.HasAcceptEncoding("br") {
-		AddContentEncoding(context.context, "br")
+	if context.Context.Request.Header.HasAcceptEncoding("br") {
+		AddContentEncoding(context.Context, "br")
 		context.writer = NewEncodeWriter(context.writer, platform.EncodingTypeBrotli)
-	} else if context.context.Request.Header.HasAcceptEncoding("gzip") {
-		AddContentEncoding(context.context, "gzip")
+	} else if context.Context.Request.Header.HasAcceptEncoding("gzip") {
+		AddContentEncoding(context.Context, "gzip")
 		context.writer = NewEncodeWriter(context.writer, platform.EncodingTypeGZip)
-	} else if context.context.Request.Header.HasAcceptEncoding("deflate") {
-		AddContentEncoding(context.context, "deflate")
+	} else if context.Context.Request.Header.HasAcceptEncoding("deflate") {
+		AddContentEncoding(context.Context, "deflate")
 		context.writer = NewEncodeWriter(context.writer, platform.EncodingTypeDeflate)
 	}
 }

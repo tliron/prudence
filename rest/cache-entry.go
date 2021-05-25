@@ -11,11 +11,11 @@ import (
 
 func NewCacheEntryFromContext(context *Context) *platform.CacheEntry {
 	body := make(map[platform.EncodingType][]byte)
-	if context.context.Request.Header.IsGet() {
+	if context.Context.Request.Header.IsGet() {
 		// Body exists only in GET
-		contentEncoding := GetContentEncoding(context.context)
+		contentEncoding := GetContentEncoding(context.Context)
 		if encodingType := GetEncodingType(contentEncoding); encodingType != platform.EncodingTypeUnsupported {
-			body[encodingType] = copyBytes(context.context.Response.Body())
+			body[encodingType] = copyBytes(context.Context.Response.Body())
 		} else {
 			log.Warningf("unsupported encoding: %s", contentEncoding)
 		}
@@ -25,7 +25,7 @@ func NewCacheEntryFromContext(context *Context) *platform.CacheEntry {
 	// get the entire header via Header() there is no API to set it correctly
 	// in CacheEntry.Write
 	var headers [][][]byte
-	context.context.Response.Header.VisitAll(func(key []byte, value []byte) {
+	context.Context.Response.Header.VisitAll(func(key []byte, value []byte) {
 		switch string(key) {
 		case fasthttp.HeaderServer, fasthttp.HeaderCacheControl:
 			return
@@ -51,11 +51,11 @@ func NewCacheEntryFromBody(context *Context, encoding platform.EncodingType, bod
 }
 
 func CacheEntryGetBestBody(cacheEntry *platform.CacheEntry, context *Context) ([]byte, bool) {
-	if context.context.Request.Header.HasAcceptEncoding("br") {
+	if context.Context.Request.Header.HasAcceptEncoding("br") {
 		return CacheEntryGetBody(cacheEntry, platform.EncodingTypeBrotli)
-	} else if context.context.Request.Header.HasAcceptEncoding("gzip") {
+	} else if context.Context.Request.Header.HasAcceptEncoding("gzip") {
 		return CacheEntryGetBody(cacheEntry, platform.EncodingTypeGZip)
-	} else if context.context.Request.Header.HasAcceptEncoding("deflate") {
+	} else if context.Context.Request.Header.HasAcceptEncoding("deflate") {
 		return CacheEntryGetBody(cacheEntry, platform.EncodingTypeDeflate)
 	} else {
 		return CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain)
@@ -128,47 +128,47 @@ func CacheEntryGetBody(cacheEntry *platform.CacheEntry, encoding platform.Encodi
 }
 
 func CacheEntryToContext(cacheEntry *platform.CacheEntry, context *Context) bool {
-	context.context.Response.Reset()
+	context.Context.Response.Reset()
 
 	// Annoyingly these were re-enabled by Reset above
-	context.context.Response.Header.DisableNormalizing()
-	context.context.Response.Header.SetNoDefaultContentType(true)
+	context.Context.Response.Header.DisableNormalizing()
+	context.Context.Response.Header.SetNoDefaultContentType(true)
 
 	// Headers
 	for _, header := range cacheEntry.Headers {
-		context.context.Response.Header.AddBytesKV(header[0], header[1])
+		context.Context.Response.Header.AddBytesKV(header[0], header[1])
 	}
 
-	eTag := GetETag(context.context)
+	eTag := GetETag(context.Context)
 
 	// New max-age
 	maxAge := int(cacheEntry.TimeToLive())
-	AddCacheControl(context.context, fmt.Sprintf("max-age=%d", maxAge))
+	AddCacheControl(context.Context, fmt.Sprintf("max-age=%d", maxAge))
 
 	// TODO only for debug mode
-	context.context.Response.Header.Set("X-Prudence-Cached", context.CacheKey)
+	context.Context.Response.Header.Set(CACHED_HEADER, context.CacheKey)
 
 	// Conditional
 
-	if IfNoneMatch(context.context, eTag) {
+	if IfNoneMatch(context.Context, eTag) {
 		// The following headers should have been set:
 		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
-		context.context.NotModified()
+		context.Context.NotModified()
 		return false
 	}
 
-	if !context.context.IfModifiedSince(GetLastModified(context.context)) {
+	if !context.Context.IfModifiedSince(GetLastModified(context.Context)) {
 		// The following headers should have been set:
 		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
-		context.context.NotModified()
+		context.Context.NotModified()
 		return false
 	}
 
 	// Body (not for HEAD)
 
-	if !context.context.IsHead() {
+	if !context.Context.IsHead() {
 		body, changed := CacheEntryGetBestBody(cacheEntry, context)
-		context.context.Response.SetBody(body)
+		context.Context.Response.SetBody(body)
 		return changed
 	}
 

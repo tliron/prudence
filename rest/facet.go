@@ -36,15 +36,21 @@ func CreateFacet(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (
 		Representations: make(Representations),
 	}
 
-	route, _ := CreateRoute(config, getRelativeURL)
-	self.Route = route.(*Route)
+	if route, err := CreateRoute(config, getRelativeURL); err == nil {
+		self.Route = route.(*Route)
+	} else {
+		return nil, err
+	}
 	if self.Handler != nil {
 		return nil, errors.New("cannot set \"handler\" on facet")
 	}
 	self.Handler = self.Handle
 
 	config_ := ard.NewNode(config)
-	self.Representations, _ = CreateRepresentations(config_.Get("representations").Data)
+	var err error
+	if self.Representations, err = CreateRepresentations(config_.Get("representations").Data); err != nil {
+		return nil, err
+	}
 
 	return &self, nil
 }

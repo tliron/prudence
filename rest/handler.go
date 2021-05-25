@@ -1,5 +1,11 @@
 package rest
 
+import (
+	"fmt"
+
+	"github.com/valyala/fasthttp"
+)
+
 //
 // HandleFunc
 //
@@ -19,11 +25,11 @@ type Handler interface {
 	Handle(context *Context) bool
 }
 
-func GetHandleFunc(value interface{}) (HandleFunc, bool) {
+func GetHandleFunc(value interface{}) (HandleFunc, error) {
 	if handler, ok := value.(Handler); ok {
-		return handler.Handle, true
+		return handler.Handle, nil
 	} else {
-		return nil, false
+		return nil, fmt.Errorf("not a handler: %T", value)
 	}
 }
 
@@ -31,13 +37,15 @@ func GetHandleFunc(value interface{}) (HandleFunc, bool) {
 // DefaultNotFound
 //
 
-var DefaultNotFound = &defaultNotFound{}
+var DefaultNotFound defaultNotFound
 
 type defaultNotFound struct{}
 
 // Handler interface
 // HandleFunc signature
-func (self *defaultNotFound) Handle(context *Context) bool {
-	context.context.NotFound()
+func (self defaultNotFound) Handle(context *Context) bool {
+	context.Context.Response.Reset()
+	context.Context.SetStatusCode(fasthttp.StatusNotFound)
+	context.Context.SetBodyString("404 Not Found\n")
 	return true
 }

@@ -26,19 +26,20 @@ Prudence was first conceptualized in 2009. Those were different times. It was or
 intended as a framework for using various interpreted languages, including templating languages,
 to build RESTful pages and APIs. The emphasis was on doing REST right, allowing tight integration
 with server-side and client-side caching. The threading model was highly concurrent, which was
-against the trend of Node.js-style single-threadedness. Prudence 1 was written in Java, around
-the [Restlet framework](https://github.com/restlet/restlet-framework-java). It was LGPL-licensed
-and used svn as its VCS (eventually migrating to git). Do you remember
-[Google Code](https://code.google.com/archive/)? It was pretty cool.
+against the trend of Node.js-style single-threadedness. Prudence 1 was written in Java, fueled by
+[Restlet](https://github.com/restlet/restlet-framework-java) and
+[Hazelcast](https://github.com/hazelcast/hazelcast). It was LGPL-licensed and used svn as its VCS
+(eventually migrating to git). Do you remember [Google Code](https://code.google.com/archive/)? It
+was pretty cool.
 
 The JVM is both complex and complicated, thus much of the work focused not on web technologies
-but in wrestling with the JVM platform and its ecosystem. And it was ambitious: Prudence supported
+but in wrestling with the JVM platform and its ecosystem. And Prudence was ambitious: it supported
 JavaScript, Lua, Clojure, Python, Ruby, and more. The project kept getting bulkier and more
 expansive until 2014, when it became version 2, at which point it comprised several projects:
 Sincerity, Diligence, Succinct, and Scripturian.
 
-The sprawl was unmanageable and had to reach a grinding halt. And so in 2021 the project was
-rebooted as version 3. Code was written from scratch in Go, Apache-licensed, and with a tighter
+The sprawl was unmanageable and development reached a grinding halt. And so in 2021 the project
+was rebooted as version 3. Code was written from scratch in Go, Apache-licensed, and with a tighter
 vision, though the initial concept had not changed. Though considerably more lightweight and easier
 to manage, Prudence 3 is in some ways more powerful and more flexible than it was before. Writing
 code from scratch is a great idea if you can afford the time and effort. And I hope we've all

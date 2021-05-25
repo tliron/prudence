@@ -13,20 +13,19 @@ import (
 //
 
 type RenderWriter struct {
-	Writer         io.Writer
-	Render         platform.RenderFunc
-	GetRelativeURL platform.GetRelativeURL
-
-	buffer *bytes.Buffer
+	writer         io.Writer
+	render         platform.RenderFunc
+	getRelativeURL platform.GetRelativeURL
+	buffer         *bytes.Buffer
 }
 
 func NewRenderWriter(writer io.Writer, renderer string, getRelativeURL platform.GetRelativeURL) (*RenderWriter, error) {
 	if render_, err := platform.GetRenderer(renderer); err == nil {
 		// Note: renderer can be nil
 		return &RenderWriter{
-			Writer:         writer,
-			Render:         render_,
-			GetRelativeURL: getRelativeURL,
+			writer:         writer,
+			render:         render_,
+			getRelativeURL: getRelativeURL,
 			buffer:         bytes.NewBuffer(nil),
 		}, nil
 	} else {
@@ -34,25 +33,30 @@ func NewRenderWriter(writer io.Writer, renderer string, getRelativeURL platform.
 	}
 }
 
-// io.Writer
+// io.Writer interface
 func (self *RenderWriter) Write(b []byte) (int, error) {
-	if self.Render == nil {
+	if self.render == nil {
 		// Optimize for empty renderer
-		return self.Writer.Write(b)
+		return self.writer.Write(b)
 	} else {
 		return self.buffer.Write(b)
 	}
 }
 
-// io.Close
+// io.Closer interface
 func (self *RenderWriter) Close() error {
-	if self.Render == nil {
+	if self.render == nil {
 		// Optimize for empty renderer
 		return nil
-	} else if content, err := self.Render(util.BytesToString(self.buffer.Bytes()), self.GetRelativeURL); err == nil {
-		_, err = self.Writer.Write(util.StringToBytes(content))
+	} else if content, err := self.render(util.BytesToString(self.buffer.Bytes()), self.getRelativeURL); err == nil {
+		_, err = self.writer.Write(util.StringToBytes(content))
 		return err
 	} else {
 		return err
 	}
+}
+
+// WrappingWriter interface
+func (self *RenderWriter) GetWrappedWriter() io.Writer {
+	return self.writer
 }

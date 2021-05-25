@@ -5,6 +5,7 @@ import (
 
 	"github.com/fasthttp/http2"
 	"github.com/tliron/kutil/ard"
+	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
 	"github.com/valyala/fasthttp"
@@ -47,8 +48,12 @@ func CreateServer(config ard.StringMap, getRelativeURL platform.GetRelativeURL) 
 		self.Protocol = "http"
 	}
 	self.Secure, _ = config_.Get("tls").Boolean(false)
-	handler := config_.Get("handler").Data
-	self.Handler, _ = GetHandleFunc(handler)
+	if handler := config_.Get("handler").Data; handler != nil {
+		var err error
+		if self.Handler, err = GetHandleFunc(handler); err != nil {
+			return nil, err
+		}
+	}
 	self.Name, _ = config_.Get("name").String(false)
 	if self.Name == "" {
 		self.Name = "Prudence"
@@ -70,7 +75,7 @@ func (self *Server) Start() error {
 			Handler:                       self.Handle,
 			Name:                          self.Name,
 			LogAllErrors:                  true,
-			Logger:                        Logger{},
+			Logger:                        Logger{logging.GetLogger("prudence.server")},
 			DisableHeaderNamesNormalizing: true,
 			NoDefaultContentType:          true,
 		}
@@ -87,7 +92,7 @@ func (self *Server) Start() error {
 			}
 
 			if self.Protocol == "http2" {
-				// STILL BROKEN
+				// TODO: BROKEN
 				http2.ConfigureServer(&self.server)
 			}
 

@@ -39,8 +39,12 @@ func CreateRoute(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (
 	self.Name, _ = config_.Get("name").String(true)
 	paths := platform.AsStringList(config_.Get("paths").Data)
 	self.PathTemplates = NewPathTemplates(paths)
-	handler := config_.Get("handler").Data
-	self.Handler, _ = GetHandleFunc(handler)
+	if handler := config_.Get("handler").Data; handler != nil {
+		var err error
+		if self.Handler, err = GetHandleFunc(handler); err != nil {
+			return nil, err
+		}
+	}
 
 	return &self, nil
 }

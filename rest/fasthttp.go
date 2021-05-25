@@ -53,7 +53,7 @@ func ParseAccept(context *Context) []string {
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
 	// TODO: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
 	// TODO: sorted by preference
-	accept := strings.Split(util.BytesToString(context.context.Request.Header.Peek(fasthttp.HeaderAccept)), ",")
+	accept := strings.Split(util.BytesToString(context.Context.Request.Header.Peek(fasthttp.HeaderAccept)), ",")
 	//context.Log.Debugf("ACCEPT: %s", accept)
 	return accept
 }

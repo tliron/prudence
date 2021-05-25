@@ -37,10 +37,13 @@ func CreateRouter(config ard.StringMap, getRelativeURL platform.GetRelativeURL) 
 	routes := platform.AsConfigList(config_.Get("routes").Data)
 	for _, route := range routes {
 		if route_, ok := route.(ard.StringMap); ok {
-			route__, _ := CreateRoute(route_, getRelativeURL)
-			route___ := route__.(*Route)
-			self.Routes = append(self.Routes, route___)
-			self.AddHandler(route___.Handle)
+			if route__, err := CreateRoute(route_, getRelativeURL); err == nil {
+				route___ := route__.(*Route)
+				self.Routes = append(self.Routes, route___)
+				self.AddHandler(route___.Handle)
+			} else {
+				return nil, err
+			}
 		}
 	}
 

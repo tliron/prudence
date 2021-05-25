@@ -36,8 +36,11 @@ func CreateResource(config ard.StringMap, getRelativeURL platform.GetRelativeURL
 	facets := platform.AsConfigList(config_.Get("facets").Data)
 	for _, facet := range facets {
 		if facet_, ok := facet.(ard.StringMap); ok {
-			facet__, _ := CreateFacet(facet_, getRelativeURL)
-			self.AddFacet(facet__.(*Facet))
+			if facet__, err := CreateFacet(facet_, getRelativeURL); err == nil {
+				self.AddFacet(facet__.(*Facet))
+			} else {
+				return nil, err
+			}
 		}
 	}
 

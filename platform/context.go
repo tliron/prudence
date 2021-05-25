@@ -6,7 +6,7 @@ import (
 )
 
 //
-// VSTContext
+// Context
 //
 
 type Context struct {

@@ -1,14 +1,5 @@
-<!DOCTYPE html>
-<%# render a section (we *must* end the section later) %>
-<%^ 'minhtml' %>
-<html>
-
-<%# insert the contents of a file %>
-<%# by default all scriptlets (that are not '=') will skip a trailing newline after the end delimiter %>
-<%# but if we put a slash just before it the newline will remain %>
-<%+ 'fragments/head.html' /%>
-
-<body>
+<%# capture the following into the 'body' variable %>
+<%! 'body' %>
 
 <%# we'll automatically create a weak signature based on the following section %>
 <%$ true %>
@@ -24,10 +15,10 @@
 <%# embed another cacheable representation (and optionally set a custom cache key) %>
 <%& 'fragments/list.jst', 'person.chores.list|' + context.variables.name %>
 
-</body>
-</html>
-<%# end render %>
-<%^^%>
+<%!!%>
+
+<%# embed the page template (which will render our captured 'body' above) %>
+<%& 'templates/page.jst' %>
 
 <%# set cache duration (in seconds) %>
 <%* 5 %>

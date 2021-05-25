@@ -1,6 +1,8 @@
 package rest
 
-import "github.com/tliron/prudence/platform"
+import (
+	"github.com/tliron/prudence/platform"
+)
 
 func CacheLoad(context *Context) (platform.CacheKey, *platform.CacheEntry, bool) {
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {

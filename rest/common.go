@@ -8,17 +8,22 @@ import (
 
 var log = logging.GetLogger("prudence.rest")
 
+const (
+	PATH_HEADER   = "X-Prudence-Path"
+	CACHED_HEADER = "X-Prudence-Cached"
+)
+
 //
 // Logger
 //
 
-type Logger struct{}
-
-var logHttp = logging.GetLogger("prudence.http")
+type Logger struct {
+	log logging.Logger
+}
 
 // fasthttp.Logger interface
 func (self Logger) Printf(format string, args ...interface{}) {
-	logHttp.Errorf(format, args...)
+	self.log.Errorf(format, args...)
 }
 
 //

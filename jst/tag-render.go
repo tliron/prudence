@@ -16,7 +16,7 @@ func EncodeRender(context *platform.Context, code string) bool {
 
 	if code == "^" {
 		// End render
-		context.Builder.WriteString("context.endRender()\n")
+		context.Builder.WriteString("context.endRender();\n")
 	} else {
 		// Start render
 		context.Builder.WriteString("context.startRender(")
