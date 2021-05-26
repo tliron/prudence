@@ -127,46 +127,34 @@ func CacheEntryGetBody(cacheEntry *platform.CacheEntry, encoding platform.Encodi
 	}
 }
 
-func CacheEntryToContext(cacheEntry *platform.CacheEntry, context *Context) bool {
+func CacheEntryDescribe(cacheEntry *platform.CacheEntry, context *Context) bool {
 	context.Context.Response.Reset()
 
 	// Annoyingly these were re-enabled by Reset above
 	context.Context.Response.Header.DisableNormalizing()
 	context.Context.Response.Header.SetNoDefaultContentType(true)
 
-	// Headers
+	if context.Debug {
+		context.Context.Response.Header.Set(CACHED_HEADER, context.CacheKey)
+	}
+
 	for _, header := range cacheEntry.Headers {
 		context.Context.Response.Header.AddBytesKV(header[0], header[1])
 	}
 
-	eTag := GetETag(context.Context)
+	return !context.isNotModified()
+}
 
-	// New max-age
+func CacheEntryPresent(cacheEntry *platform.CacheEntry, context *Context) bool {
+	if !CacheEntryDescribe(cacheEntry, context) {
+		return false
+	}
+
+	// Match client-side caching with server-side caching
 	maxAge := int(cacheEntry.TimeToLive())
 	AddCacheControl(context.Context, fmt.Sprintf("max-age=%d", maxAge))
 
-	// TODO only for debug mode
-	context.Context.Response.Header.Set(CACHED_HEADER, context.CacheKey)
-
-	// Conditional
-
-	if IfNoneMatch(context.Context, eTag) {
-		// The following headers should have been set:
-		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
-		context.Context.NotModified()
-		return false
-	}
-
-	if !context.Context.IfModifiedSince(GetLastModified(context.Context)) {
-		// The following headers should have been set:
-		// Cache-Control, Content-Location, Date, ETag, Expires, and Vary
-		context.Context.NotModified()
-		return false
-	}
-
-	// Body (not for HEAD)
-
-	if !context.Context.IsHead() {
+	if context.Context.IsGet() {
 		body, changed := CacheEntryGetBestBody(cacheEntry, context)
 		context.Context.Response.SetBody(body)
 		return changed
@@ -175,7 +163,7 @@ func CacheEntryToContext(cacheEntry *platform.CacheEntry, context *Context) bool
 	return false
 }
 
-func CacheEntryWritePlain(cacheEntry *platform.CacheEntry, context *Context) (bool, int, error) {
+func CacheEntryWrite(cacheEntry *platform.CacheEntry, context *Context) (bool, int, error) {
 	if body, changed := CacheEntryGetBody(cacheEntry, platform.EncodingTypePlain); body != nil {
 		n, err := context.Write(body)
 		return changed, n, err

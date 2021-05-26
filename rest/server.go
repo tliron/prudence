@@ -24,6 +24,7 @@ type Server struct {
 	Address  string
 	Protocol string
 	Secure   bool
+	Debug    bool
 	Handler  HandleFunc
 
 	server fasthttp.Server
@@ -47,7 +48,8 @@ func CreateServer(config ard.StringMap, getRelativeURL platform.GetRelativeURL) 
 	if self.Protocol == "" {
 		self.Protocol = "http"
 	}
-	self.Secure, _ = config_.Get("tls").Boolean(false)
+	self.Secure, _ = config_.Get("secure").Boolean(false)
+	self.Debug, _ = config_.Get("debug").Boolean(false)
 	if handler := config_.Get("handler").Data; handler != nil {
 		var err error
 		if self.Handler, err = GetHandleFunc(handler); err != nil {
@@ -114,6 +116,8 @@ func (self *Server) Stop() error {
 // fasthttp.RequestHandler signature
 func (self *Server) Handle(context *fasthttp.RequestCtx) {
 	if self.Handler != nil {
-		self.Handler(NewContext(context))
+		context_ := NewContext(context)
+		context_.Debug = self.Debug
+		self.Handler(context_)
 	}
 }

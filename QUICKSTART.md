@@ -362,16 +362,21 @@ You'll see that the first request receives a 200 status code from the server, me
 that it received a full representation. But, for the next 10 seconds every request
 will show a 304 status code, which means "Not Modified".
 
-We'll discuss client-side caching more in the next section.
+Note that setting "cacheDuration" to a negative number has a special meeting: it means
+that not only are we not caching on the server (like a zero "cacheDuration"), but also
+that we don't want to the client to cache, too. This is sometimes important for
+security reasons, i.e. the content contains sensitive information that we'd rather not
+be stored anywhere.
+
+We'll discuss client-side caching in more detail in the next section.
 
 Now, we remember that our `html.jst` is just one big "present" function, and it's
-fine to set the cache duration there. However, there is a better place to put it.
-Let's edit our `json.js` file and add an additional hook function:
+fine to configure caching there. However, there is a better place to put it. Let's
+edit our `json.js` file and add an additional hook function, "construct":
 
     function construct(context) {
         context.log.info('construct');
         context.cacheKey = 'myapp.person.' + context.variables.name;
-        context.cacheDuration = 5;
         context.contentType = 'application/json';
     }
 
@@ -383,7 +388,12 @@ you can delete that line from "present":
         context.log.info('present');
         const data = {name: context.variables.name};
         context.write(JSON.stringify(data));
+        context.cacheDuration = 5;
     }
+
+As for "cacheDuration", you can set it anywhere. However, it might make most sense to
+set it in "present", because that's were we often retrieve our data, which may inform
+out decision about how long it should be cached, if at all.
 
 The "construct" hook is very powerful. If it exists, it is called by Prudence *before*
 trying the cache. So, this is where we can set the parameters that tell Prudence how

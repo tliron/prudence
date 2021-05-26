@@ -1,6 +1,7 @@
 package js
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 
@@ -30,6 +31,19 @@ func (self *PrudenceAPI) Run(url string) (interface{}, error) {
 		return value, err
 	} else {
 		return nil, err
+	}
+}
+
+func (self *PrudenceAPI) Go(value goja.Value) error {
+	if callable, ok := goja.AssertFunction(value); ok {
+		go func() {
+			if _, err := callable(nil); err != nil {
+				self.Log.Errorf("%s", err.Error())
+			}
+		}()
+		return nil
+	} else {
+		return fmt.Errorf("not a \"function\": %T", value)
 	}
 }
 

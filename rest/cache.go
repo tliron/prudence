@@ -19,6 +19,14 @@ func CacheLoad(context *Context) (platform.CacheKey, *platform.CacheEntry, bool)
 	}
 }
 
+func CacheDelete(context *Context) {
+	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
+		cacheKey := NewCacheKey(context)
+		cacheBackend.Delete(cacheKey)
+		log.Debugf("cache deleted: %s", cacheKey)
+	}
+}
+
 func CacheUpdate(cacheKey platform.CacheKey, cacheEntry *platform.CacheEntry) {
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
 		cacheBackend.Store(cacheKey, cacheEntry)

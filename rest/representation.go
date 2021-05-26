@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/prudence/platform"
+	"github.com/valyala/fasthttp"
 )
 
 //
@@ -100,72 +100,86 @@ func CreateRepresentation(node *ard.Node) (*Representation, error) {
 // Handler interface
 // HandleFunc signature
 func (self *Representation) Handle(context *Context) bool {
-	context.CacheKey = context.Context.URI().String()
 	context.CharSet = "utf-8"
 
-	// Construct
+	if context.Context.IsHead() {
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD
+
+		// Avoid wasting resources on writing for HEAD
+		context.writer = io.Discard
+
+		if self.construct(context, true) {
+			if self.describe(context) {
+				self.present(context)
+			}
+		}
+	} else if context.Context.IsGet() {
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET
+		if self.construct(context, true) {
+			if self.describe(context) {
+				self.present(context)
+			}
+		}
+	} else if context.Context.IsDelete() {
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE
+		if self.construct(context, false) {
+			self.erase(context)
+		}
+	} else if context.Context.IsPut() {
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT
+		if self.construct(context, false) {
+			self.change(context)
+		}
+	} else {
+		// TODO
+	}
+
+	return !NotFound(context.Context)
+}
+
+func (self *Representation) construct(context *Context, tryCache bool) bool {
+	context.CacheKey = context.Context.URI().String()
 	if self.Construct != nil {
 		if err := self.Construct(context); err != nil {
 			context.Error(err)
-			return true
-		}
-	}
-
-	if context.Context.IsDelete() {
-		// Erase
-		if self.Erase != nil {
-			if err := self.Erase(context); err != nil {
-				context.Error(err)
-				return true
-			}
-		}
-	} else if context.Context.IsPut() {
-		// Change
-		if self.Change != nil {
-			if err := self.Change(context); err != nil {
-				context.Error(err)
-				return true
-			}
+			return false
 		}
 	}
 
 	// Try cache
-	if context.Context.IsHead() || context.Context.IsGet() {
-		if context.CacheKey != "" {
-			if cacheKey, cacheEntry, ok := CacheLoad(context); ok {
-				if context.Context.IsHead() {
-					// HEAD doesn't care if the cacheEntry doesn't have a body
-					if changed := CacheEntryToContext(cacheEntry, context); changed {
-						CacheUpdate(cacheKey, cacheEntry)
-					}
-					return !NotFound(context.Context)
-				} else {
-					if len(cacheEntry.Body) == 0 {
-						context.Log.Debugf("ignoring cache with no body: %s", context.Path)
-					} else {
-						if changed := CacheEntryToContext(cacheEntry, context); changed {
-							CacheUpdate(cacheKey, cacheEntry)
-						}
-						return !NotFound(context.Context)
-					}
+	if tryCache && (context.CacheKey != "") {
+		if cacheKey, cacheEntry, ok := CacheLoad(context); ok {
+			if context.Context.IsGet() && (len(cacheEntry.Body) == 0) {
+				// The cache entry was likely created by a previous HEAD request
+				context.Log.Debugf("ignoring cache becase it has no body: %s", context.Path)
+			} else {
+				if changed := CacheEntryPresent(cacheEntry, context); changed {
+					CacheUpdate(cacheKey, cacheEntry)
 				}
+				return false
 			}
 		}
 	}
 
-	if context.Context.IsHead() {
-		// Avoid wasting resources on writing for HEAD
-		context.writer = io.Discard
-	}
+	return true
+}
 
-	// Describe
+func (self *Representation) describe(context *Context) bool {
 	if self.Describe != nil {
 		if err := self.Describe(context); err != nil {
 			context.Error(err)
-			return true
+			return false
+		}
+
+		if context.isNotModified() {
+			return false
 		}
 	}
 
+	return true
+}
+
+func (self *Representation) present(context *Context) {
 	if context.Context.IsGet() {
 		// Encoding
 		SetBestEncodeWriter(context)
@@ -174,92 +188,86 @@ func (self *Representation) Handle(context *Context) bool {
 		if self.Present != nil {
 			if err := self.Present(context); err != nil {
 				context.Error(err)
-				return true
+				return
 			}
 		}
-	}
 
-	if context.Timestamp.IsZero() {
-		context.Timestamp = time.Now()
-	}
-
-	context.EndSignature()
-
-	eTag := context.ETag()
-
-	if context.CacheDuration < 0.0 {
-
-		// Don't store and *also* invalidate the existing client cache
-		AddCacheControl(context.Context, "no-store,max-age=0")
-
-	} else if context.CacheDuration > 0.0 {
-
-		// Enabling caching means no conditional checks
-
-		// Cache-Control
-		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
-		maxAge := int(context.CacheDuration)
-		AddCacheControl(context.Context, fmt.Sprintf("max-age=%d", maxAge))
-
-	} else {
-
-		// Conditional
-
-		// If-None-Match
-		// (Has precedence over If-Modified-Since)
-		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
-		if IfNoneMatch(context.Context, eTag) {
-			context.Context.NotModified()
-			return true
-		}
-
-		// If-Modified-Since
-		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
-		if !context.Context.IfModifiedSince(context.Timestamp) {
-			context.Context.NotModified()
-			return true
-		}
-
-	}
-
-	// Content-Type
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
-	if context.ContentType != "" {
-		if context.CharSet != "" {
-			context.Context.SetContentType(context.ContentType + ";charset=" + context.CharSet)
-		} else {
-			context.Context.SetContentType(context.ContentType)
+		if context.isNotModified() {
+			return
 		}
 	}
 
-	// Last-Modified
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
-	context.Context.Response.Header.SetLastModified(context.Timestamp)
+	context.unwrapWriters()
 
-	// ETag
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
-	if eTag != "" {
-		AddETag(context.Context, eTag)
-	}
+	// Headers
+	context.setContentType()
+	context.addETag()
+	context.setLastModified()
+	context.setCacheControl()
 
-	// Unwrap writers
-	for true {
-		if wrappedWriter, ok := context.writer.(WrappingWriter); ok {
-			if err := wrappedWriter.Close(); err != nil {
-				context.Error(err)
-			}
-			context.writer = wrappedWriter.GetWrappedWriter()
-		} else {
-			break
-		}
-	}
-
-	// To cache
-	if (context.CacheDuration > 0.0) && (context.CacheKey != "") && (context.Context.IsHead() || context.Context.IsGet()) {
+	if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
 		CacheStoreContext(context)
 	}
+}
 
-	return !NotFound(context.Context)
+func (self *Representation) erase(context *Context) {
+	if self.Erase != nil {
+		if err := self.Erase(context); err != nil {
+			context.Error(err)
+			return
+		}
+
+		if context.Done {
+			if context.Async {
+				// Will be erased later
+				context.Context.SetStatusCode(fasthttp.StatusAccepted) // 202
+			} else if len(context.Context.Response.Body()) > 0 {
+				// Erased, has response
+				context.Context.SetStatusCode(fasthttp.StatusOK) // 200
+			} else {
+				// Erased, no response
+				context.Context.SetStatusCode(fasthttp.StatusNoContent) // 204
+			}
+
+			if context.CacheKey != "" {
+				CacheDelete(context)
+			}
+		} else {
+			context.Context.SetStatusCode(fasthttp.StatusNotFound) // 404
+		}
+	} else {
+		context.Context.SetStatusCode(fasthttp.StatusMethodNotAllowed) // 405
+	}
+}
+
+func (self *Representation) change(context *Context) {
+	if self.Change != nil {
+		if err := self.Change(context); err != nil {
+			context.Error(err)
+			return
+		}
+
+		if context.Done {
+			if context.Created {
+				// Created
+				context.Context.SetStatusCode(fasthttp.StatusCreated) // 201
+			} else if len(context.Context.Response.Body()) > 0 {
+				// Erased, has response
+				context.Context.SetStatusCode(fasthttp.StatusOK) // 200
+			} else {
+				// Erased, no response
+				context.Context.SetStatusCode(fasthttp.StatusNoContent) // 204
+			}
+
+			if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
+				CacheStoreContext(context)
+			}
+		} else {
+			context.Context.SetStatusCode(fasthttp.StatusNotFound) // 404
+		}
+	} else {
+		context.Context.SetStatusCode(fasthttp.StatusMethodNotAllowed) // 405
+	}
 }
 
 //

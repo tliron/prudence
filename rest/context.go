@@ -22,6 +22,7 @@ import (
 type Context struct {
 	Context     *fasthttp.RequestCtx
 	Log         logging.Logger
+	Debug       bool
 	Variables   ard.StringMap
 	Path        string
 	Method      string
@@ -29,6 +30,9 @@ type Context struct {
 	ContentType string
 	CharSet     string
 	Language    string
+	Done        bool
+	Created     bool
+	Async       bool
 
 	CacheDuration float64 // seconds
 	CacheKey      string
@@ -48,6 +52,32 @@ func NewContext(context *fasthttp.RequestCtx) *Context {
 		Method:    util.BytesToString(context.Method()),
 		Query:     GetQuery(context),
 		writer:    context,
+	}
+}
+
+func (self *Context) Copy() *Context {
+	variables := ard.Copy(self.Variables).(ard.StringMap)
+
+	return &Context{
+		Context:       self.Context,
+		Log:           self.Log,
+		Debug:         self.Debug,
+		Variables:     variables,
+		Path:          self.Path,
+		Method:        self.Method,
+		Query:         self.Query,
+		ContentType:   self.ContentType,
+		CharSet:       self.CharSet,
+		Language:      self.Language,
+		Done:          self.Done,
+		Created:       self.Created,
+		Async:         self.Async,
+		CacheDuration: self.CacheDuration,
+		CacheKey:      self.CacheKey,
+		Signature:     self.Signature,
+		WeakSignature: self.WeakSignature,
+		Timestamp:     self.Timestamp,
+		writer:        self.writer,
 	}
 }
 
@@ -143,28 +173,6 @@ func (self *Context) WriteString(s string) (int, error) {
 	return self.writer.Write(util.StringToBytes(s))
 }
 
-func (self *Context) Copy() *Context {
-	variables := ard.Copy(self.Variables).(ard.StringMap)
-
-	return &Context{
-		Context:       self.Context,
-		Log:           self.Log,
-		Variables:     variables,
-		Path:          self.Path,
-		Method:        self.Method,
-		Query:         self.Query,
-		ContentType:   self.ContentType,
-		CharSet:       self.CharSet,
-		Language:      self.Language,
-		CacheDuration: self.CacheDuration,
-		CacheKey:      self.CacheKey,
-		Signature:     self.Signature,
-		WeakSignature: self.WeakSignature,
-		Timestamp:     self.Timestamp,
-		writer:        self.writer,
-	}
-}
-
 func (self *Context) Embed(present interface{}, runtime *goja.Runtime) error {
 	// Try cache
 	if self.CacheKey != "" {
@@ -172,7 +180,7 @@ func (self *Context) Embed(present interface{}, runtime *goja.Runtime) error {
 			if len(cacheEntry.Body) == 0 {
 				self.Log.Debugf("ignoring cache with no body: %s", self.Path)
 			} else {
-				changed, _, err := CacheEntryWritePlain(cacheEntry, self)
+				changed, _, err := CacheEntryWrite(cacheEntry, self)
 				if err != nil {
 					self.Log.Errorf("%s", err.Error())
 				}
@@ -188,11 +196,8 @@ func (self *Context) Embed(present interface{}, runtime *goja.Runtime) error {
 	writer := self.writer
 	self.writer = buffer
 
-	if call, ok := present.(func(goja.FunctionCall) goja.Value); ok {
-		call(goja.FunctionCall{
-			This:      nil,
-			Arguments: []goja.Value{runtime.ToValue(self)},
-		})
+	if function, ok := present.(JavaScriptFunc); ok {
+		CallJavaScript(runtime, function, self)
 	} else {
 		return fmt.Errorf("not a function: %T", present)
 	}
@@ -210,4 +215,81 @@ func (self *Context) Embed(present interface{}, runtime *goja.Runtime) error {
 	self.Write(body)
 
 	return nil
+}
+
+func (self *Context) unwrapWriters() {
+	for true {
+		if wrappedWriter, ok := self.writer.(WrappingWriter); ok {
+			if err := wrappedWriter.Close(); err != nil {
+				self.Error(err)
+			}
+			self.writer = wrappedWriter.GetWrappedWriter()
+		} else {
+			break
+		}
+	}
+}
+
+func (self *Context) setContentType() {
+	// Content-Type
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+	if self.ContentType != "" {
+		if self.CharSet != "" {
+			self.Context.SetContentType(self.ContentType + ";charset=" + self.CharSet)
+		} else {
+			self.Context.SetContentType(self.ContentType)
+		}
+	}
+}
+
+func (self *Context) addETag() {
+	// ETag
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
+	if eTag := self.ETag(); eTag != "" {
+		AddETag(self.Context, eTag)
+	}
+}
+
+func (self *Context) setLastModified() {
+	// Last-Modified
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
+	if !self.Timestamp.IsZero() {
+		self.Context.Response.Header.SetLastModified(self.Timestamp)
+	}
+}
+
+func (self *Context) setCacheControl() {
+	// Cache-Control
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
+	if self.CacheDuration < 0.0 {
+		// Negative means don't store and *also* invalidate the existing client cache
+		AddCacheControl(self.Context, "no-store,max-age=0")
+	} else if self.CacheDuration > 0.0 {
+		// Match client-side caching with server-side caching
+		maxAge := int(self.CacheDuration)
+		AddCacheControl(self.Context, fmt.Sprintf("max-age=%d", maxAge))
+	}
+}
+
+func (self *Context) isNotModified() bool {
+	// If-None-Match
+	// (Has precedence over If-Modified-Since)
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
+	if IfNoneMatch(self.Context, self.ETag()) {
+		self.Context.NotModified()
+		self.Log.Debug("not modified: ETag")
+		return true
+	}
+
+	// If-Modified-Since
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
+	if !self.Timestamp.IsZero() {
+		if !self.Context.IfModifiedSince(self.Timestamp) {
+			self.Context.NotModified()
+			self.Log.Debug("not modified: Last-Modified")
+			return true
+		}
+	}
+
+	return false
 }

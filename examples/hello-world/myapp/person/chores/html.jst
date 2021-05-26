@@ -9,11 +9,10 @@
         <% const scope = context.query.scope; if (scope && scope.includes('all')) { %>(all of them)<% } %>
     </h1>
 
-<%# end signature section %>
-<%$$%>
-
-<%# embed another cacheable representation (and optionally set a custom cache key) %>
+<%# embed another cacheable representation (and set a custom cache key for it) %>
 <%& 'fragments/list.jst', 'person.chores.list|' + context.variables.name %>
+
+<%$$%>
 
 <%!!%>
 

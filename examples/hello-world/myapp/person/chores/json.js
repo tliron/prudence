@@ -9,13 +9,19 @@ function present(context) {
 
 function erase(context) {
     context.log.info('erase');
-    backend.setChores(context.variables.name, []);
-    present(context);
+    prudence.go(function() {
+        backend.setChores(context.variables.name, []);
+    });
+    context.done = true;
+    context.async = true;
 }
 
 function change(context) {
     context.log.info('change');
     const chores = prudence.decode(context.request(), 'json');
     backend.setChores(context.variables.name, chores);
+    context.done = true;
     present(context);
+    // TODO:
+    /// prudence.invalidateCacheTag(...)
 }

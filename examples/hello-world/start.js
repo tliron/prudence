@@ -14,5 +14,6 @@ prudence.start(prudence.create({
     address: 'localhost:8080',
     // protocol: 'http2',
     // secure: true,
+    debug: true,
     handler: prudence.run('myapp/router.js')
 }));

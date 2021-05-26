@@ -18,5 +18,11 @@ func Start(startables []Startable) error {
 	// Block forever
 	<-make(chan struct{})
 
+	for _, startable := range startables {
+		if err := startable.Stop(); err != nil {
+			log.Errorf("%s", err.Error())
+		}
+	}
+
 	return nil
 }
