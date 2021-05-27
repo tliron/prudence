@@ -3,13 +3,14 @@ const backend = prudence.require('../backend.js');
 
 // The "construct" hook (optional) optimizes for server-side caching
 // It should be a very fast function
-// Here we can set cacheKey, cacheDuration, contentType, charSet, and language
-// cacheKey defaults to the request path
-// contentType defaults to that of the accepted representation
+// Here we can set "cacheKey", "cacheGroups", "contentType", "charSet", and "language"
+// "cacheKey" defaults to the request path
+// "contentType" defaults to that of the accepted representation
 function construct(context) {
     context.log.info('construct');
-    context.cacheKey = 'person|' + context.variables.name;
-    context.cacheDuration = 5;
+    const cachePrefix = backend.getCachePrefix(context.variables.name);
+    context.cacheGroups.push(cachePrefix);
+    context.cacheKey = cachePrefix + '|main';
     context.contentType = 'application/json';
 }
 
@@ -26,6 +27,7 @@ function describe(context) {
 // Safely assume that "describe" has already been called (if it exists)
 function present(context) {
     context.log.info('present');
+    context.cacheDuration = 5;
     prudence.encode(backend.getPerson(context.variables.name), 'json', '  ', context);
     // The above is equivalent to this:
     //context.write(JSON.stringify(backend.getPerson(context), null, '  ')+'\n');

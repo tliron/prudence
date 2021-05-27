@@ -36,6 +36,7 @@ type Context struct {
 
 	CacheDuration float64 // seconds
 	CacheKey      string
+	CacheGroups   []string
 	Signature     string
 	WeakSignature bool
 	Timestamp     time.Time
@@ -57,6 +58,8 @@ func NewContext(context *fasthttp.RequestCtx) *Context {
 
 func (self *Context) Copy() *Context {
 	variables := ard.Copy(self.Variables).(ard.StringMap)
+	cacheGroups := make([]string, len(self.CacheGroups))
+	copy(cacheGroups, self.CacheGroups)
 
 	return &Context{
 		Context:       self.Context,
@@ -74,6 +77,7 @@ func (self *Context) Copy() *Context {
 		Async:         self.Async,
 		CacheDuration: self.CacheDuration,
 		CacheKey:      self.CacheKey,
+		CacheGroups:   cacheGroups,
 		Signature:     self.Signature,
 		WeakSignature: self.WeakSignature,
 		Timestamp:     self.Timestamp,

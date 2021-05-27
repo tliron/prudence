@@ -1,0 +1,14 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+body {
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+a:hover, a:focus {
+    font-weight: inherit;
+    text-decoration: underline;
+}

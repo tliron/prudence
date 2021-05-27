@@ -13,6 +13,7 @@ import (
 
 func main() {
 	logging.Configure(2, nil)
+	var err error
 
 	jsonRepresentation := &rest.Representation{
 		Present: presentJson,
@@ -22,11 +23,15 @@ func main() {
 		Present: presentDefault,
 	}
 
-	main := rest.NewFacet("main", []string{"{name}"})
+	main := rest.NewFacet("main")
+	main.PathTemplates, err = rest.NewPathTemplates("{name}")
+	util.FailOnError(err)
 	main.Representations["application/json"] = jsonRepresentation
 	main.Representations[""] = defaultRepresentation
 
-	age := rest.NewFacet("age", []string{"{name}/age"})
+	age := rest.NewFacet("age")
+	age.PathTemplates, err = rest.NewPathTemplates("{name}/age")
+	util.FailOnError(err)
 	age.Representations["application/json"] = jsonRepresentation
 	age.Representations[""] = defaultRepresentation
 
@@ -35,12 +40,20 @@ func main() {
 	person.AddFacet(age)
 
 	router := rest.NewRouter("myapp")
-	router.AddRoute(rest.NewRoute("", []string{"person/*"}, person.Handle))
-	router.AddRoute(rest.NewRoute("", nil, rest.DefaultNotFound.Handle))
+	route := rest.NewRoute("")
+	route.PathTemplates, err = rest.NewPathTemplates("person/*")
+	util.FailOnError(err)
+	route.Handler = person.Handle
+	router.AddRoute(route)
+	route = rest.NewRoute("")
+	route.Handler = rest.DefaultNotFound.Handle
+	router.AddRoute(route)
 
-	server := rest.NewServer("localhost:8080", router.Handle)
+	server := rest.NewServer("")
+	server.Address = "localhost:8080"
+	server.Handler = router.Handle
 
-	err := server.Start()
+	err = server.Start()
 	util.FailOnError(err)
 }
 
@@ -48,12 +61,12 @@ func presentJson(context *rest.Context) error {
 	person := map[string]interface{}{"name": context.Variables["name"]}
 	bytes, _ := json.Marshal(person)
 	context.Write(bytes)
-	context.Write([]byte("\n"))
+	context.WriteString("\n")
 	return nil
 }
 
 func presentDefault(context *rest.Context) error {
-	fmt.Fprintf(context, "%s\n", context.ContentType)
-	fmt.Fprintf(context, "%s\n", context.Variables)
+	context.WriteString(context.ContentType)
+	fmt.Fprintf(context, "\n%s\n", context.Variables)
 	return nil
 }

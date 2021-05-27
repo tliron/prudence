@@ -2,7 +2,7 @@ XPrudence: The Prudence Customizer
 ==================================
 
 The downloadable distribution of Prudence contains a ready-to-use `prudence` executable
-that contains all the built-in types, APIs, cache backends, renderers, and JST tags.
+that bundled with all the basic types, APIs, cache backends, renderers, and JST tags.
 However, if you want to [extend](../platform/README.md) Prudence then you'll need to make
 a custom build of `prudence` with your plugins.
 
@@ -33,7 +33,8 @@ languages, not for assembling Go programs.)
 
 ### Example
 
-Here's how you would build Prudence with the [plugin example](examples/plugin):
+Here's how you would build Prudence with the
+[plugin example](https://github.com/tliron/prudence/tree/main/examples/plugin):
 
     xprudence build -v --directory=examples/plugin
 
@@ -46,9 +47,12 @@ times to specify plugin directories that you want to add to your build. These di
 are [Go modules](https://golang.org/ref/mod) and thus must have a `go.mod` file. The
 [extension guide](../platform/README.md) goes into more detail about their structure.
 
-Or, you can use the `--module` flag to specify plugins as Go module names, for example if
-you keep your module code in a git repository. As is usual with Go modules, you can append
-a specific version or tag after a `@`.
+Or, you can use the `--module` flag to specify plugins as Go module names, which is useful
+if you keep your module code in a git repository. As is usual with Go modules, you can
+append a specific version or tag after a `@`.
+
+Another useful flag is `--replace`, which lets you insert a
+[replace directive](https://golang.org/ref/mod#go-mod-file-replace).
 
 To get help on the additional build flags:
 

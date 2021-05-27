@@ -30,11 +30,12 @@ type Server struct {
 	server fasthttp.Server
 }
 
-func NewServer(address string, handler HandleFunc) *Server {
+func NewServer(name string) *Server {
+	if name == "" {
+		name = "Prudence"
+	}
 	return &Server{
-		Name:    "Prudence",
-		Address: address,
-		Handler: handler,
+		Name: name,
 	}
 }
 

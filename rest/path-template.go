@@ -27,13 +27,13 @@ type PathTemplate struct {
 
 var PathTemplateAll = &PathTemplate{"", nil}
 
-func NewPathTemplate(path string) *PathTemplate {
+func NewPathTemplate(path string) (*PathTemplate, error) {
 	// /resource/{name}
 	// ^/resource/(?P<name>[^/]*)$
 
 	if path == "" {
 		// Empty template always matches
-		return PathTemplateAll
+		return PathTemplateAll, nil
 	}
 
 	var builder strings.Builder
@@ -71,9 +71,13 @@ func NewPathTemplate(path string) *PathTemplate {
 
 	builder.WriteRune('$')
 
-	return &PathTemplate{
-		Template:          path,
-		RegularExpression: regexp.MustCompile(builder.String()),
+	if re, err := regexp.Compile(builder.String()); err == nil {
+		return &PathTemplate{
+			Template:          path,
+			RegularExpression: re,
+		}, nil
+	} else {
+		return nil, err
 	}
 }
 
@@ -106,12 +110,16 @@ func (self *PathTemplate) Match(path string) map[string]string {
 
 type PathTemplates []*PathTemplate
 
-func NewPathTemplates(paths []string) PathTemplates {
+func NewPathTemplates(paths ...string) (PathTemplates, error) {
 	self := make(PathTemplates, len(paths))
 	for index, path := range paths {
-		self[index] = NewPathTemplate(path)
+		if pathTemplate, err := NewPathTemplate(path); err == nil {
+			self[index] = pathTemplate
+		} else {
+			return nil, err
+		}
 	}
-	return self
+	return self, nil
 }
 
 func (self PathTemplates) MatchAny(path string) map[string]string {

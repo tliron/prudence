@@ -43,3 +43,9 @@ func (self *PrudenceAPI) Start(startables interface{}) error {
 func (self *PrudenceAPI) SetCache(cacheBackend platform.CacheBackend) {
 	platform.SetCacheBackend(cacheBackend)
 }
+
+func (self *PrudenceAPI) InvalidateCacheGroup(group string) {
+	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
+		cacheBackend.DeleteGroup(group)
+	}
+}

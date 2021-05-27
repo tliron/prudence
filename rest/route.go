@@ -23,11 +23,9 @@ type Route struct {
 	Handler       HandleFunc
 }
 
-func NewRoute(name string, paths []string, handler HandleFunc) *Route {
+func NewRoute(name string) *Route {
 	return &Route{
-		Name:          name,
-		PathTemplates: NewPathTemplates(paths),
-		Handler:       handler,
+		Name: name,
 	}
 }
 
@@ -38,9 +36,11 @@ func CreateRoute(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (
 	config_ := ard.NewNode(config)
 	self.Name, _ = config_.Get("name").String(true)
 	paths := platform.AsStringList(config_.Get("paths").Data)
-	self.PathTemplates = NewPathTemplates(paths)
+	var err error
+	if self.PathTemplates, err = NewPathTemplates(paths...); err != nil {
+		return nil, err
+	}
 	if handler := config_.Get("handler").Data; handler != nil {
-		var err error
 		if self.Handler, err = GetHandleFunc(handler); err != nil {
 			return nil, err
 		}

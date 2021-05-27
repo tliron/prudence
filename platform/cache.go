@@ -2,6 +2,7 @@ package platform
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type CacheBackend interface {
 	Load(cacheKey CacheKey) (*CacheEntry, bool)      // sync
 	Store(cacheKey CacheKey, cacheEntry *CacheEntry) // async
 	Delete(cacheKey CacheKey)                        // async
+	DeleteGroup(name string)                         // async
 }
 
 func SetCacheBackend(cacheBackend_ CacheBackend) {
@@ -46,6 +48,7 @@ func (self CacheKey) String() string {
 //
 
 type CacheEntry struct {
+	Groups     []string
 	Headers    [][][]byte              // list of key, value tuples
 	Body       map[EncodingType][]byte // encoding type -> body
 	Expiration time.Time
@@ -57,7 +60,7 @@ func (self *CacheEntry) String() string {
 	for key := range self.Body {
 		keys = append(keys, key.String())
 	}
-	return fmt.Sprintf("%s", keys)
+	return strings.Join(keys, ",")
 }
 
 func (self *CacheEntry) Expired() bool {

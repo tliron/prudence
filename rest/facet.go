@@ -21,9 +21,9 @@ type Facet struct {
 	Representations Representations
 }
 
-func NewFacet(name string, paths []string) *Facet {
+func NewFacet(name string) *Facet {
 	self := Facet{
-		Route:           NewRoute(name, paths, nil),
+		Route:           NewRoute(name),
 		Representations: make(Representations),
 	}
 	self.Handler = self.Handle

@@ -1,5 +1,5 @@
-Prudence: Quickstart Guide
-==========================
+Prudence: Usage Guide
+=====================
 
 Let's learn by example and build a web application using Prudence.
 

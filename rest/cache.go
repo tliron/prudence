@@ -34,10 +34,10 @@ func CacheUpdate(cacheKey platform.CacheKey, cacheEntry *platform.CacheEntry) {
 	}
 }
 
-func CacheStoreContext(context *Context) {
+func CacheStoreContext(context *Context, withBody bool) {
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
 		cacheKey := NewCacheKey(context)
-		cacheEntry := NewCacheEntryFromContext(context)
+		cacheEntry := NewCacheEntryFromContext(context, withBody)
 		cacheBackend.Store(cacheKey, cacheEntry)
 		context.Log.Debugf("cache stored: %s|%s", cacheKey, cacheEntry)
 	}
@@ -45,7 +45,6 @@ func CacheStoreContext(context *Context) {
 
 func CacheStoreBody(context *Context, encoding platform.EncodingType, body []byte) {
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
-		cacheBackend := platform.GetCacheBackend()
 		cacheKey := NewCacheKey(context)
 		cacheEntry := NewCacheEntryFromBody(context, encoding, body)
 		cacheBackend.Store(cacheKey, cacheEntry)

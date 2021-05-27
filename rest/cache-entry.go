@@ -9,9 +9,9 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func NewCacheEntryFromContext(context *Context) *platform.CacheEntry {
+func NewCacheEntryFromContext(context *Context, withBody bool) *platform.CacheEntry {
 	body := make(map[platform.EncodingType][]byte)
-	if context.Context.Request.Header.IsGet() {
+	if withBody {
 		// Body exists only in GET
 		contentEncoding := GetContentEncoding(context.Context)
 		if encodingType := GetEncodingType(contentEncoding); encodingType != platform.EncodingTypeUnsupported {
@@ -35,7 +35,11 @@ func NewCacheEntryFromContext(context *Context) *platform.CacheEntry {
 		headers = append(headers, [][]byte{copyBytes(key), copyBytes(value)})
 	})
 
+	groups := make([]string, len(context.CacheGroups))
+	copy(groups, context.CacheGroups)
+
 	return &platform.CacheEntry{
+		Groups:     groups,
 		Body:       body,
 		Headers:    headers,
 		Expiration: time.Now().Add(time.Duration(context.CacheDuration * 1000000000.0)), // seconds to nanoseconds
@@ -43,7 +47,11 @@ func NewCacheEntryFromContext(context *Context) *platform.CacheEntry {
 }
 
 func NewCacheEntryFromBody(context *Context, encoding platform.EncodingType, body []byte) *platform.CacheEntry {
+	groups := make([]string, len(context.CacheGroups))
+	copy(groups, context.CacheGroups)
+
 	return &platform.CacheEntry{
+		Groups:     groups,
 		Body:       map[platform.EncodingType][]byte{encoding: body},
 		Headers:    nil,
 		Expiration: time.Now().Add(time.Duration(context.CacheDuration * 1000000000.0)), // seconds to nanoseconds
@@ -145,7 +153,7 @@ func CacheEntryDescribe(cacheEntry *platform.CacheEntry, context *Context) bool 
 	return !context.isNotModified()
 }
 
-func CacheEntryPresent(cacheEntry *platform.CacheEntry, context *Context) bool {
+func CacheEntryPresent(cacheEntry *platform.CacheEntry, context *Context, withBody bool) bool {
 	if !CacheEntryDescribe(cacheEntry, context) {
 		return false
 	}
@@ -154,7 +162,7 @@ func CacheEntryPresent(cacheEntry *platform.CacheEntry, context *Context) bool {
 	maxAge := int(cacheEntry.TimeToLive())
 	AddCacheControl(context.Context, fmt.Sprintf("max-age=%d", maxAge))
 
-	if context.Context.IsGet() {
+	if withBody {
 		body, changed := CacheEntryGetBestBody(cacheEntry, context)
 		context.Context.Response.SetBody(body)
 		return changed
