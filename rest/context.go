@@ -180,16 +180,16 @@ func (self *Context) WriteString(s string) (int, error) {
 func (self *Context) Embed(present interface{}, runtime *goja.Runtime) error {
 	// Try cache
 	if self.CacheKey != "" {
-		if cacheKey, cacheEntry, ok := CacheLoad(self); ok {
-			if len(cacheEntry.Body) == 0 {
+		if key, cached, ok := self.LoadCachedRepresentation(); ok {
+			if len(cached.Body) == 0 {
 				self.Log.Debugf("ignoring cache with no body: %s", self.Path)
 			} else {
-				changed, _, err := CacheEntryWrite(cacheEntry, self)
+				changed, _, err := self.WriteCachedRepresentation(cached)
 				if err != nil {
 					self.Log.Errorf("%s", err.Error())
 				}
 				if changed {
-					CacheUpdate(cacheKey, cacheEntry)
+					cached.Update(key)
 				}
 				return nil
 			}
@@ -212,7 +212,7 @@ func (self *Context) Embed(present interface{}, runtime *goja.Runtime) error {
 
 	// To cache
 	if (self.CacheDuration > 0.0) && (self.CacheKey != "") {
-		CacheStoreBody(self, platform.EncodingTypePlain, body)
+		self.StoreCachedRepresentationFromBody(platform.EncodingTypePlain, body)
 	}
 
 	self.writer = writer

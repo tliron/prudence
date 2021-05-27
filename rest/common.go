@@ -8,6 +8,8 @@ import (
 
 var log = logging.GetLogger("prudence.rest")
 
+var logCache = logging.GetLogger("prudence.cache")
+
 const (
 	PATH_HEADER   = "X-Prudence-Path"
 	CACHED_HEADER = "X-Prudence-Cached"
@@ -34,4 +36,12 @@ type WrappingWriter interface {
 	io.WriteCloser
 
 	GetWrappedWriter() io.Writer
+}
+
+// Utils
+
+func copyBytes(bytes []byte) []byte {
+	bytes_ := make([]byte, len(bytes))
+	copy(bytes_, bytes)
+	return bytes_
 }

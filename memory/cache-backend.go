@@ -31,17 +31,17 @@ func init() {
 type MemoryCacheBackend struct {
 	MaxSize int // TODO
 
-	entries map[platform.CacheKey]*platform.CacheEntry
-	groups  map[string]*CacheGroup
-	lock    sync.RWMutex
-	pruning chan struct{}
+	representations map[platform.CacheKey]*platform.CachedRepresentation
+	groups          map[string]*CacheGroup
+	lock            sync.RWMutex
+	pruning         chan struct{}
 }
 
 func NewMemoryCacheBackend() *MemoryCacheBackend {
 	self := MemoryCacheBackend{
-		entries: make(map[platform.CacheKey]*platform.CacheEntry),
-		groups:  make(map[string]*CacheGroup),
-		pruning: make(chan struct{}),
+		representations: make(map[platform.CacheKey]*platform.CachedRepresentation),
+		groups:          make(map[string]*CacheGroup),
+		pruning:         make(chan struct{}),
 	}
 	self.StartPruning(10.0)
 	util.OnExit(self.StopPruning)
@@ -54,21 +54,21 @@ func CreateMemoryCacheBackend(config ard.StringMap, getRelativeURL platform.GetR
 }
 
 // CacheBackend interface
-func (self *MemoryCacheBackend) Load(cacheKey platform.CacheKey) (*platform.CacheEntry, bool) {
+func (self *MemoryCacheBackend) LoadRepresentation(key platform.CacheKey) (*platform.CachedRepresentation, bool) {
 	self.lock.RLock()
-	if cacheEntry, ok := self.entries[cacheKey]; ok {
-		if cacheEntry.Expired() {
+	if cached, ok := self.representations[key]; ok {
+		if cached.Expired() {
 			self.lock.RUnlock()
-			log.Debugf("cache expired: %s|%s", cacheKey, cacheEntry)
+			log.Debugf("cache expired: %s|%s", key, cached)
 			self.lock.Lock()
-			if cacheEntry.Expired() {
-				delete(self.entries, cacheKey)
+			if cached.Expired() {
+				delete(self.representations, key)
 			}
 			self.lock.Unlock()
 			return nil, false
 		} else {
 			self.lock.RUnlock()
-			return cacheEntry, true
+			return cached, true
 		}
 	} else {
 		self.lock.RUnlock()
@@ -77,13 +77,13 @@ func (self *MemoryCacheBackend) Load(cacheKey platform.CacheKey) (*platform.Cach
 }
 
 // CacheBackend interface
-func (self *MemoryCacheBackend) Store(cacheKey platform.CacheKey, cacheEntry *platform.CacheEntry) {
+func (self *MemoryCacheBackend) StoreRepresentation(cacheKey platform.CacheKey, cached *platform.CachedRepresentation) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	self.entries[cacheKey] = cacheEntry
+	self.representations[cacheKey] = cached
 
-	for _, name := range cacheEntry.Groups {
+	for _, name := range cached.Groups {
 		var group *CacheGroup
 		var ok bool
 		if group, ok = self.groups[name]; !ok {
@@ -94,7 +94,7 @@ func (self *MemoryCacheBackend) Store(cacheKey platform.CacheKey, cacheEntry *pl
 
 		// Group expiration
 		for _, key := range group.Keys {
-			if entry, ok := self.entries[key]; ok {
+			if entry, ok := self.representations[key]; ok {
 				if entry.Expiration.After(group.Expiration) {
 					group.Expiration = entry.Expiration
 				}
@@ -104,11 +104,11 @@ func (self *MemoryCacheBackend) Store(cacheKey platform.CacheKey, cacheEntry *pl
 }
 
 // CacheBackend interface
-func (self *MemoryCacheBackend) Delete(cacheKey platform.CacheKey) {
+func (self *MemoryCacheBackend) DeleteRepresentation(key platform.CacheKey) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	delete(self.entries, cacheKey)
+	delete(self.representations, key)
 }
 
 // CacheBackend interface
@@ -118,7 +118,7 @@ func (self *MemoryCacheBackend) DeleteGroup(name string) {
 
 	if group, ok := self.groups[name]; ok {
 		for _, cacheKey := range group.Keys {
-			delete(self.entries, cacheKey)
+			delete(self.representations, cacheKey)
 		}
 	}
 }
@@ -127,10 +127,10 @@ func (self *MemoryCacheBackend) Prune() {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	for cacheKey, cacheEntry := range self.entries {
-		if cacheEntry.Expired() {
-			log.Debugf("pruning cache: %s", cacheKey)
-			delete(self.entries, cacheKey)
+	for key, cached := range self.representations {
+		if cached.Expired() {
+			log.Debugf("pruning representation: %s", key)
+			delete(self.representations, key)
 		}
 	}
 	for name, group := range self.groups {

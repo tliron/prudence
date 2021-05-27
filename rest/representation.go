@@ -168,13 +168,13 @@ func (self *Representation) construct(context *Context) bool {
 
 func (self *Representation) tryCache(context *Context, withBody bool) bool {
 	if context.CacheKey != "" {
-		if cacheKey, cacheEntry, ok := CacheLoad(context); ok {
-			if withBody && (len(cacheEntry.Body) == 0) {
+		if key, cached, ok := context.LoadCachedRepresentation(); ok {
+			if withBody && (len(cached.Body) == 0) {
 				// The cache entry was likely created by a previous HEAD request
 				context.Log.Debugf("ignoring cache becase it has no body: %s", context.Path)
 			} else {
-				if changed := CacheEntryPresent(cacheEntry, context, withBody); changed {
-					CacheUpdate(cacheKey, cacheEntry)
+				if changed := context.PresentCachedRepresentation(cached, withBody); changed {
+					cached.Update(key)
 				}
 				return false
 			}
@@ -226,7 +226,7 @@ func (self *Representation) present(context *Context, withBody bool) {
 	context.setCacheControl()
 
 	if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
-		CacheStoreContext(context, withBody)
+		context.StoreCachedRepresentation(withBody)
 	}
 }
 
@@ -250,7 +250,7 @@ func (self *Representation) erase(context *Context) {
 			}
 
 			if context.CacheKey != "" {
-				CacheDelete(context)
+				context.DeleteCachedRepresentation()
 			}
 		} else {
 			context.Context.SetStatusCode(fasthttp.StatusNotFound) // 404
@@ -280,7 +280,7 @@ func (self *Representation) change(context *Context) {
 			}
 
 			if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
-				CacheStoreContext(context, true)
+				context.StoreCachedRepresentation(true)
 			}
 		} else {
 			context.Context.SetStatusCode(fasthttp.StatusNotFound) // 404
