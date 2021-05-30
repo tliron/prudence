@@ -1,13 +1,15 @@
 package plugin
 
 import (
+	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
+	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 	"github.com/tliron/prudence/rest"
 )
 
 func init() {
-	platform.RegisterType("myplugin.echo", CreateEcho)
+	platform.RegisterType("Echo", CreateEcho)
 }
 
 //
@@ -18,16 +20,16 @@ type Echo struct {
 	Message string
 }
 
-// CreateFunc signature
-func CreateEcho(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
+// platform.CreateFunc signature
+func CreateEcho(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
 	var self Echo
 	config_ := ard.NewNode(config)
 	self.Message, _ = config_.Get("message").String(true)
 	return &self, nil
 }
 
-// Handler interface
-// HandleFunc signature
+// rest.Handler interface
+// rest.HandleFunc signature
 func (self *Echo) Handle(context *rest.Context) bool {
 	context.WriteString(self.Message + "\n")
 	return true

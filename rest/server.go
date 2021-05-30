@@ -3,8 +3,10 @@ package rest
 import (
 	"net"
 
+	"github.com/dop251/goja"
 	"github.com/fasthttp/http2"
 	"github.com/tliron/kutil/ard"
+	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
@@ -12,7 +14,7 @@ import (
 )
 
 func init() {
-	platform.RegisterType("server", CreateServer)
+	platform.RegisterType("Server", CreateServer)
 }
 
 //
@@ -40,7 +42,7 @@ func NewServer(name string) *Server {
 }
 
 // CreateFunc signature
-func CreateServer(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
+func CreateServer(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
 	var self Server
 
 	config_ := ard.NewNode(config)
@@ -99,9 +101,19 @@ func (self *Server) Start() error {
 				http2.ConfigureServer(&self.server)
 			}
 
-			return self.server.ServeTLS(listener, "", "")
+			if err := self.server.ServeTLS(listener, "", ""); err == nil {
+				log.Infof("server stopped: %s", self.Address)
+				return nil
+			} else {
+				return err
+			}
 		} else {
-			return self.server.Serve(listener)
+			if err := self.server.Serve(listener); err == nil {
+				log.Infof("server stopped: %s", self.Address)
+				return nil
+			} else {
+				return err
+			}
 		}
 	} else {
 		return err

@@ -13,7 +13,7 @@ Prudence itself is distributed as a single, compact executable file with no exte
 
 [![Download](assets/media/download.png "Download")](https://github.com/tliron/prudence/releases)
 
-Check out the detailed [usage guide](GUIDE.md). Then take a look at the
+Check out the detailed [usage guide](GUIDE-BASIC.md). Then take a look at the
 [examples](examples/README.md). And don't forget to read the [FAQ](FAQ.md)!
 
 
@@ -21,9 +21,9 @@ Highlights
 ----------
 
 * Triple-phase representation generation allows for composable, fine-grained, associative control
-  over server-side and client-side caching. Reap the full scalability benefits of idempotency in
-  RESTful network architectures.
-* Pluggable server-side cache backends. Store your generated representations in scalable, fast
+  over server-side and client-side caching. Reap the full benefits of idempotency in RESTful network
+  architectures.
+* Pluggable server-side cache backends. Store your generated representations in fast distributed
   stores such as [Memcached](https://memcached.org/), [Redis](https://redis.io/), etc.
 * [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you
   to create custom builds of Prudence bundled with the plugins, modules, and APIs required by your
@@ -34,5 +34,5 @@ Highlights
 * Prudence is written in Go for reliability and performance but allows you to use straightforward
   JavaScript for assembling and configuring your application. (JavaScript is *not required*.
   [Here's](https://github.com/tliron/prudence/tree/main/examples/go) an example in pure Go.)
-* It additionally supports extensible [JavaScript Templates (JST)](jst/README.md) for generating
-  HTML pages by combining design and programming.
+* Additionally supports extensible [JavaScript Templates (JST)](jst/README.md) for generating HTML
+  pages by combining design and programming.

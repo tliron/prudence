@@ -9,6 +9,7 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
+	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
@@ -102,8 +103,8 @@ func (self *Context) EndCapture() error {
 	}
 }
 
-func (self *Context) StartRender(renderer string, hasGetRelativeURL platform.HasGetRelativeURL) error {
-	if renderWriter, err := NewRenderWriter(self.writer, renderer, hasGetRelativeURL.GetRelativeURL); err == nil {
+func (self *Context) StartRender(renderer string, resolve js.ResolveFunc) error {
+	if renderWriter, err := NewRenderWriter(self.writer, renderer, resolve); err == nil {
 		self.Log.Debugf("start render: %s", renderer)
 		self.writer = renderWriter
 		return nil
@@ -177,7 +178,18 @@ func (self *Context) WriteString(s string) (int, error) {
 	return self.writer.Write(util.StringToBytes(s))
 }
 
-func (self *Context) Embed(present interface{}, runtime *goja.Runtime) error {
+func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) goja.Value {
+	var present JavaScriptFunc
+	if len(function.Arguments) > 0 {
+		var ok bool
+		present_ := function.Arguments[0].Export()
+		if present, ok = present_.(JavaScriptFunc); !ok {
+			panic(runtime.NewGoError(fmt.Errorf("\"present\" not a function: %T", present_)))
+		}
+	} else {
+		panic(runtime.NewGoError(errors.New("missing \"present\" argument")))
+	}
+
 	// Try cache
 	if self.CacheKey != "" {
 		if key, cached, ok := self.LoadCachedRepresentation(); ok {
@@ -200,11 +212,7 @@ func (self *Context) Embed(present interface{}, runtime *goja.Runtime) error {
 	writer := self.writer
 	self.writer = buffer
 
-	if function, ok := present.(JavaScriptFunc); ok {
-		CallJavaScript(runtime, function, self)
-	} else {
-		return fmt.Errorf("not a function: %T", present)
-	}
+	CallJavaScript(runtime, present, self)
 
 	self.EndSignature()
 

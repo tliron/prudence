@@ -23,7 +23,7 @@ func EncodeInsert(context *platform.Context, code string) bool {
 
 	context.Builder.WriteString("var __insert")
 	context.Builder.WriteString(suffix)
-	context.Builder.WriteString(" = prudence.load(__args")
+	context.Builder.WriteString(" = prudence.loadString(__args")
 	context.Builder.WriteString(suffix)
 	context.Builder.WriteString("[0]);\n")
 

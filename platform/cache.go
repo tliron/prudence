@@ -2,7 +2,6 @@ package platform
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"time"
 
@@ -13,13 +12,15 @@ import (
 // CacheBackend
 //
 
+type CacheKey string
+
 var cacheBackend CacheBackend
 
 type CacheBackend interface {
 	LoadRepresentation(key CacheKey) (*CachedRepresentation, bool)  // sync
 	StoreRepresentation(key CacheKey, cached *CachedRepresentation) // async
 	DeleteRepresentation(key CacheKey)                              // async
-	DeleteGroup(name string)                                        // async
+	DeleteGroup(name CacheKey)                                      // async
 }
 
 func SetCacheBackend(cacheBackend_ CacheBackend) {
@@ -31,29 +32,13 @@ func GetCacheBackend() CacheBackend {
 }
 
 //
-// CacheKey
-//
-
-type CacheKey struct {
-	Key         string
-	ContentType string
-	CharSet     string
-	Language    string
-}
-
-// fmt.Stringer interface
-func (self CacheKey) String() string {
-	return fmt.Sprintf("%s|%s|%s|%s", self.Key, self.ContentType, self.CharSet, self.Language)
-}
-
-//
 // CachedRepresentation
 //
 
 type CachedRepresentation struct {
-	Groups     []string
-	Headers    [][][]byte              // list of key, value tuples
-	Body       map[EncodingType][]byte // encoding type -> body
+	Groups     []CacheKey
+	Headers    [][][]byte // list of key, value tuples
+	Body       map[EncodingType][]byte
 	Expiration time.Time
 }
 

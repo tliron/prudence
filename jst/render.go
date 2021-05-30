@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -14,10 +15,10 @@ func init() {
 var jstRe = regexp.MustCompile(`(?s)<%.*?%>`)
 
 // platform.RenderFunc signature
-func RenderJST(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
+func RenderJST(content string, resolve js.ResolveFunc) (string, error) {
 	var context platform.Context
 
-	context.Builder.WriteString("function present(context) {\n")
+	context.Builder.WriteString("exports.present = function(context) {\n")
 
 	last := 0
 
@@ -74,7 +75,7 @@ func RenderJST(content string, getRelativeURL platform.GetRelativeURL) (string, 
 	}
 
 	context.WriteLiteral(content[last:])
-	context.Builder.WriteString("}\n")
+	context.Builder.WriteString("};\n")
 
 	string_ := context.Builder.String()
 	//log.Debugf("%s", string_)

@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"errors"
 	"fmt"
 	"io"
 
@@ -37,24 +36,17 @@ type Representation struct {
 	Describe  RepresentionFunc
 	Present   RepresentionFunc
 	Erase     RepresentionFunc
-	Change    RepresentionFunc
+	Modify    RepresentionFunc
 	Call      RepresentionFunc
 }
 
-func CreateRepresentation(node *ard.Node) (*Representation, error) {
+func CreateRepresentation(node *ard.Node, runtime *goja.Runtime) (*Representation, error) {
+	//panic(fmt.Sprintf("%v", node.Data))
 	var self Representation
 
 	var get func(name string) (RepresentionFunc, error)
 
 	if functions := node.Get("functions"); functions.Data != nil {
-		var runtime *goja.Runtime
-		var ok bool
-		if runtime, ok = functions.Get("runtime").Data.(*goja.Runtime); !ok {
-			if runtime, ok = node.Get("runtime").Data.(*goja.Runtime); !ok {
-				return nil, errors.New("no valid \"runtime\" property")
-			}
-		}
-
 		get = func(name string) (RepresentionFunc, error) {
 			if f := functions.Get(name).Data; f != nil {
 				return NewRepresentationFunc(f, runtime)
@@ -63,12 +55,6 @@ func CreateRepresentation(node *ard.Node) (*Representation, error) {
 			}
 		}
 	} else {
-		var runtime *goja.Runtime
-		var ok bool
-		if runtime, ok = node.Get("runtime").Data.(*goja.Runtime); !ok {
-			return nil, errors.New("no valid \"runtime\" property")
-		}
-
 		// Individual function properties
 		get = func(name string) (RepresentionFunc, error) {
 			if f := node.Get(name).Data; f != nil {
@@ -92,7 +78,7 @@ func CreateRepresentation(node *ard.Node) (*Representation, error) {
 	if self.Erase, err = get("erase"); err != nil {
 		return nil, err
 	}
-	if self.Change, err = get("change"); err != nil {
+	if self.Modify, err = get("modify"); err != nil {
 		return nil, err
 	}
 	if self.Call, err = get("call"); err != nil {
@@ -141,7 +127,7 @@ func (self *Representation) Handle(context *Context) bool {
 	case "PUT":
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT
 		if self.construct(context) {
-			self.change(context)
+			self.modify(context)
 		}
 
 	case "POST":
@@ -260,9 +246,9 @@ func (self *Representation) erase(context *Context) {
 	}
 }
 
-func (self *Representation) change(context *Context) {
-	if self.Change != nil {
-		if err := self.Change(context); err != nil {
+func (self *Representation) modify(context *Context) {
+	if self.Modify != nil {
+		if err := self.Modify(context); err != nil {
 			context.Error(err)
 			return
 		}
@@ -272,10 +258,10 @@ func (self *Representation) change(context *Context) {
 				// Created
 				context.Context.SetStatusCode(fasthttp.StatusCreated) // 201
 			} else if len(context.Context.Response.Body()) > 0 {
-				// Erased, has response
+				// Changed, has response
 				context.Context.SetStatusCode(fasthttp.StatusOK) // 200
 			} else {
-				// Erased, no response
+				// Changed, no response
 				context.Context.SetStatusCode(fasthttp.StatusNoContent) // 204
 			}
 
@@ -305,13 +291,13 @@ func (self *Representation) call(context *Context) {
 
 type Representations map[string]*Representation
 
-func CreateRepresentations(config ard.Value) (Representations, error) {
+func CreateRepresentations(config ard.Value, runtime *goja.Runtime) (Representations, error) {
 	self := make(Representations)
 
 	representations := platform.AsConfigList(config)
 	for _, representation := range representations {
 		representation_ := ard.NewNode(representation)
-		if representation__, err := CreateRepresentation(representation_); err == nil {
+		if representation__, err := CreateRepresentation(representation_, runtime); err == nil {
 			contentTypes := platform.AsStringList(representation_.Get("contentTypes").Data)
 			// TODO:
 			//charSets := asStringList(representation_.Get("charSets").Data)

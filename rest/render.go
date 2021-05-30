@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 
+	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
 )
@@ -13,20 +14,20 @@ import (
 //
 
 type RenderWriter struct {
-	writer         io.Writer
-	render         platform.RenderFunc
-	getRelativeURL platform.GetRelativeURL
-	buffer         *bytes.Buffer
+	writer  io.Writer
+	render  platform.RenderFunc
+	resolve js.ResolveFunc
+	buffer  *bytes.Buffer
 }
 
-func NewRenderWriter(writer io.Writer, renderer string, getRelativeURL platform.GetRelativeURL) (*RenderWriter, error) {
+func NewRenderWriter(writer io.Writer, renderer string, resolve js.ResolveFunc) (*RenderWriter, error) {
 	if render_, err := platform.GetRenderer(renderer); err == nil {
 		// Note: renderer can be nil
 		return &RenderWriter{
-			writer:         writer,
-			render:         render_,
-			getRelativeURL: getRelativeURL,
-			buffer:         bytes.NewBuffer(nil),
+			writer:  writer,
+			render:  render_,
+			resolve: resolve,
+			buffer:  bytes.NewBuffer(nil),
 		}, nil
 	} else {
 		return nil, err
@@ -48,7 +49,7 @@ func (self *RenderWriter) Close() error {
 	if self.render == nil {
 		// Optimize for empty renderer
 		return nil
-	} else if content, err := self.render(util.BytesToString(self.buffer.Bytes()), self.getRelativeURL); err == nil {
+	} else if content, err := self.render(util.BytesToString(self.buffer.Bytes()), self.resolve); err == nil {
 		_, err = self.writer.Write(util.StringToBytes(content))
 		return err
 	} else {

@@ -10,6 +10,7 @@ import (
 	"github.com/tdewolff/minify/v2/json"
 	"github.com/tdewolff/minify/v2/svg"
 	"github.com/tdewolff/minify/v2/xml"
+	kutiljs "github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -35,32 +36,32 @@ func init() {
 	platform.RegisterRenderer("minxml", RenderMinifyXML)
 }
 
-// RenderFunc signature
-func RenderMinifyCSS(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
+// platform.RenderFunc signature
+func RenderMinifyCSS(content string, resolve kutiljs.ResolveFunc) (string, error) {
 	return minify_.String("text/css", content)
 }
 
-// RenderFunc signature
-func RenderMinifyHTML(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
+// platform.RenderFunc signature
+func RenderMinifyHTML(content string, resolve kutiljs.ResolveFunc) (string, error) {
 	return minify_.String("text/html", content)
 }
 
-// RenderFunc signature
-func RenderMinifySVG(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
+// platform.RenderFunc signature
+func RenderMinifySVG(content string, resolve kutiljs.ResolveFunc) (string, error) {
 	return minify_.String("image/svg+xml", content)
 }
 
-// RenderFunc signature
-func RenderMinifyJavaScript(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
+// platform.RenderFunc signature
+func RenderMinifyJavaScript(content string, resolve kutiljs.ResolveFunc) (string, error) {
 	return minify_.String("text/javascript", content)
 }
 
-// RenderFunc signature
-func RenderMinifyJSON(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
+// platform.RenderFunc signature
+func RenderMinifyJSON(content string, resolve kutiljs.ResolveFunc) (string, error) {
 	return minify_.String("application/json", content)
 }
 
-// RenderFunc signature
-func RenderMinifyXML(content string, getRelativeURL platform.GetRelativeURL) (string, error) {
+// platform.RenderFunc signature
+func RenderMinifyXML(content string, resolve kutiljs.ResolveFunc) (string, error) {
 	return minify_.String("application/xml", content)
 }

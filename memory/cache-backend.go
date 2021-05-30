@@ -12,7 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
+	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
@@ -21,7 +23,7 @@ import (
 var log = logging.GetLogger("prudence.memory")
 
 func init() {
-	platform.RegisterType("cache.memory", CreateMemoryCacheBackend)
+	platform.RegisterType("MemoryCache", CreateMemoryCacheBackend)
 }
 
 //
@@ -32,7 +34,7 @@ type MemoryCacheBackend struct {
 	MaxSize int // TODO
 
 	representations map[platform.CacheKey]*platform.CachedRepresentation
-	groups          map[string]*CacheGroup
+	groups          map[platform.CacheKey]*CacheGroup
 	lock            sync.RWMutex
 	pruning         chan struct{}
 }
@@ -40,7 +42,7 @@ type MemoryCacheBackend struct {
 func NewMemoryCacheBackend() *MemoryCacheBackend {
 	self := MemoryCacheBackend{
 		representations: make(map[platform.CacheKey]*platform.CachedRepresentation),
-		groups:          make(map[string]*CacheGroup),
+		groups:          make(map[platform.CacheKey]*CacheGroup),
 		pruning:         make(chan struct{}),
 	}
 	self.StartPruning(10.0)
@@ -49,7 +51,7 @@ func NewMemoryCacheBackend() *MemoryCacheBackend {
 }
 
 // CreateFunc signature
-func CreateMemoryCacheBackend(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
+func CreateMemoryCacheBackend(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
 	return NewMemoryCacheBackend(), nil
 }
 
@@ -77,11 +79,11 @@ func (self *MemoryCacheBackend) LoadRepresentation(key platform.CacheKey) (*plat
 }
 
 // CacheBackend interface
-func (self *MemoryCacheBackend) StoreRepresentation(cacheKey platform.CacheKey, cached *platform.CachedRepresentation) {
+func (self *MemoryCacheBackend) StoreRepresentation(key platform.CacheKey, cached *platform.CachedRepresentation) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	self.representations[cacheKey] = cached
+	self.representations[key] = cached
 
 	for _, name := range cached.Groups {
 		var group *CacheGroup
@@ -90,16 +92,22 @@ func (self *MemoryCacheBackend) StoreRepresentation(cacheKey platform.CacheKey, 
 			group = new(CacheGroup)
 			self.groups[name] = group
 		}
-		group.Keys = append(group.Keys, cacheKey)
+		group.Keys = append(group.Keys, key)
 
 		// Group expiration
+		index := 0
 		for _, key := range group.Keys {
-			if entry, ok := self.representations[key]; ok {
-				if entry.Expiration.After(group.Expiration) {
-					group.Expiration = entry.Expiration
+			if cached, ok := self.representations[key]; ok {
+				if !cached.Expired() {
+					group.Keys[index] = key
+					index++
+					if cached.Expiration.After(group.Expiration) {
+						group.Expiration = cached.Expiration
+					}
 				}
 			}
 		}
+		group.Keys = group.Keys[:index]
 	}
 }
 
@@ -112,13 +120,13 @@ func (self *MemoryCacheBackend) DeleteRepresentation(key platform.CacheKey) {
 }
 
 // CacheBackend interface
-func (self *MemoryCacheBackend) DeleteGroup(name string) {
+func (self *MemoryCacheBackend) DeleteGroup(name platform.CacheKey) {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
 	if group, ok := self.groups[name]; ok {
-		for _, cacheKey := range group.Keys {
-			delete(self.representations, cacheKey)
+		for _, key := range group.Keys {
+			delete(self.representations, key)
 		}
 	}
 }

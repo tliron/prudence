@@ -1,7 +1,9 @@
 package rest
 
 import (
+	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
+	"github.com/tliron/kutil/js"
 	urlpkg "github.com/tliron/kutil/url"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
@@ -9,7 +11,7 @@ import (
 )
 
 func init() {
-	platform.RegisterType("static", CreateStatic)
+	platform.RegisterType("Static", CreateStatic)
 }
 
 //
@@ -50,11 +52,11 @@ func NewStatic(root string, indexes []string) *Static {
 }
 
 // CreateFunc signature
-func CreateStatic(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
+func CreateStatic(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
 	config_ := ard.NewNode(config)
 
 	root, _ := config_.Get("root").String(false)
-	if rootUrl, err := getRelativeURL(root); err == nil {
+	if rootUrl, err := resolve(root); err == nil {
 		root = rootUrl.(*urlpkg.FileURL).Path
 	} else {
 		return nil, err

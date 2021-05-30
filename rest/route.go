@@ -1,13 +1,15 @@
 package rest
 
 import (
+	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
+	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	"github.com/tliron/prudence/platform"
 )
 
 func init() {
-	platform.RegisterType("route", CreateRoute)
+	platform.RegisterType("Route", CreateRoute)
 }
 
 //
@@ -30,7 +32,7 @@ func NewRoute(name string) *Route {
 }
 
 // CreateFunc signature
-func CreateRoute(config ard.StringMap, getRelativeURL platform.GetRelativeURL) (interface{}, error) {
+func CreateRoute(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
 	var self Route
 
 	config_ := ard.NewNode(config)

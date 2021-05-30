@@ -9,12 +9,7 @@ import (
 )
 
 func (self *Context) NewCacheKey() platform.CacheKey {
-	return platform.CacheKey{
-		Key:         self.CacheKey,
-		ContentType: self.ContentType,
-		CharSet:     self.CharSet,
-		Language:    self.Language,
-	}
+	return platform.CacheKey(fmt.Sprintf("%s|%s|%s|%s", self.CacheKey, self.ContentType, self.CharSet, self.Language))
 }
 
 func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepresentation {
@@ -43,8 +38,10 @@ func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepr
 		headers = append(headers, [][]byte{copyBytes(key), copyBytes(value)})
 	})
 
-	groups := make([]string, len(self.CacheGroups))
-	copy(groups, self.CacheGroups)
+	groups := make([]platform.CacheKey, len(self.CacheGroups))
+	for index, group := range self.CacheGroups {
+		groups[index] = platform.CacheKey(group)
+	}
 
 	return &platform.CachedRepresentation{
 		Groups:     groups,
@@ -55,8 +52,10 @@ func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepr
 }
 
 func (self *Context) NewCachedRepresentationFromBody(encoding platform.EncodingType, body []byte) *platform.CachedRepresentation {
-	groups := make([]string, len(self.CacheGroups))
-	copy(groups, self.CacheGroups)
+	groups := make([]platform.CacheKey, len(self.CacheGroups))
+	for index, group := range self.CacheGroups {
+		groups[index] = platform.CacheKey(group)
+	}
 
 	return &platform.CachedRepresentation{
 		Groups:     groups,
@@ -70,14 +69,14 @@ func (self *Context) LoadCachedRepresentation() (platform.CacheKey, *platform.Ca
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
 		key := self.NewCacheKey()
 		if cached, ok := cacheBackend.LoadRepresentation(key); ok {
-			self.Log.Debugf("cache hit: %s|%s", key, cached)
+			self.Log.Debugf("cache hit: %s, %s", key, cached)
 			return key, cached, true
 		} else {
 			self.Log.Debugf("cache miss: %s", key)
-			return platform.CacheKey{}, nil, false
+			return "", nil, false
 		}
 	} else {
-		return platform.CacheKey{}, nil, false
+		return "", nil, false
 	}
 }
 

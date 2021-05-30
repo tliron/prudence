@@ -1,5 +1,5 @@
 <% 
-const backend = prudence.require('../../backend.js');
+const backend = require('../../backend.js');
 const chores = backend.getPerson(context.variables.name).chores;
 for (var i = 0; i < chores.length; i++) {
 %>

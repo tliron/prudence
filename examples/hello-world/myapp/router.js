@@ -1,15 +1,13 @@
 
-prudence.create({
-    type: 'router',
+exports.handler = new prudence.Router({
     name: 'myapp',
     routes: [{ // can be a list or a single route
         // Person resource
         paths: 'person/*', // can also be a list
-        handler: prudence.run('person/resource.js')
+        handler: require('person/resource.js').handler
     }, {
         // Static files
-        handler: prudence.create({
-            type: 'static',
+        handler: new prudence.Static({
             root: 'static/',
             indexes: 'index.html' // can also be a list
         })

@@ -23,7 +23,7 @@ func EncodeEmbed(context *platform.Context, code string) bool {
 
 	context.Builder.WriteString("const __present")
 	context.Builder.WriteString(suffix)
-	context.Builder.WriteString(" = prudence.require(__args")
+	context.Builder.WriteString(" = require(__args")
 	context.Builder.WriteString(suffix)
 	context.Builder.WriteString("[0]).present;\n")
 
@@ -43,7 +43,7 @@ func EncodeEmbed(context *platform.Context, code string) bool {
 	context.Builder.WriteString(suffix)
 	context.Builder.WriteString(".embed(__present")
 	context.Builder.WriteString(suffix)
-	context.Builder.WriteString(", runtime);\n")
+	context.Builder.WriteString(");\n")
 
 	return false
 }

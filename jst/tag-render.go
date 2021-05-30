@@ -21,7 +21,7 @@ func EncodeRender(context *platform.Context, code string) bool {
 		// Start render
 		context.Builder.WriteString("context.startRender(")
 		context.Builder.WriteString(strings.Trim(code, " \n"))
-		context.Builder.WriteString(", prudence);\n")
+		context.Builder.WriteString(", prudence.resolve);\n")
 	}
 
 	return false
