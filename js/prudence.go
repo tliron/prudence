@@ -7,8 +7,8 @@ import (
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	urlpkg "github.com/tliron/kutil/url"
-	"github.com/tliron/prudence/platform"
-	"github.com/tliron/prudence/rest"
+	platform "github.com/tliron/prudence/platform"
+	rest "github.com/tliron/prudence/rest"
 )
 
 //

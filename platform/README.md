@@ -13,14 +13,14 @@ would be to customize the `prudence` command to be bundled with your plugins. Th
 
 ### A note about versions
 
-From Prudence 3.1.0 and onwards the Prudence `platform` package should maintain its contract
-between *minor* versions of Prudence. I.e. extensions written against Prudence 3.1.6 should
-work with Prudence 3.1.12. The latter may add more features, but should not remove or change the
+From Prudence 1.1.0 and onwards the Prudence `platform` package should maintain its contract
+between *minor* versions of Prudence. I.e. extensions written against Prudence 1.1.6 should
+work with Prudence 1.1.12. The latter may add more features, but should not remove or change the
 functionality of existing ones. In other words, if a breaking change needs to be introduced to
 this package then the minor version of Prudence would be bumped. Thus extensions written against
-Prudence 3.2.0 would not be guaranteed to work with Prudence 3.1.x.
+Prudence 1.2.0 would not be guaranteed to work with Prudence 1.1.x.
 
-This discipline will not be maintained for 3.0.x versions. In that early stage we will be
+This discipline will not be maintained for 1.0.x versions. In that early stage we will be
 doing more frequent API changes as the platform moves towards maturity and stability.
 
 

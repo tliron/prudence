@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/tliron/kutil/js"
-	"github.com/tliron/prudence/platform"
+	platform "github.com/tliron/prudence/platform"
 )
 
 func init() {

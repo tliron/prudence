@@ -20,7 +20,7 @@ and functions are first class citizens) but with a crusty C syntax.
 Our chosen ECMAScript engine is [goja](https://github.com/dop251/goja), which is 100% Go and does
 not require any external dependencies.
 
-### Why is Prudence starting with version 3? Where are versions 1 and 2?
+### Wasn't Prudence originally in Java?
 
 Prudence was first conceptualized in 2009. Those were different times. It was originally
 intended as a framework for using various interpreted languages, including templating languages,
@@ -39,10 +39,10 @@ expansive until 2014, when it became version 2, at which point it comprised seve
 Sincerity, Diligence, Succinct, and Scripturian.
 
 The sprawl was unmanageable and development reached a grinding halt. And so in 2021 the project
-was rebooted as version 3. Code was written from scratch in Go, Apache-licensed, and with a tighter
-vision, though the initial concept had not changed. Though considerably more lightweight and easier
-to manage, Prudence 3 is in some ways more powerful and more flexible than it was before. Writing
-code from scratch is a great idea if you can afford the time and effort. And I hope we've all
-learned lessons from our Java foibles. Again: those we different times.
+was rebooted. Code was written from scratch in Go, Apache-licensed, and with a tighter vision, though
+the initial concept had not changed. Though considerably more lightweight and easier to manage,
+The new Prudence is in some ways more powerful and more flexible than it was before. Writing code from
+scratch is a great idea if you can afford the time and effort. And I hope we've all learned lessons
+from our Java foibles. Again: those we different times.
 
-The original code for versions 1 and 2 can still be found in the `java` branch.
+The original code for Prudence in Java is archived [here](https://github.com/tliron/prudence-java).
