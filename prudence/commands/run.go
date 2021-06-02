@@ -49,7 +49,7 @@ var runCommand = &cobra.Command{
 				platform.Restart()
 			})
 			if err != nil {
-				log.Warningf("watch feature not supported")
+				log.Warningf("watch feature not supported on this platform")
 			}
 		}
 
