@@ -11,7 +11,7 @@ func init() {
 }
 
 // platform.EncodeTagFunc signature
-func EncodeCapture(context *platform.Context, code string) bool {
+func EncodeCapture(context *platform.JSTContext, code string) bool {
 	code = code[1:]
 
 	if code == "!" {

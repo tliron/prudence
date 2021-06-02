@@ -11,7 +11,7 @@ func init() {
 }
 
 // platform.EncodeTagFunc signature
-func EncodeInsert(context *platform.Context, code string) bool {
+func EncodeInsert(context *platform.JSTContext, code string) bool {
 	code = code[1:]
 	suffix := context.NextSuffix()
 

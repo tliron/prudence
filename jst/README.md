@@ -1,4 +1,4 @@
-JavaScript Templates (JST)
-==========================
+Prudence: JavaScript Templates (JST)
+====================================
 
 TODO

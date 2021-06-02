@@ -13,8 +13,15 @@ Prudence itself is distributed as a single, compact executable file with no exte
 
 [![Download](assets/media/download.png "Download")](https://github.com/tliron/prudence/releases)
 
-Check out the detailed [usage guide](GUIDE-BASIC.md). Then take a look at the
-[examples](examples/README.md). And don't forget to read the [FAQ](FAQ.md)!
+Documentation:
+
+* [Tutorial](TUTORIAL.md)
+* [Caching guide](CACHING.md)
+* [Examples](examples/README.md)
+* [JavaScript Templates](jst/README.md)
+* [Extension guide](platform/README.md)
+* [xprudence](xprudence/README.md)
+* [FAQ](FAQ.md)
 
 
 Highlights
@@ -36,3 +43,5 @@ Highlights
   [Here's](https://github.com/tliron/prudence/tree/main/examples/go) an example in pure Go.)
 * Additionally supports extensible [JavaScript Templates (JST)](jst/README.md) for generating HTML
   pages by combining design and programming.
+* Prudence is fun. Through rigorous benchmarks conducted in our good-times laboratory we found
+  Prudence to be a zillion times more fun than products from leading brand names.

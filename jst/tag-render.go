@@ -11,7 +11,7 @@ func init() {
 }
 
 // platform.EncodeTagFunc signature
-func EncodeRender(context *platform.Context, code string) bool {
+func EncodeRender(context *platform.JSTContext, code string) bool {
 	code = code[1:]
 
 	if code == "^" {

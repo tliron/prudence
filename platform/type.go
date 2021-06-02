@@ -4,12 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
 )
 
-type CreateFunc func(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error)
+type CreateFunc func(config ard.StringMap, context *js.Context) (interface{}, error)
 
 var creators = make(map[string]CreateFunc)
 
@@ -33,11 +32,11 @@ func OnTypes(f func(type_ string, create CreateFunc) bool) {
 	}
 }
 
-func Create(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
+func Create(config ard.StringMap, context *js.Context) (interface{}, error) {
 	config_ := ard.NewNode(config)
 	if type_, ok := config_.Get("type").String(false); ok {
 		if create, err := GetType(type_); err == nil {
-			return create(config, resolve, runtime)
+			return create(config, context)
 		} else {
 			return nil, err
 		}

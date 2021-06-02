@@ -3,7 +3,6 @@ package rest
 import (
 	"errors"
 
-	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
@@ -33,12 +32,12 @@ func NewFacet(name string) *Facet {
 }
 
 // CreateFunc signature
-func CreateFacet(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
+func CreateFacet(config ard.StringMap, context *js.Context) (interface{}, error) {
 	self := Facet{
 		Representations: make(Representations),
 	}
 
-	if route, err := CreateRoute(config, resolve, runtime); err == nil {
+	if route, err := CreateRoute(config, context); err == nil {
 		self.Route = route.(*Route)
 	} else {
 		return nil, err
@@ -50,7 +49,7 @@ func CreateFacet(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Run
 
 	config_ := ard.NewNode(config)
 	var err error
-	if self.Representations, err = CreateRepresentations(config_.Get("representations").Data, runtime); err != nil {
+	if self.Representations, err = CreateRepresentations(config_.Get("representations").Data, context.Environment.Runtime); err != nil {
 		return nil, err
 	}
 

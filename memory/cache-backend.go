@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
@@ -51,7 +50,7 @@ func NewMemoryCacheBackend() *MemoryCacheBackend {
 }
 
 // CreateFunc signature
-func CreateMemoryCacheBackend(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
+func CreateMemoryCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
 	return NewMemoryCacheBackend(), nil
 }
 
@@ -80,55 +79,61 @@ func (self *MemoryCacheBackend) LoadRepresentation(key platform.CacheKey) (*plat
 
 // CacheBackend interface
 func (self *MemoryCacheBackend) StoreRepresentation(key platform.CacheKey, cached *platform.CachedRepresentation) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	go func() {
+		self.lock.Lock()
+		defer self.lock.Unlock()
 
-	self.representations[key] = cached
+		self.representations[key] = cached
 
-	for _, name := range cached.Groups {
-		var group *CacheGroup
-		var ok bool
-		if group, ok = self.groups[name]; !ok {
-			group = new(CacheGroup)
-			self.groups[name] = group
-		}
-		group.Keys = append(group.Keys, key)
+		for _, name := range cached.Groups {
+			var group *CacheGroup
+			var ok bool
+			if group, ok = self.groups[name]; !ok {
+				group = new(CacheGroup)
+				self.groups[name] = group
+			}
+			group.Keys = append(group.Keys, key)
 
-		// Group expiration
-		index := 0
-		for _, key := range group.Keys {
-			if cached, ok := self.representations[key]; ok {
-				if !cached.Expired() {
-					group.Keys[index] = key
-					index++
-					if cached.Expiration.After(group.Expiration) {
-						group.Expiration = cached.Expiration
+			// Group expiration
+			index := 0
+			for _, key := range group.Keys {
+				if cached, ok := self.representations[key]; ok {
+					if !cached.Expired() {
+						group.Keys[index] = key
+						index++
+						if cached.Expiration.After(group.Expiration) {
+							group.Expiration = cached.Expiration
+						}
 					}
 				}
 			}
+			group.Keys = group.Keys[:index]
 		}
-		group.Keys = group.Keys[:index]
-	}
+	}()
 }
 
 // CacheBackend interface
 func (self *MemoryCacheBackend) DeleteRepresentation(key platform.CacheKey) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	go func() {
+		self.lock.Lock()
+		defer self.lock.Unlock()
 
-	delete(self.representations, key)
+		delete(self.representations, key)
+	}()
 }
 
 // CacheBackend interface
 func (self *MemoryCacheBackend) DeleteGroup(name platform.CacheKey) {
-	self.lock.Lock()
-	defer self.lock.Unlock()
+	go func() {
+		self.lock.Lock()
+		defer self.lock.Unlock()
 
-	if group, ok := self.groups[name]; ok {
-		for _, key := range group.Keys {
-			delete(self.representations, key)
+		if group, ok := self.groups[name]; ok {
+			for _, key := range group.Keys {
+				delete(self.representations, key)
+			}
 		}
-	}
+	}()
 }
 
 func (self *MemoryCacheBackend) Prune() {

@@ -1,8 +1,8 @@
 package platform
 
-import "sync"
-
-var stopChannel = make(chan bool)
+import (
+	"sync"
+)
 
 var startGroup *StartGroup
 
@@ -49,38 +49,32 @@ type Startable interface {
 //
 
 type StartGroup struct {
-	Entries []StartEntry
+	Startables []Startable
 
-	lock sync.Mutex
+	lock    sync.Mutex
+	started sync.WaitGroup
 }
 
 type StartEntry struct {
 	Startable Startable
-	Stopped   chan bool
 }
 
 func NewStartGroup(startables []Startable) *StartGroup {
-	entries := make([]StartEntry, len(startables))
-	for index, startable := range startables {
-		entries[index] = StartEntry{
-			Startable: startable,
-			Stopped:   make(chan bool),
-		}
-	}
-	return &StartGroup{Entries: entries}
+	return &StartGroup{Startables: startables}
 }
 
 func (self *StartGroup) Start() {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	for _, entry := range self.Entries {
-		entry_ := entry // closure capture
+	for _, startable := range self.Startables {
+		startable_ := startable // closure capture
+		self.started.Add(1)
 		go func() {
-			if err := entry_.Startable.Start(); err != nil {
+			if err := startable_.Start(); err != nil {
 				log.Errorf("%s", err.Error())
 			}
-			entry_.Stopped <- true
+			self.started.Done()
 		}()
 	}
 }
@@ -89,10 +83,11 @@ func (self *StartGroup) Stop() {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	for _, entry := range self.Entries {
-		if err := entry.Startable.Stop(); err != nil {
+	for _, startable := range self.Startables {
+		if err := startable.Stop(); err != nil {
 			log.Errorf("%s", err.Error())
 		}
-		<-entry.Stopped
 	}
+
+	self.started.Wait()
 }

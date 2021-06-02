@@ -54,16 +54,17 @@ func createPrudenceExtension(context *js.Context) goja.Value {
 
 	// Type constructors
 	platform.OnTypes(func(type_ string, create platform.CreateFunc) bool {
-		prudence.Set(type_, newTypeConstructor(create, context.Resolve))
+		prudence.Set(type_, newTypeConstructor(create, context))
 		return true
 	})
 
 	return prudence
 }
 
-func newTypeConstructor(create platform.CreateFunc, resolve js.ResolveFunc) func(constructor goja.ConstructorCall, runtime *goja.Runtime) *goja.Object {
+func newTypeConstructor(create platform.CreateFunc, context *js.Context) func(constructor goja.ConstructorCall) *goja.Object {
+	runtime := context.Environment.Runtime
 	// goja constructor signature
-	return func(constructor goja.ConstructorCall, runtime *goja.Runtime) *goja.Object {
+	return func(constructor goja.ConstructorCall) *goja.Object {
 		var config ard.StringMap
 		if len(constructor.Arguments) > 0 {
 			config_ := constructor.Arguments[0].Export()
@@ -75,7 +76,7 @@ func newTypeConstructor(create platform.CreateFunc, resolve js.ResolveFunc) func
 			config = make(ard.StringMap)
 		}
 
-		if object, err := create(config, resolve, runtime); err == nil {
+		if object, err := create(config, context); err == nil {
 			return runtime.ToValue(object).ToObject(runtime)
 		} else {
 			panic(runtime.NewGoError(err))

@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
@@ -28,17 +27,17 @@ func NewResource(name string) *Resource {
 }
 
 // CreateFunc signature
-func CreateResource(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
+func CreateResource(config ard.StringMap, context *js.Context) (interface{}, error) {
 	var self Resource
 
-	router, _ := CreateRouter(config, resolve, runtime)
+	router, _ := CreateRouter(config, context)
 	self.Router = router.(*Router)
 
 	config_ := ard.NewNode(config)
 	facets := platform.AsConfigList(config_.Get("facets").Data)
 	for _, facet := range facets {
 		if facet_, ok := facet.(ard.StringMap); ok {
-			if facet__, err := CreateFacet(facet_, resolve, runtime); err == nil {
+			if facet__, err := CreateFacet(facet_, context); err == nil {
 				self.AddFacet(facet__.(*Facet))
 			} else {
 				return nil, err

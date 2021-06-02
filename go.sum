@@ -426,8 +426,8 @@ github.com/tdewolff/minify/v2 v2.9.17 h1:0RPKCBSz5plIKZkmkm/zeQdqPYf/9NJVwG63NHt
 github.com/tdewolff/minify/v2 v2.9.17/go.mod h1:OLHZpngMfp36EyqxkGGta1l3hB1c+sHhXNHk8WTrsQo=
 github.com/tdewolff/test v1.0.6 h1:76mzYJQ83Op284kMT+63iCNCI7NEERsIN8dLM+RiKr4=
 github.com/tdewolff/test v1.0.6/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
-github.com/tliron/kutil v0.1.34 h1:B+aWLdktUIUJlaihpA0/5ORUrxizHrcoasLaZL9q2FM=
-github.com/tliron/kutil v0.1.34/go.mod h1:jtUVhQgXb41aJvjPp0SJ8yD+NFmVB4ulQynsJAeHnOM=
+github.com/tliron/kutil v0.1.36 h1:9uF0Ec3TkRcUQwjGPjAg9iQg1QB4iFUOJqieSCAGmyg=
+github.com/tliron/kutil v0.1.36/go.mod h1:jtUVhQgXb41aJvjPp0SJ8yD+NFmVB4ulQynsJAeHnOM=
 github.com/tliron/yamlkeys v1.3.5 h1:zfNwrtxNP9pyj2UJV8SgLj6jUP4bsHwFtBByZyIg4AM=
 github.com/tliron/yamlkeys v1.3.5/go.mod h1:8kJ1A/1s3p/I3MQUAbtv72dPEyQGoh0ZkQp0UAkABBo=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=

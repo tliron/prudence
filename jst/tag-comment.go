@@ -9,6 +9,6 @@ func init() {
 }
 
 // platform.EncodeTagFunc signature
-func EncodeComment(context *platform.Context, code string) bool {
+func EncodeComment(context *platform.JSTContext, code string) bool {
 	return false
 }

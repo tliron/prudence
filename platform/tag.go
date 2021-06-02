@@ -1,6 +1,6 @@
 package platform
 
-type EncodeTagFunc func(context *Context, code string) bool // return true to allow trailing newlines
+type EncodeTagFunc func(context *JSTContext, code string) bool // return true to allow trailing newlines
 
 var tagEncoders = make(map[string]EncodeTagFunc)
 

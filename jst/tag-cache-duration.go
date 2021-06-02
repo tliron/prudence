@@ -11,7 +11,7 @@ func init() {
 }
 
 // platform.EncodeTagFunc signature
-func EncodeCacheDuration(context *platform.Context, code string) bool {
+func EncodeCacheDuration(context *platform.JSTContext, code string) bool {
 	code = code[1:]
 
 	context.Builder.WriteString("context.cacheDuration = ")

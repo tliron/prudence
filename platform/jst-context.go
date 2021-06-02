@@ -6,22 +6,22 @@ import (
 )
 
 //
-// Context
+// JSTContext
 //
 
-type Context struct {
+type JSTContext struct {
 	Builder strings.Builder
 
 	embedIndex int64
 }
 
-func (self *Context) NextSuffix() string {
+func (self *JSTContext) NextSuffix() string {
 	suffix := strconv.FormatInt(self.embedIndex, 10)
 	self.embedIndex++
 	return suffix
 }
 
-func (self *Context) WriteLiteral(literal string) {
+func (self *JSTContext) WriteLiteral(literal string) {
 	if literal != "" {
 		self.Builder.WriteString("context.write('")
 		for _, rune_ := range literal {

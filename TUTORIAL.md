@@ -1,5 +1,5 @@
-Prudence: Basic Usage Guide
-===========================
+Prudence: Tutorial
+==================
 
 Let's learn by example and build a web application using Prudence.
 
@@ -157,7 +157,7 @@ We've added an additional route before our other two routes, though in this case
 also given it a "paths" property. Above you've seen that the resource's facet has a "paths"
 property, too.
 
-## "paths"
+### "paths"
 
 "paths" is used often in Prudence to control routing. The incoming request URL's path is
 checked against our "paths" before being handled. "paths" can be a single string, which is
@@ -420,5 +420,5 @@ Or just render an area of the JST with the "render" sugar, `<%^`:
 Next Steps
 ----------
 
-This covers all the basics. Let's move on to
-[more advanced Prudence functionality](GUIDE-ADVANCED.md).
+You're now and expert on all the basics. It is strongly recommended to continue to the
+[caching guide](CACHING.md).

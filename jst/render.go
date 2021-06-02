@@ -16,7 +16,7 @@ var jstRe = regexp.MustCompile(`(?s)<%.*?%>`)
 
 // platform.RenderFunc signature
 func RenderJST(content string, resolve js.ResolveFunc) (string, error) {
-	var context platform.Context
+	var context platform.JSTContext
 
 	context.Builder.WriteString("exports.present = function(context) {\n")
 

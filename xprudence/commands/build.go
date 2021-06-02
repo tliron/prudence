@@ -99,6 +99,10 @@ func Build() {
 	path := filepath.Join(output, executable)
 	log.Infof("building %s", path)
 	Command(sourceDirectory, []string{"GOBIN=" + output}, go_, "install", ".")
+	//-ldflags " \
+	//-X 'github.com/tliron/kutil/version.GitVersion=$VERSION' \
+	//-X 'github.com/tliron/kutil/version.GitRevision=$REVISION' \
+	//-X 'github.com/tliron/kutil/version.Timestamp=$TIMESTAMP'"
 	terminal.Printf("built: %s\n", path)
 }
 

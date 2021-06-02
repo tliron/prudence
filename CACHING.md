@@ -1,7 +1,7 @@
-Prudence: Advanced Usage Guide
-==============================
+Prudence: Caching Guide
+=======================
 
-Make sure you're up-to-speed with [the basics](GUIDE-BASIC.md) first!
+Make sure you're up-to-speed with [the basics](TUTORIAL.md) first!
 
 
 Server-Side Caching
@@ -141,7 +141,7 @@ fine-grained caching scheme, because that other representation may also be cache
 with its own cache key and cache duration. Thus, if many different pages use that same
 building block they might not have to regenerate it each time.
 
-Because JST files only have "present" and do not have a "construct", the sugar allow you
+Because JST files only have "present" and do not have a "construct", the sugar allows you
 to optionally add a cache key. Note that this is the key for the embedded representation,
 not the containing one:
 
@@ -150,12 +150,12 @@ not the containing one:
 ### Cache Groups
 
 Deciding on a good cache key scheme can go a long way towards helping your application scale.
-However, aggressive caching can introduce consistency bugs. For example, imagine a resource
-with several factets, each having several representations, and all are cached. Now a client
+However, aggressive caching can introduce data inconsistency. For example, imagine a resource
+with several facets, each having several representations, and all are cached. Now a client
 sends a DELETE request to one representation, where you have an "erase" hook. Prudence will make
 sure to delete the cache entry for that particular representation. But what about all the other
-representations? Normally, they stay in the cache until they expire, thus presenting out-of-date
-data to clients.
+representations? Normally, they stay in the cache until they expire, thus potentially presenting
+out-of-date data to clients.
 
 This might not be a problem for your application. But if it is, Prudence provides a powerful
 feature to tackle it: cache groups. These are strings that can be assigned to a cache entry in

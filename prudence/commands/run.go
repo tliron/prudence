@@ -40,7 +40,7 @@ var runCommand = &cobra.Command{
 		})
 
 		if watch {
-			environment.Watch(func(id string, module *kutiljs.Module) {
+			err := environment.Watch(func(id string, module *kutiljs.Module) {
 				if module != nil {
 					log.Infof("module changed: %s", module.Id)
 				} else {
@@ -48,6 +48,9 @@ var runCommand = &cobra.Command{
 				}
 				platform.Restart()
 			})
+			if err != nil {
+				log.Warningf("watch feature not supported")
+			}
 		}
 
 		_, err := environment.RequireID(args[0])

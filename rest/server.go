@@ -3,7 +3,6 @@ package rest
 import (
 	"net"
 
-	"github.com/dop251/goja"
 	"github.com/fasthttp/http2"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
@@ -42,7 +41,7 @@ func NewServer(name string) *Server {
 }
 
 // CreateFunc signature
-func CreateServer(config ard.StringMap, resolve js.ResolveFunc, runtime *goja.Runtime) (interface{}, error) {
+func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error) {
 	var self Server
 
 	config_ := ard.NewNode(config)
