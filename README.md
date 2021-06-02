@@ -13,7 +13,9 @@ Prudence itself is distributed as a single, compact executable file with no exte
 
 [![Download](assets/media/download.png "Download")](https://github.com/tliron/prudence/releases)
 
-Documentation:
+
+Documentation
+-------------
 
 * [Tutorial](TUTORIAL.md)
 * [Caching guide](CACHING.md)
