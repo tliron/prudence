@@ -22,7 +22,7 @@ type PrudenceAPI struct {
 	js.FileAPI
 
 	Log             logging.Logger
-	JSContext       *js.Context
+	JsContext       *js.Context
 	DefaultNotFound rest.Handler
 }
 
@@ -30,16 +30,16 @@ func NewPrudenceAPI(urlContext *urlpkg.Context, jsContext *js.Context) *Prudence
 	return &PrudenceAPI{
 		FileAPI:         js.NewFileAPI(urlContext),
 		Log:             log,
-		JSContext:       jsContext,
+		JsContext:       jsContext,
 		DefaultNotFound: rest.DefaultNotFound,
 	}
 }
 
 func (self *PrudenceAPI) LoadString(id string) (string, error) {
-	if url_, err := self.JSContext.Resolve(id); err == nil {
+	if url_, err := self.JsContext.Resolve(id); err == nil {
 		if fileUrl, ok := url_.(*urlpkg.FileURL); ok {
-			if self.JSContext.Environment.Watcher != nil {
-				self.JSContext.Environment.Watcher.Add(fileUrl.Path)
+			if self.JsContext.Environment.Watcher != nil {
+				self.JsContext.Environment.Watcher.Add(fileUrl.Path)
 			}
 		}
 
@@ -90,5 +90,5 @@ func (self *PrudenceAPI) InvalidateCacheGroup(group string) {
 }
 
 func (self *PrudenceAPI) Render(content string, renderer string) (string, error) {
-	return platform.Render(content, renderer, self.JSContext.Resolve)
+	return platform.Render(content, renderer, self.JsContext)
 }

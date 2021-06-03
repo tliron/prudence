@@ -21,7 +21,7 @@ func HandleRender(context *platform.JSTContext, code string) bool {
 		// Start render
 		context.Builder.WriteString("context.startRender(")
 		context.Builder.WriteString(strings.Trim(code, " \n"))
-		context.Builder.WriteString(", prudence.resolve);\n")
+		context.Builder.WriteString(", prudence.jsContext);\n")
 	}
 
 	return false

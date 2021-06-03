@@ -13,6 +13,6 @@ func init() {
 }
 
 // platform.RenderFunc signature
-func RenderMarkdown(content string, resolve js.ResolveFunc) (string, error) {
+func RenderMarkdown(content string, context *js.Context) (string, error) {
 	return util.BytesToString(markdown.ToHTML(util.StringToBytes(content), nil, nil)), nil
 }

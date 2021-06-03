@@ -120,8 +120,8 @@ func (self *Context) EndCapture() error {
 	}
 }
 
-func (self *Context) StartRender(renderer string, resolve js.ResolveFunc) error {
-	if renderWriter, err := NewRenderWriter(self.writer, renderer, resolve); err == nil {
+func (self *Context) StartRender(renderer string, jsContext *js.Context) error {
+	if renderWriter, err := NewRenderWriter(self.writer, renderer, jsContext); err == nil {
 		self.Log.Debugf("start render: %s", renderer)
 		self.writer = renderWriter
 		return nil

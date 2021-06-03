@@ -4,7 +4,7 @@ Prudence: JavaScript Templates (JST)
 The [tutorial](../README.md) covers basic usage, this page is for reference.
 
 The tag delimiters are `<%` and `%>`. Characters that follow right after the opening delimiter
-specify special tags, or "sugar", that offer additional features.
+specify special tags, or "sugar".
 
 The delimiters can be escaped by prefixing a backslash: `\<%` and `\%>`.
 
@@ -38,7 +38,7 @@ will be output as this:
 The one exception is the "expression" tag, `<%=`, which does not swallow the trailing newline
 because it's intended to be used within flows of text.
 
-The following tags are built in. It is also possible to [extend](../prudence/README.md)
+The following tags are built in. It is also possible to [extend](../platform/README.md#jst-sugar)
 Prudence with additional tags.
 
 ### Cache duration: `<%* numeric_expr %>`
@@ -95,8 +95,8 @@ representation has been cached (with a "context.cacheDuration" > 0) then it may 
 from a cache. This can allow for powerful, fine-grained caching.
 
 Note that the current context will be copied into the embedded context. This means that any
-variable you set will be usable in the embedded context. The opposite does not happen,
-though, to ensure that anything the embedded representation does do the context will not
+variable you set can be accessed in the embedded context. The opposite does not happen in
+order to ensure that anything the embedded representation does to the context will not
 interfere with the current one.
 
 The long form allows you to set the "context.cacheKey" for the embedded representation

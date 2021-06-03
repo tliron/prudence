@@ -16,17 +16,17 @@ import (
 type RenderWriter struct {
 	writer  io.Writer
 	render  platform.RenderFunc
-	resolve js.ResolveFunc
+	context *js.Context
 	buffer  *bytes.Buffer
 }
 
-func NewRenderWriter(writer io.Writer, renderer string, resolve js.ResolveFunc) (*RenderWriter, error) {
+func NewRenderWriter(writer io.Writer, renderer string, context *js.Context) (*RenderWriter, error) {
 	if render_, err := platform.GetRenderer(renderer); err == nil {
 		// Note: renderer can be nil
 		return &RenderWriter{
 			writer:  writer,
 			render:  render_,
-			resolve: resolve,
+			context: context,
 			buffer:  bytes.NewBuffer(nil),
 		}, nil
 	} else {
@@ -49,7 +49,7 @@ func (self *RenderWriter) Close() error {
 	if self.render == nil {
 		// Optimize for empty renderer
 		return nil
-	} else if content, err := self.render(util.BytesToString(self.buffer.Bytes()), self.resolve); err == nil {
+	} else if content, err := self.render(util.BytesToString(self.buffer.Bytes()), self.context); err == nil {
 		_, err = self.writer.Write(util.StringToBytes(content))
 		return err
 	} else {

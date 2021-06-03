@@ -11,7 +11,7 @@ import (
 // js.PrecompileFunc signature
 func precompile(url urlpkg.URL, script string, context *js.Context) (string, error) {
 	if strings.HasSuffix(url.String(), ".jst") {
-		if script_, err := platform.Render(script, "jst", context.Resolve); err == nil {
+		if script_, err := platform.Render(script, "jst", context); err == nil {
 			return script_, nil
 		} else {
 			return "", err

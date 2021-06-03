@@ -2,7 +2,7 @@ XPrudence: The Prudence Customizer
 ==================================
 
 The downloadable distribution of Prudence contains a ready-to-use `prudence` executable
-that bundled with all the basic types, APIs, cache backends, renderers, and JST tags.
+that isbundled with all the basic types, APIs, cache backends, renderers, and JST tags.
 However, if you want to [extend](../platform/README.md) Prudence then you'll need to make
 a custom build of `prudence` with your plugins.
 

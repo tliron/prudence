@@ -6,7 +6,7 @@ import (
 	"github.com/tliron/kutil/js"
 )
 
-type RenderFunc func(content string, resolve js.ResolveFunc) (string, error)
+type RenderFunc func(content string, context *js.Context) (string, error)
 
 var renderers = make(map[string]RenderFunc)
 
@@ -25,13 +25,13 @@ func GetRenderer(renderer string) (RenderFunc, error) {
 	}
 }
 
-func Render(content string, renderer string, resolve js.ResolveFunc) (string, error) {
+func Render(content string, renderer string, context *js.Context) (string, error) {
 	if render, err := GetRenderer(renderer); err == nil {
 		if render == nil {
 			// Renderer can be nil
 			return content, nil
 		} else {
-			return render(content, resolve)
+			return render(content, context)
 		}
 	} else {
 		return "", err

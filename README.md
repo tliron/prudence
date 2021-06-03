@@ -23,6 +23,7 @@ Documentation
 * [Examples](examples/README.md)
 * [JavaScript API](js/README.md)
 * [JavaScript Templates (JST)](jst/README.md)
+* [Renderers](render/README.md)
 * [Extension guide](platform/README.md)
 * [xprudence](xprudence/README.md)
 * [Go API](https://pkg.go.dev/github.com/tliron/prudence)

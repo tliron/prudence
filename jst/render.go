@@ -15,10 +15,10 @@ func init() {
 var jstRe = regexp.MustCompile(`(?s)<%.*?%>`)
 
 // platform.RenderFunc signature
-func RenderJST(content string, resolve js.ResolveFunc) (string, error) {
-	var context platform.JSTContext
+func RenderJST(content string, jsContext *js.Context) (string, error) {
+	var jstContext platform.JSTContext
 
-	context.Builder.WriteString("exports.present = function(context) {\n")
+	jstContext.Builder.WriteString("exports.present = function(context) {\n")
 
 	last := 0
 
@@ -33,7 +33,7 @@ func RenderJST(content string, resolve js.ResolveFunc) (string, error) {
 			//log.Debugf("match: %s", content[start:end])
 
 			// Write previous chunk
-			context.WriteLiteral(content[last:start])
+			jstContext.WriteLiteral(content[last:start])
 			last = end
 
 			code := content[start+2 : end-2]
@@ -55,7 +55,7 @@ func RenderJST(content string, resolve js.ResolveFunc) (string, error) {
 			encoded := false
 			platform.OnTags(func(prefix string, handleTag platform.HandleTagFunc) bool {
 				if strings.HasPrefix(code, prefix) {
-					if handleTag(&context, code) {
+					if handleTag(&jstContext, code) {
 						swallowTrailingNewline = false
 					}
 					encoded = true
@@ -66,8 +66,8 @@ func RenderJST(content string, resolve js.ResolveFunc) (string, error) {
 
 			if !encoded {
 				// As is
-				context.Builder.WriteString(strings.Trim(code, " \n"))
-				context.Builder.WriteRune('\n')
+				jstContext.Builder.WriteString(strings.Trim(code, " \n"))
+				jstContext.Builder.WriteRune('\n')
 			}
 
 			if swallowTrailingNewline {
@@ -79,10 +79,10 @@ func RenderJST(content string, resolve js.ResolveFunc) (string, error) {
 		}
 	}
 
-	context.WriteLiteral(content[last:])
-	context.Builder.WriteString("};\n")
+	jstContext.WriteLiteral(content[last:])
+	jstContext.Builder.WriteString("};\n")
 
-	string_ := context.Builder.String()
+	string_ := jstContext.Builder.String()
 	//log.Debugf("%s", string_)
 
 	return string_, nil

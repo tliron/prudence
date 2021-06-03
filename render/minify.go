@@ -37,31 +37,31 @@ func init() {
 }
 
 // platform.RenderFunc signature
-func RenderMinifyCSS(content string, resolve kutiljs.ResolveFunc) (string, error) {
+func RenderMinifyCSS(content string, context *kutiljs.Context) (string, error) {
 	return minify_.String("text/css", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifyHTML(content string, resolve kutiljs.ResolveFunc) (string, error) {
+func RenderMinifyHTML(content string, context *kutiljs.Context) (string, error) {
 	return minify_.String("text/html", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifySVG(content string, resolve kutiljs.ResolveFunc) (string, error) {
+func RenderMinifySVG(content string, context *kutiljs.Context) (string, error) {
 	return minify_.String("image/svg+xml", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifyJavaScript(content string, resolve kutiljs.ResolveFunc) (string, error) {
+func RenderMinifyJavaScript(content string, context *kutiljs.Context) (string, error) {
 	return minify_.String("text/javascript", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifyJSON(content string, resolve kutiljs.ResolveFunc) (string, error) {
+func RenderMinifyJSON(content string, context *kutiljs.Context) (string, error) {
 	return minify_.String("application/json", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifyXML(content string, resolve kutiljs.ResolveFunc) (string, error) {
+func RenderMinifyXML(content string, context *kutiljs.Context) (string, error) {
 	return minify_.String("application/xml", content)
 }

@@ -276,3 +276,31 @@ And then using it in JST:
     <div>
         <%~ I like to watch TV %>
     </div>
+
+
+Renderers
+---------
+
+The Prudence renderer API is quite straightforward: it accepts text as input and returns text
+as output. What the [renderer](../render/README.md) actually does, of course, can be quite
+sophisticated. It could be an entire language implementation. Here's a trivial example:
+
+    package plugin
+
+    import (
+        "strings"
+        "github.com/tliron/kutil/js"
+        "github.com/tliron/prudence/platform"
+    )
+
+    func init() {
+        platform.RegisterRenderer("doublespace", RenderDoubleSpace)
+
+
+    // platform.RenderFunc signature
+    func RenderDoubleSpace(content string, context *js.Context) (string, error) {
+        return strings.ReplaceAll(context, " ", "  "), nil
+    }
+
+Note that the JavaScript context is provided as an argument. This is to allow sophisticated
+renderers to integrate with the resolver, module, etc.

@@ -36,8 +36,8 @@ interfaces.
 Prudence will automatically restart the server(s) if any of the dependent files (JavaScript
 source code or others, such as includes) are changed. To do this it "watches" these files
 using filesystem services. To turn this feature off run Prudence with the `--watch=false`
-flag. Note that restarting the server(s) does *not* delete any cached representations, and
-that includes the in-memory cache backend.
+flag. Note that restarting the server(s) does *not* delete any cached representations, even 
+if you're using the in-memory cache backend.
 
 We have a server running. Now, let's add an application!
 
@@ -47,7 +47,7 @@ The Router
 
 Let's create a directory for our application, `myapp`. You don't have to organize your files
 in any particular way, but it's nice to have the application in its own directory. After
-all, you might want to have more than one applications running on the same server. And then
+all, you might want to have more than one application running on the same server. And then
 create a `myapp/router.js` file with this code:
 
     exports.handler = new prudence.Router({
@@ -61,13 +61,12 @@ create a `myapp/router.js` file with this code:
         }]
     });
 
-The "name" property is optional and only used for logging, so that if you have multiple
-applications running on the same server then you'd more easily be able to read the logs.
-Most Prudence types support this property.
+The "name" property is optional and only used for logging, which is useful if you have
+multiple applications running on the same server. A few Prudence types support this property.
 
-Create a directory `myapp/files` and put any file(s) you want there. (The "root" path is
-relative to the current file's directory. Actually, in Prudence almost all file references
-are relative to the current file's directory.)
+Create a `myapp/files` directory and put any file(s) you want there. Note that the "root" path
+is relative to the current JavaScript file's directory. Actually, in Prudence almost all file
+references are relative to the current JavaScript file's directory.
 
 Then, edit your `start.js` with this code:
 
@@ -76,24 +75,32 @@ Then, edit your `start.js` with this code:
         handler: require('myapp/router.js').handler
     }));
 
-If you run `prudence run start.js` again, you should have a running static file server.
-You can use `curl` again to test it, or open a web browser to
-[`http://localhost:8080`](http://localhost:8080). The Prudence "static" handler will, by
-default, automatically generate an HTML page listing the contents of the directory.
+Prudence is a [CommonJS-style modular](http://www.commonjs.org/specs/modules/1.0/)
+JavaScript environment. Simply put, any module can "export" values, including functions,
+by placing them in its "exports" global. Other modules can use "require" to access those
+exports. Prudence caches the module's exports, so that any module is only ever executed
+once.
+
+The "require" here will give us access to the "exports.handler" from `router.js`.
+
+Quit Prudence with CTRL+C and restart it. (Yes, it restarted automatically when we edited
+this file, but because we changed the server itself we need to quit Prudence entirely.)
+
+You should have a running static file server now. You can use `curl` again to test it, or
+open a web browser to [`http://localhost:8080`](http://localhost:8080). The Prudence
+"Static" handler will, by default, automatically generate an HTML page listing the contents
+of the directory.
 
 In the above code we've set three different "handlers". What are these?
 
 ### Handlers
 
-Like many web frameworks, Prudence is based on chaining together "handlers" that attempt to
-do something with each incoming request. Handlers can delegate to other handlers based on
-certain aspects of the request (we call this "routing", not to be confused with network
-routing in the IP protocol!) and may affect certain aspects of the request or the response
-along the way. Or, they can declare the handling complete and terminate there (e.g. if they
-generated a complete response).
+Like many web frameworks, Prudence is based on chaining together "handlers" that can modify
+or terminate a request. Handlers can also delegate to other handlers based on aspects of the
+request (we call this "routing", not to be confused with network routing in the IP protocol!).
 
-The "server" object only allows for a single handler, so it's very common to set it to be
-a "router" handler. Routers, as you can see above, allow for multiple "routes", each with
+The "Server" object only allows for a single handler, so it's very common to set it to be
+a "Router" handler. Routers, as you can see above, allow for multiple "routes", each with
 its own handler. Each route is attempted *in order*. In this case we are trying to handle
 the reqest with a "Static" handler, and if that fails (file not found) it will move on to
 the next route, which is Prudence's default 404 Not Found handler.
@@ -116,13 +123,13 @@ code:
         }
     });
 
-A "resource" is similar to a router except it has "facets" instead of "routes". Whereas a
+A "Resource" is similar to a "Router" except it has "facets" instead of "routes". Whereas a
 route is an arbitrary handler, a facet handles a request by generating a representation
-and/or updating the resource. A resource can have multiple facets, and each facet can have
-multiple representations. Each representation usually targets one or more content types.
-For example, you might have one representation for HTML and another representation for both
-JSON and YAML. This feature is provided for as a convenience to allow you to better separate
-and organize code.
+or otherwise affecting the resource (more on that later). A resource can have multiple facets,
+and each facet can have multiple representations. Each representation usually targets one or
+more content types. For example, you might have one representation for HTML and another
+representation for both JSON and YAML. You can think of the "Resource" as encapsulating state
+with all facets making use of the same basic state.
 
 ### "present"
 
@@ -134,9 +141,10 @@ Now let's create the representation, `myapp/person/json.js`:
         context.contentType = 'application/json';
     };
 
-The name of this function, "present", is required by Prudence. The "functions" property in
-the representation in `resource.js` uses a call to "require" to hook to functions with
-specific names. (We'll get to the other optional hooks later on in this guide.)
+The name of this exported function, "present", is required by Prudence. The "functions"
+property in the representation in `resource.js` uses a call to "require" to hook to
+functions with specific names. (We'll get to the other optional hooks later on in this
+tutorial.)
 
 Now, edit your `myapp/router.js` with this code:
 
@@ -192,22 +200,15 @@ Our application is more complex now, so let's follow a request one step at a tim
 5. The handler is a resource with a single facet, so let's try it.
 6. The first facet's "paths" is `{name}`. This matches! Before selecting a representation
    the wildcard's value is placed in the "name" variable.
-7. The facet has only representation, so we'll choose it. The representation is hooked to
-   `json.js`.
-8. The `json.js` file doesn't have any of the optional hooks, so we'll just call its
-   "present" function.
+7. The facet has only one representation, so we'll choose it. The representation is hooked
+   to `json.js`.
+8. The `json.js` file doesn't have any of the optional hooks (more on those later), so we'll
+   just call its "present" function.
 9. "present" sets the content type to JSON and writes JSON to the response using the
    "name" variable that was extracted via the path wildcard.
 
 
-JavaScript
-----------
-
-Prudence is a [CommonJS-style modular](http://www.commonjs.org/specs/modules/1.0/)
-JavaScript environment. Simply put, any module can "export" values, including functions,
-by placing them in its "exports" global. Other modules can use "require" to access those
-exports. Prudence caches the module's exports, so that any module is only ever executed
-once.
+### More JavaScript
 
 You might be wondering at this point what APIs are available for your JavaScript code. Can
 you use libraries downloaded from [npm](https://www.npmjs.com/)? The answer is a qualified no.
@@ -219,38 +220,40 @@ relies on platform-specific APIs will not.
 Prudence provides you with an alternative solution: the ability to use almost any Go library
 as-is in JavaScript. There's a growing ecosystem of great Go libraries that can help you write
 your application, including database drivers. To learn how to use them see the
-[extension guide](platform/README.md).
+[extension guide](platform/README.md#javascript-apis).
 
 
 Effects
 -------
 
 The "present" hook should not cause server-side changes to the resource. However, there are
-three more hooks you can add to your representation to allow for changed, operations, and other
+three more hooks you can add to your representation to allow for changes, operations, and other
 effects.
 
 ### "erase"
 
-This hook works with the DELETE verb. How you interpret erasure is up to you: it could mean
+This hook works with the DELETE verb. The meaning of erasure is up to you: it could be about
 deleting data from a database, closing a session, invalidating a cache, etc. Just remember
 that DELETE is idempotent: multiple DELETE requests to the same URL should have the same
 overall result. A bad example of erasure would thus be decreasing an existing counter, because
 several calls to DELETE would result in a different final number.
 
 Yes, we did say *multiple DELETE requests to the same URL*. Though the HTTP specification
-doesn't explicitly forbid request bodies, many implementations ignore or even discard them.
-It is thus generally not a good idea to take the request body into consideration in "erase".
+doesn't explicitly forbid request bodies in DELETE, many implementations ignore or even discard
+the body. It is thus generally not a good idea to take the request body into consideration in
+"erase" and stick to the URL and headers.
 
 If your erasure succeeds you must set "context.done" to true. Writing a response body is
-optional, and indeed many clients may ignore it. Prudence will automatically set the return
-code to 204 (No Content) if you don't write anything. If you do want a response body, it
-might make sense to call "present" to render the results of the erasure.
+optional, and indeed many clients may ignore it, just like they ignore the request body.
+Prudence will automatically set the return code to 204 (No Content) if you don't write
+anything. If you do want a response body, it might make sense to call "present" to render
+the full representation after the erasure.
 
 In addition to setting "context.done" to true you can also set "context.async" to true, which
 tells the client that erasure is going to happen soon via status 202 (Accepted). This could be
 a useful optimization for improving throughput, because you can respond to the request quickly
 and do the actual erasure asynchronously. Of course in some situations it may be important to
-do a synchronized erasure. Example:
+do a synchronized erasure. Async example:
 
     exports.erase = function(context) {
         prudence.go(function() { // runs the function in a thread
@@ -261,14 +264,14 @@ do a synchronized erasure. Example:
     }
 
 (Note that setting "context.done" to true will also delete any server-side cache for the
-representation. We'll get to that in the advance guide.)
+representation. We'll get to that in the caching guide.)
 
 ### "modify"
 
-This hook works with the PUT verb. Again, the actual semantics of modification are up to you.
+This hook works with the PUT verb. Again, the actual meaning of modification is up to you.
 Importantly, modification refers to both creation *and* change. Many people think that PUT is
-meant for creation and POST is meant for change (or the other way around), and they are wrong.
-POST has an entirely different use, which we'll get to below.
+meant for creation and POST is meant for change (or the other way around). Those people are
+wrong: POST has an entirely different use, which we'll get to below.
 
 PUT is special because, like DELETE, it is idempotent. Again, think back to the example of
 decreasing a counter: when your "modify" is called multiple times in succession with the same
@@ -278,11 +281,12 @@ Erasure, of course, is also a kind of modification, and indeed the "modify" hook
 to erase parts of or even the whole resource. For example, an empty request or an empty JSON array
 or some other directive can be understood by your "modify" to mean erasure. However, the "erase"
 hook is more specialized in that it allows for the "async" response and is sometimes optimized to
-ignore the request body. So, it's generally better to use "erase" for erasure if you can.
+ignore the request body. So, it's generally better to use "erase" for erasure if you can. Its
+semantics are more optimal for that.
 
-As with "erase", you must set "context.done" to true if the change happened. There is no support
-for "context.async". However, you can optionally set "context.created" to true to let the client
-know that the resource was created rather than changed.
+As with "erase" you must set "context.done" to true if the modification happened. There is no
+support for "context.async". However, you can optionally set "context.created" to true to let
+the client know that the resource was created rather than changed.
 
 Though not required, it's often a good idea with PUT to return the modified representation,
 essentially what we see in the next GET. So it might make sense to just call "present". Example:
@@ -296,7 +300,7 @@ essentially what we see in the next GET. So it might make sense to just call "pr
     }
 
 (Note that setting "context.done" to true will also update the server-side cache for the
-representation. We'll get to that in the advance guide.)
+representation. We'll get to that in the caching guide.)
 
 ### "call"
 
@@ -304,8 +308,8 @@ This hook works with the POST verb. It is the most general-purpose verb, and thu
 possible to optimize. Indeed, POST is non-idempotent and non-cacheable and should be your last
 resort.
 
-"call" is what you can use for non-idempotent modifications, such as decreasing a counter. But
-it doesn't just have to be about modifications. "call" can run a job, start a workflow, process
+"call" is what you use for non-idempotent modifications, such as decreasing a counter. But it
+doesn't just have to be about modifications. "call" can run a job, start a workflow, process
 a payment, or indeed call an API. It's for any server-side operation on your resource.
 
 OK, so we know how to create a dynamic resource. But there has to be an easier way to
@@ -319,7 +323,7 @@ The "present" function in JavaScript gives us a lot of power, but it can be inco
 if most of what we're doing is generating HTML. For this reason Prudence comes with an
 extensible templating engine, JST, which reverses the order: HTML is the "first-class"
 default mode, while JavaScript code has to be explicitly delimited. Additionally, JST comes
-with lots of useful sugar for common tasks.
+with lots of useful sugar.
 
 Let's start simple and add another representation to our `resource.js`:
 
@@ -361,17 +365,19 @@ Now, let's create `myapp/person/html.jst`
 
 As you can see, we embed arbitrary JavaScript code using the `<%` and `%>` delimiters.
 The first character right after the opening delimiter is used for sugar. In this case
-the `<%==` sugar will simply write the variable in-place. For more JST sugar see the
-[JST documentation](jst/README.md). It is even possible to [extend](platform/README.md)
-JST with your own custom sugar.
+the `<%==` sugar writes the context variable in-place and `<%=` writes any JavaScript
+expression, in this case a local number variable.
+
+For more JST sugar see the [JST documentation](jst/README.md). It is even possible to
+[extend](platform/README.md#jst-sugar) JST with your own custom sugar.
 
 Behind the scenes the the entire JST file is translated into JavaScript code and wrapped
 in an exported "present" function, allowing it to be used with "require" in the same way we
 hooked `json.js`.
 
-If you check the [`http://localhost:8080/person/linus`](http://localhost:8080/person/linus)
+If you now check the [`http://localhost:8080/person/linus`](http://localhost:8080/person/linus)
 URL in your web browser, it will indeed default to this HTML representation, because that's
-what web browsers perfer. In the CLI you need to explicitly ask for HTML:
+what web browsers perfer. With curl you need to explicitly ask for HTML:
 
     curl localhost:8080/person/linus -v --header 'Accept: text/html'
 
@@ -388,9 +394,10 @@ And `template.jst`:
     <html>
     <head><title>My Site</title></head>
     <body>
-        <%= context.variables.body %>
+        <%== 'body' %>
     </body>
     </html>
+
 
 Rendering
 ---------
@@ -416,6 +423,8 @@ Or just render an area of the JST with the "render" sugar, `<%^`:
         Minimize!
       </div>
     <%^^%>
+
+For a list of all supported renders see the [documentation](render/README.md).
 
 
 Next Steps

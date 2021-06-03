@@ -38,11 +38,11 @@ JavaScript, Lua, Clojure, Python, Ruby, and more. The project kept getting bulki
 expansive until 2014, when it became version 2, at which point it comprised several projects:
 Sincerity, Diligence, Succinct, and Scripturian.
 
-The sprawl was unmanageable and development reached a grinding halt. And so in 2021 the project
-was rebooted. Code was written from scratch in Go, Apache-licensed, and with a tighter vision, though
-the initial concept had not changed. Though considerably more lightweight and easier to manage,
-The new Prudence is in some ways more powerful and more flexible than it was before. Writing code from
-scratch is a great idea if you can afford the time and effort. And I hope we've all learned lessons
-from our Java foibles. Again: those we different times.
+The sprawl was unmanageable and development came to a grinding halt. And so in 2021 the project was
+rebooted. Code was rewritten from scratch in Go, Apache-licensed, and with a tighter vision with
+essentially the same initial concept. Though considerably more lightweight and easier to manage, the
+new Prudence is in some ways more powerful and more flexible than it was before. Writing code from
+scratch is a great idea if you can afford the time and effort! In conclusion, I hope we've all learned
+lessons from our Java foibles. Again: those we different times.
 
 The original code for Prudence in Java is archived [here](https://github.com/tliron/prudence-java).
