@@ -6,7 +6,7 @@ import (
 	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
-	platform "github.com/tliron/prudence/platform"
+	"github.com/tliron/prudence/platform"
 )
 
 func newExtensions() []js.Extension {

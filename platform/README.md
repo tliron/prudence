@@ -245,11 +245,11 @@ likely will do is write JavaScript source code into the context. Remember that t
 code is eventually integrated in-place into the JST, which is in the end one big "present" hook
 function.
 
-The returned value is usually "false", which means that Prudence will swallow any trailing newline
-after the tag's end delimiter. This is what we want with most tags, as it avoids filling your output
-with empty lines. However, you can return "true" to disable this, which is what the "expression"
-sugar, `<%=`, does. Also note that the user can explicitly disable this effect by putting a `/`
-just before the end delimiter: `/%>`.
+The returned value is usually "false", which means that Prudence will swallow the trailing newline
+character just after the tag's end delimiter. This is what we want with most tags, as it avoids
+filling your output with empty lines. However, you can return "true" to disable this, which is what
+the "expression" sugar, `<%=`, does. Also note that the user can explicitly disable this effect by
+putting a `/` just before the end delimiter: `/%>`.
 
 Example:
 
@@ -264,7 +264,7 @@ Example:
         platform.RegisterTag("~", EncodeInBed)
     }
 
-    // platform.EncodeTagFunc signature
+    // platform.HandleTagFunc signature
     func EncodeInBed(context *platform.JSTContext, code string) bool {
         code = code[1:]
         context.WriteLiteral(strings.Trim(code, " \n") + " in bed")

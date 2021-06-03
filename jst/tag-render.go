@@ -7,11 +7,11 @@ import (
 )
 
 func init() {
-	platform.RegisterTag("^", EncodeRender)
+	platform.RegisterTag("^", HandleRender)
 }
 
-// platform.EncodeTagFunc signature
-func EncodeRender(context *platform.JSTContext, code string) bool {
+// platform.HandleTagFunc signature
+func HandleRender(context *platform.JSTContext, code string) bool {
 	code = code[1:]
 
 	if code == "^" {

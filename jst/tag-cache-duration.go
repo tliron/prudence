@@ -7,11 +7,11 @@ import (
 )
 
 func init() {
-	platform.RegisterTag("*", EncodeCacheDuration)
+	platform.RegisterTag("*", HandleCacheDuration)
 }
 
-// platform.EncodeTagFunc signature
-func EncodeCacheDuration(context *platform.JSTContext, code string) bool {
+// platform.HandleTagFunc signature
+func HandleCacheDuration(context *platform.JSTContext, code string) bool {
 	code = code[1:]
 
 	context.Builder.WriteString("context.cacheDuration = ")

@@ -36,7 +36,8 @@ interfaces.
 Prudence will automatically restart the server(s) if any of the dependent files (JavaScript
 source code or others, such as includes) are changed. To do this it "watches" these files
 using filesystem services. To turn this feature off run Prudence with the `--watch=false`
-flag.
+flag. Note that restarting the server(s) does *not* delete any cached representations, and
+that includes the in-memory cache backend.
 
 We have a server running. Now, let's add an application!
 
@@ -347,7 +348,7 @@ Now, let's create `myapp/person/html.jst`
     <html>
     <body>
         <h1>
-            Name: <%= context.variables.name %>
+            Name: <%== 'name' %>
         </h1>
         <div>
             Some numbers:
@@ -360,9 +361,9 @@ Now, let's create `myapp/person/html.jst`
 
 As you can see, we embed arbitrary JavaScript code using the `<%` and `%>` delimiters.
 The first character right after the opening delimiter is used for sugar. In this case
-the `<%=` sugar will simply write the JavaScript expression in-place. For more JST sugar
-see the [JST documentation](jst/README.md). It is even possible to extend JST with your
-own custom sugar.
+the `<%==` sugar will simply write the variable in-place. For more JST sugar see the
+[JST documentation](jst/README.md). It is even possible to [extend](platform/README.md)
+JST with your own custom sugar.
 
 Behind the scenes the the entire JST file is translated into JavaScript code and wrapped
 in an exported "present" function, allowing it to be used with "require" in the same way we

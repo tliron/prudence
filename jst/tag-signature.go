@@ -7,11 +7,11 @@ import (
 )
 
 func init() {
-	platform.RegisterTag("$", EncodeSignature)
+	platform.RegisterTag("$", HandleSignature)
 }
 
-// platform.EncodeTagFunc signature
-func EncodeSignature(context *platform.JSTContext, code string) bool {
+// platform.HandleTagFunc signature
+func HandleSignature(context *platform.JSTContext, code string) bool {
 	code = code[1:]
 
 	if code == "$" {

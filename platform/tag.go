@@ -1,16 +1,16 @@
 package platform
 
-type EncodeTagFunc func(context *JSTContext, code string) bool // return true to allow trailing newlines
+type HandleTagFunc func(context *JSTContext, code string) bool // return true to allow trailing newlines
 
-var tagEncoders = make(map[string]EncodeTagFunc)
+var tagHandlers = make(map[string]HandleTagFunc)
 
-func RegisterTag(prefix string, encodeTag EncodeTagFunc) {
-	tagEncoders[prefix] = encodeTag
+func RegisterTag(prefix string, handle HandleTagFunc) {
+	tagHandlers[prefix] = handle
 }
 
-func OnTags(f func(prefix string, encodeTag EncodeTagFunc) bool) {
-	for prefix, encodeTag := range tagEncoders {
-		if !f(prefix, encodeTag) {
+func OnTags(f func(prefix string, handle HandleTagFunc) bool) {
+	for prefix, handle := range tagHandlers {
+		if !f(prefix, handle) {
 			return
 		}
 	}

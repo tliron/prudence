@@ -3,7 +3,6 @@ package rest
 import (
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
-	"github.com/tliron/kutil/logging"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -54,10 +53,10 @@ func CreateRoute(config ard.StringMap, context *js.Context) (interface{}, error)
 // HandleFunc signature
 func (self *Route) Handle(context *Context) bool {
 	if matches := self.Match(context.Path); matches != nil {
-		context = context.Copy()
-
-		if self.Name != "" {
-			context.Log = logging.NewSubLogger(context.Log, self.Name)
+		if context_ := context.Rename(self.Name); context == context_ {
+			context = context.Copy()
+		} else {
+			context = context_
 		}
 
 		for key, value := range matches {

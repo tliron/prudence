@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/tliron/kutil/js"
-	platform "github.com/tliron/prudence/platform"
+	"github.com/tliron/prudence/platform"
 )
 
 func init() {
@@ -22,36 +22,41 @@ func RenderJST(content string, resolve js.ResolveFunc) (string, error) {
 
 	last := 0
 
+	// Escape
+	content = strings.ReplaceAll(content, "\\<%", "<% context.writeString('<%'); %>")
+	content = strings.ReplaceAll(content, "\\%>", "<% context.writeString('%>'); %>")
+
 	if matches := jstRe.FindAllStringSubmatchIndex(content, -1); matches != nil {
 		for _, match := range matches {
 			start := match[0]
 			end := match[1]
+			//log.Debugf("match: %s", content[start:end])
 
-			//log.Debugf("match: %s", content[match[0]:match[1]])
+			// Write previous chunk
 			context.WriteLiteral(content[last:start])
+			last = end
 
 			code := content[start+2 : end-2]
-			last = end
 
 			if code == "" {
 				continue
 			}
 
-			// Skip trailing newline by default
-			skipTrailingNewline := true
+			// Swallow trailing newline by default
+			swallowTrailingNewline := true
 
 			if content[end-3] == '/' {
-				// Explicitly allow trailing newline
+				// Disable the swallowing of trailing newline
 				code = code[:len(code)-1]
-				skipTrailingNewline = false
+				swallowTrailingNewline = false
 			}
 
-			// Encode
+			// Handle
 			encoded := false
-			platform.OnTags(func(prefix string, encodeTag platform.EncodeTagFunc) bool {
+			platform.OnTags(func(prefix string, handleTag platform.HandleTagFunc) bool {
 				if strings.HasPrefix(code, prefix) {
-					if encodeTag(&context, code) {
-						skipTrailingNewline = false
+					if handleTag(&context, code) {
+						swallowTrailingNewline = false
 					}
 					encoded = true
 					return false
@@ -65,7 +70,7 @@ func RenderJST(content string, resolve js.ResolveFunc) (string, error) {
 				context.Builder.WriteRune('\n')
 			}
 
-			if skipTrailingNewline {
+			if swallowTrailingNewline {
 				// Skip trailing newline
 				if content[end] == '\n' {
 					last++

@@ -3,6 +3,7 @@ Prudence
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Latest Release](https://img.shields.io/github/release/tliron/prudence.svg)](https://github.com/tliron/prudence/releases/latest)
+[![Go Reference](https://pkg.go.dev/badge/github.com/tliron/prudence.svg)](https://pkg.go.dev/github.com/tliron/prudence)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tliron/prudence)](https://goreportcard.com/report/github.com/tliron/prudence)
 
 A lightweight web framework built for scale, featuring baked-in
@@ -20,9 +21,11 @@ Documentation
 * [Tutorial](TUTORIAL.md)
 * [Caching guide](CACHING.md)
 * [Examples](examples/README.md)
+* [JavaScript API](js/README.md)
 * [JavaScript Templates](jst/README.md)
 * [Extension guide](platform/README.md)
 * [xprudence](xprudence/README.md)
+* [Go API](https://pkg.go.dev/github.com/tliron/prudence)
 * [FAQ](FAQ.md)
 
 

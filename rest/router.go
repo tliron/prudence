@@ -3,7 +3,6 @@ package rest
 import (
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
-	"github.com/tliron/kutil/logging"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -63,10 +62,7 @@ func (self *Router) AddRoute(route *Route) {
 // Handler interface
 // HandleFunc signature
 func (self *Router) Handle(context *Context) bool {
-	if self.Name != "" {
-		context = context.Copy()
-		context.Log = logging.NewSubLogger(context.Log, self.Name)
-	}
+	context = context.Rename(self.Name)
 
 	for _, handler := range self.Handlers {
 		if handled := handler(context); handled {

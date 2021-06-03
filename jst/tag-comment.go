@@ -5,10 +5,10 @@ import (
 )
 
 func init() {
-	platform.RegisterTag("#", EncodeComment)
+	platform.RegisterTag("#", HandleComment)
 }
 
-// platform.EncodeTagFunc signature
-func EncodeComment(context *platform.JSTContext, code string) bool {
+// platform.HandleTagFunc signature
+func HandleComment(context *platform.JSTContext, code string) bool {
 	return false
 }

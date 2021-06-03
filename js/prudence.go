@@ -2,6 +2,7 @@ package js
 
 import (
 	"fmt"
+	"html"
 
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
@@ -46,6 +47,14 @@ func (self *PrudenceAPI) LoadString(id string) (string, error) {
 	} else {
 		return "", err
 	}
+}
+
+func (self *PrudenceAPI) EscapeHtml(text string) string {
+	return html.EscapeString(text)
+}
+
+func (self *PrudenceAPI) UnescapeHtml(text string) string {
+	return html.UnescapeString(text)
 }
 
 // Platform

@@ -7,11 +7,11 @@ import (
 )
 
 func init() {
-	platform.RegisterTag("+", EncodeInsert)
+	platform.RegisterTag("+", HandleInsert)
 }
 
-// platform.EncodeTagFunc signature
-func EncodeInsert(context *platform.JSTContext, code string) bool {
+// platform.HandleTagFunc signature
+func HandleInsert(context *platform.JSTContext, code string) bool {
 	code = code[1:]
 	suffix := context.NextSuffix()
 

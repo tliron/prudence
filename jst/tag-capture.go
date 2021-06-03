@@ -7,11 +7,11 @@ import (
 )
 
 func init() {
-	platform.RegisterTag("!", EncodeCapture)
+	platform.RegisterTag("!", HandleCapture)
 }
 
-// platform.EncodeTagFunc signature
-func EncodeCapture(context *platform.JSTContext, code string) bool {
+// platform.HandleTagFunc signature
+func HandleCapture(context *platform.JSTContext, code string) bool {
 	code = code[1:]
 
 	if code == "!" {

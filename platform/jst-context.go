@@ -30,6 +30,8 @@ func (self *JSTContext) WriteLiteral(literal string) {
 				self.Builder.WriteString("\\n")
 			case '\'':
 				self.Builder.WriteString("\\'")
+			case '\\':
+				self.Builder.WriteString("\\\\")
 			default:
 				self.Builder.WriteRune(rune_)
 			}

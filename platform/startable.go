@@ -69,12 +69,13 @@ func (self *StartGroup) Start() {
 
 	for _, startable := range self.Startables {
 		startable_ := startable // closure capture
-		self.started.Add(1)
 		go func() {
+			self.started.Add(1)
+			defer self.started.Done()
+
 			if err := startable_.Start(); err != nil {
 				log.Errorf("%s", err.Error())
 			}
-			self.started.Done()
 		}()
 	}
 }

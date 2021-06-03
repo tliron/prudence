@@ -22,6 +22,7 @@ import (
 
 type Context struct {
 	Context     *fasthttp.RequestCtx
+	Name        string
 	Log         logging.Logger
 	Debug       bool
 	Variables   ard.StringMap
@@ -57,6 +58,21 @@ func NewContext(context *fasthttp.RequestCtx) *Context {
 	}
 }
 
+func (self *Context) Rename(name string) *Context {
+	if name == "" {
+		return self
+	} else {
+		context := self.Copy()
+		if context.Name == "" {
+			context.Name = name
+		} else {
+			context.Name += "." + name
+		}
+		context.Log = logging.NewSubLogger(log, context.Name)
+		return context
+	}
+}
+
 func (self *Context) Copy() *Context {
 	variables := ard.Copy(self.Variables).(ard.StringMap)
 	cacheGroups := make([]string, len(self.CacheGroups))
@@ -64,6 +80,7 @@ func (self *Context) Copy() *Context {
 
 	return &Context{
 		Context:       self.Context,
+		Name:          self.Name,
 		Log:           self.Log,
 		Debug:         self.Debug,
 		Variables:     variables,

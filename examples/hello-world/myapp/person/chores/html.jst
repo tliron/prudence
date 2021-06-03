@@ -5,7 +5,7 @@
 <%$ true %>
 
     <h1>
-        Chores for: <%= context.variables.name %>
+        Chores for: <%== 'name' %>
         <% const scope = context.query.scope; if (scope && scope.includes('all')) { %>(all of them)<% } %>
     </h1>
 
@@ -13,6 +13,8 @@
 <%& 'fragments/list.jst', 'person.' + context.variables.name + '.chores.list' %>
 
 <%$$%>
+
+(these are escaped: \<% )
 
 <%!!%>
 

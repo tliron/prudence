@@ -1,15 +1,45 @@
 Prudence: JavaScript Templates (JST)
 ====================================
 
-The following tags are supported:
+The [tutorial](../README.md) covers basic usage, this page is for reference.
 
-### Code: `<%`
+The tag delimiters are `<%` and `%>`. Characters that follow right after the opening delimiter
+specify special tags, or "sugar", that offer additional features.
 
-Insert any JavaScript code. Example:
+The delimiters can be escaped by prefixing a backslash: `\<%` and `\%>`.
 
-    <% for (var i = 0; i < 10; i++) { %>
-        <p>Number <%= i %></p>
-    <% } %>
+Most tags will will swallow the trailing newline character just after the tag's end delimiter.
+This helps you avoid cluttering your output with empty lines. For example, this:
+
+    No
+    <% var x = 1; %>
+    empty
+    <% x += 1; %>
+    lines!
+
+will be output as this:
+
+    No
+    Empty
+    Lines
+
+To disable this feature use `/%>` as the closing delimiter. This:
+
+    Empty
+    <% var x = 1; /%>
+    line!
+
+will be output as this:
+
+    Empty
+
+    line!
+
+The one exception is the "expression" tag, `<%=`, which does not swallow the trailing newline
+because it's intended to be used within flows of text.
+
+The following tags are built in. It is also possible to [extend](../prudence/README.md)
+Prudence with additional tags.
 
 ### Cache duration: `<%* numeric_expr %>`
 
@@ -23,13 +53,21 @@ Captures the enclosed text into a context variable. Does *not* write it. Example
 
     <%! 'greeting' %>
     <div>
-        Hello, <%= context.variables.name %>!
+        Hello, <%== 'name' %>!
     </div>
     <%!!%>
 
-    The greeting is: <%= context.variables.greeting %>
+    The greeting is: <%== 'greeting' %>
 
 See "Embed" for possible uses.
+
+### Code: `<%`
+
+Insert any JavaScript code. Example:
+
+    <% for (var i = 0; i < 10; i++) { %>
+        <p>Number <%= i %></p>
+    <% } %>
 
 ### Comment: `<%# anything %>`
 
@@ -101,7 +139,7 @@ Renders the enclosed text before writing it. Example:
     This is Markdown
     ================
 
-    Hello, <%= context.variables.name %>!
+    Hello, <%== 'name' %>!
 
     It is a *markup* language for generating HTML.
     <%^^%>
@@ -116,7 +154,17 @@ longer form, with the "bool_expr", will set the signature to weak if the "bool_e
 is true. Example of a weak signature:
 
     <%$ true %>
-    Hello, <%= context.variables.name %>!
+    Hello, <%== 'name' %>!
     <%$$%>
 
 Note that any other JST tags inside the enclosed text are processed as usual.
+
+### Variable: `<%== name_expr %>`
+
+Write a variable. Example:
+
+    Hello! Your name is <%== 'name' %>!
+
+Equivalent to:
+
+    <%= context.variables[name_expr] %>
