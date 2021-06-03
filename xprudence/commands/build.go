@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tliron/kutil/terminal"
@@ -98,11 +99,19 @@ func Build() {
 
 	path := filepath.Join(output, executable)
 	log.Infof("building %s", path)
-	Command(sourceDirectory, []string{"GOBIN=" + output}, go_, "install", ".")
-	//-ldflags " \
-	//-X 'github.com/tliron/kutil/version.GitVersion=$VERSION' \
-	//-X 'github.com/tliron/kutil/version.GitRevision=$REVISION' \
-	//-X 'github.com/tliron/kutil/version.Timestamp=$TIMESTAMP'"
+
+	timestamp := time.Now().Format("2006-01-02 15:04:05 MST")
+
+	version_ := version
+	if version_ == "" {
+		version_ = "custom"
+	} else {
+		version_ += "-custom"
+	}
+
+	ldflags := fmt.Sprintf("-X 'github.com/tliron/kutil/version.GitVersion=%s' -X 'github.com/tliron/kutil/version.Timestamp=%s'", version_, timestamp)
+
+	Command(sourceDirectory, []string{"GOBIN=" + output}, go_, "install", "-ldflags", ldflags, ".")
 	terminal.Printf("built: %s\n", path)
 }
 
