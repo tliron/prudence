@@ -23,7 +23,7 @@ func HandleSignature(context *platform.JSTContext, code string) bool {
 		if weak := strings.Trim(code, " \n"); weak != "" {
 			context.Builder.WriteString("if (")
 			context.Builder.WriteString(weak)
-			context.Builder.WriteString(") context.weakSignature = true;\n")
+			context.Builder.WriteString(") context.response.weakSignature = true;\n")
 		}
 	}
 

@@ -2,6 +2,7 @@ package rest
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
@@ -56,10 +57,16 @@ func CreateFacet(config ard.StringMap, context *js.Context) (interface{}, error)
 	return &self, nil
 }
 
-func (self *Facet) FindRepresentation(context *Context) (*Representation, string, bool) {
-	for _, contentType := range ParseAccept(context) {
-		if functions, ok := self.Representations[contentType]; ok {
-			return functions, contentType, true
+func (self *Facet) NegotiateBestRepresentation(context *Context) (*Representation, string, bool) {
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
+	// Example: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+	//TODO: sorted by preference
+	clientContentTypes := strings.Split(context.Request.Header.Get("Accept"), ",")
+	for _, clientContentType := range clientContentTypes {
+		for serverContentType, functions := range self.Representations {
+			if clientContentType == serverContentType {
+				return functions, serverContentType, true
+			}
 		}
 	}
 
@@ -71,9 +78,9 @@ func (self *Facet) FindRepresentation(context *Context) (*Representation, string
 // Handler interface
 // HandleFunc signature
 func (self *Facet) Handle(context *Context) bool {
-	if representation, contentType, ok := self.FindRepresentation(context); ok {
+	if representation, contentType, ok := self.NegotiateBestRepresentation(context); ok {
 		context = context.Copy()
-		context.ContentType = contentType
+		context.Response.ContentType = contentType
 		return representation.Handle(context)
 	} else {
 		return false

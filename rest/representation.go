@@ -3,11 +3,11 @@ package rest
 import (
 	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/prudence/platform"
-	"github.com/valyala/fasthttp"
 )
 
 //
@@ -91,9 +91,9 @@ func CreateRepresentation(node *ard.Node, runtime *goja.Runtime) (*Representatio
 // Handler interface
 // HandleFunc signature
 func (self *Representation) Handle(context *Context) bool {
-	context.CharSet = "utf-8"
+	context.Response.CharSet = "utf-8"
 
-	switch context.Method {
+	switch context.Request.Method {
 	case "GET":
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET
 		if self.construct(context) {
@@ -137,11 +137,11 @@ func (self *Representation) Handle(context *Context) bool {
 		}
 	}
 
-	return !NotFound(context.Context)
+	return context.Response.Status != http.StatusNotFound
 }
 
 func (self *Representation) construct(context *Context) bool {
-	context.CacheKey = context.Context.URI().String()
+	context.CacheKey = context.Request.URL.String()
 	if self.Construct != nil {
 		if err := self.Construct(context); err != nil {
 			context.Error(err)
@@ -203,12 +203,12 @@ func (self *Representation) present(context *Context, withBody bool) {
 		}
 	}
 
-	context.unwrapWriters()
+	context.flushWriters()
 
 	// Headers
-	context.setContentType()
-	context.addETag()
-	context.setLastModified()
+	context.Response.setContentType()
+	context.Response.setETag()
+	context.Response.setLastModified()
 	context.setCacheControl()
 
 	if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
@@ -226,23 +226,23 @@ func (self *Representation) erase(context *Context) {
 		if context.Done {
 			if context.Async {
 				// Will be erased later
-				context.Context.SetStatusCode(fasthttp.StatusAccepted) // 202
-			} else if len(context.Context.Response.Body()) > 0 {
+				context.Response.Status = http.StatusAccepted // 202
+			} else if context.Response.Buffer.Len() > 0 {
 				// Erased, has response
-				context.Context.SetStatusCode(fasthttp.StatusOK) // 200
+				context.Response.Status = http.StatusOK // 200
 			} else {
 				// Erased, no response
-				context.Context.SetStatusCode(fasthttp.StatusNoContent) // 204
+				context.Response.Status = http.StatusNoContent // 204
 			}
 
 			if context.CacheKey != "" {
 				context.DeleteCachedRepresentation()
 			}
 		} else {
-			context.Context.SetStatusCode(fasthttp.StatusNotFound) // 404
+			context.Response.Status = http.StatusNotFound // 404
 		}
 	} else {
-		context.Context.SetStatusCode(fasthttp.StatusMethodNotAllowed) // 405
+		context.Response.Status = http.StatusMethodNotAllowed // 405
 	}
 }
 
@@ -256,23 +256,23 @@ func (self *Representation) modify(context *Context) {
 		if context.Done {
 			if context.Created {
 				// Created
-				context.Context.SetStatusCode(fasthttp.StatusCreated) // 201
-			} else if len(context.Context.Response.Body()) > 0 {
+				context.Response.Status = http.StatusCreated // 201
+			} else if context.Response.Buffer.Len() > 0 {
 				// Changed, has response
-				context.Context.SetStatusCode(fasthttp.StatusOK) // 200
+				context.Response.Status = http.StatusOK // 200
 			} else {
 				// Changed, no response
-				context.Context.SetStatusCode(fasthttp.StatusNoContent) // 204
+				context.Response.Status = http.StatusNoContent // 204
 			}
 
 			if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
 				context.StoreCachedRepresentation(true)
 			}
 		} else {
-			context.Context.SetStatusCode(fasthttp.StatusNotFound) // 404
+			context.Response.Status = http.StatusNotFound // 404
 		}
 	} else {
-		context.Context.SetStatusCode(fasthttp.StatusMethodNotAllowed) // 405
+		context.Response.Status = http.StatusMethodNotAllowed // 405
 	}
 }
 

@@ -1,42 +1,36 @@
 package rest
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 
+	"github.com/tliron/kutil/ard"
 	"github.com/tliron/prudence/platform"
-	"github.com/valyala/fasthttp"
 )
 
 func (self *Context) NewCacheKey() platform.CacheKey {
-	return platform.CacheKey(fmt.Sprintf("%s|%s|%s|%s", self.CacheKey, self.ContentType, self.CharSet, self.Language))
+	return platform.CacheKey(fmt.Sprintf("%s|%s|%s|%s", self.CacheKey, self.Response.ContentType, self.Response.CharSet, self.Response.Language))
 }
 
 func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepresentation {
 	body := make(map[platform.EncodingType][]byte)
+
 	if withBody {
-		// Body exists only in GET
-		contentEncoding := GetContentEncoding(self.Context)
+		contentEncoding := self.Response.Header.Get("Content-Encoding")
 		if encodingType := GetEncodingType(contentEncoding); encodingType != platform.EncodingTypeUnsupported {
-			body[encodingType] = copyBytes(self.Context.Response.Body())
+			body[encodingType] = copyBytes(self.Response.Buffer.Bytes())
 		} else {
 			self.Log.Warningf("unsupported encoding: %s", contentEncoding)
 		}
 	}
 
-	// This is an annoying way to get all headers, but unfortunately if we
-	// get the entire header via Header() there is no API to set it correctly
-	// in CacheEntry.Write
-	var headers [][][]byte
-	self.Context.Response.Header.VisitAll(func(key []byte, value []byte) {
-		switch string(key) {
-		case fasthttp.HeaderServer, fasthttp.HeaderCacheControl:
-			return
+	headers := make(map[string][]string)
+	for name, values := range self.Response.Header {
+		if name != "Cache-Control" {
+			headers[name] = ard.Copy(values).([]string)
 		}
-
-		//context.Log.Debugf("header: %s", key)
-		headers = append(headers, [][]byte{copyBytes(key), copyBytes(value)})
-	})
+	}
 
 	groups := make([]platform.CacheKey, len(self.CacheGroups))
 	for index, group := range self.CacheGroups {
@@ -107,30 +101,22 @@ func (self *Context) StoreCachedRepresentationFromBody(encoding platform.Encodin
 }
 
 func (self *Context) GetCachedRepresentationBody(cached *platform.CachedRepresentation) ([]byte, bool) {
-	if self.Context.Request.Header.HasAcceptEncoding("br") {
-		return cached.GetBody(platform.EncodingTypeBrotli)
-	} else if self.Context.Request.Header.HasAcceptEncoding("gzip") {
-		return cached.GetBody(platform.EncodingTypeGZip)
-	} else if self.Context.Request.Header.HasAcceptEncoding("deflate") {
-		return cached.GetBody(platform.EncodingTypeDeflate)
-	} else {
-		return cached.GetBody(platform.EncodingTypePlain)
-	}
+	return cached.GetBody(NegotiateBestEncodingType(self.Request.Header))
 }
 
 func (self *Context) DescribeCachedRepresentation(cached *platform.CachedRepresentation) bool {
-	self.Context.Response.Reset()
-
-	// Annoyingly these were re-enabled by Reset above
-	self.Context.Response.Header.DisableNormalizing()
-	self.Context.Response.Header.SetNoDefaultContentType(true)
+	self.Response.Buffer.Reset()
 
 	if self.Debug {
-		self.Context.Response.Header.Set(CACHED_HEADER, self.CacheKey)
+		self.Response.Header.Set(CACHED_HEADER, self.CacheKey)
 	}
 
-	for _, header := range cached.Headers {
-		self.Context.Response.Header.AddBytesKV(header[0], header[1])
+	if cached.Headers != nil {
+		for name, values := range cached.Headers {
+			for _, value := range values {
+				self.Response.Header.Add(name, value)
+			}
+		}
 	}
 
 	return !self.isNotModified()
@@ -143,11 +129,11 @@ func (self *Context) PresentCachedRepresentation(cached *platform.CachedRepresen
 
 	// Match client-side caching with server-side caching
 	maxAge := int(cached.TimeToLive())
-	AddCacheControl(self.Context, fmt.Sprintf("max-age=%d", maxAge))
+	self.Response.Header.Set("Cache-Control", fmt.Sprintf("max-age=%d", maxAge))
 
 	if withBody {
 		body, changed := self.GetCachedRepresentationBody(cached)
-		self.Context.Response.SetBody(body)
+		self.Response.Buffer = bytes.NewBuffer(body)
 		return changed
 	}
 

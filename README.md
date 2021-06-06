@@ -42,8 +42,6 @@ Highlights
   to create custom builds of Prudence bundled with the plugins, modules, and APIs required by your
   applications. Even when extended in this way, Prudence is still distributed as a single, compact
   executable file.
-* Uses [fasthttp](https://github.com/valyala/fasthttp) for allocation-free handling of HTTP
-  requests and high-performance serving of static files.
 * Prudence is written in Go for reliability and performance but allows you to use straightforward
   JavaScript for assembling and configuring your application. (JavaScript is *not required*.
   [Here's](https://github.com/tliron/prudence/tree/main/examples/go) an example in pure Go.)

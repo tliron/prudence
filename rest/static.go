@@ -1,12 +1,13 @@
 package rest
 
 import (
+	"net/http"
+	"path/filepath"
+
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
 	urlpkg "github.com/tliron/kutil/url"
-	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
-	"github.com/valyala/fasthttp"
 )
 
 func init() {
@@ -18,36 +19,13 @@ func init() {
 //
 
 type Static struct {
-	RequestHandler fasthttp.RequestHandler
-
-	cleanStop chan struct{}
+	Root string
 }
 
 func NewStatic(root string, indexes []string) *Static {
-	cleanStop := make(chan struct{})
-
-	fs := fasthttp.FS{
-		Root:               root,
-		IndexNames:         indexes,
-		GenerateIndexPages: len(indexes) > 0,
-		Compress:           true,
-		CompressBrotli:     true,
-		CleanStop:          cleanStop,
-		PathRewrite: func(context *fasthttp.RequestCtx) []byte {
-			path := context.Request.Header.Peek(PATH_HEADER)
-			log.Debugf("path: %s", path)
-			return path
-		},
+	return &Static{
+		Root: root,
 	}
-
-	self := Static{
-		RequestHandler: fs.NewRequestHandler(),
-		cleanStop:      cleanStop,
-	}
-
-	util.OnExit(self.Close)
-
-	return &self
 }
 
 // CreateFunc signature
@@ -65,16 +43,42 @@ func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error
 	return NewStatic(root, indexes), nil
 }
 
-func (self *Static) Close() {
-	close(self.cleanStop)
-}
-
 // Handler interface
 // HandleFunc signature
 func (self *Static) Handle(context *Context) bool {
-	context.Context.Request.Header.Del(PATH_HEADER)
-	context.Context.Request.Header.Add(PATH_HEADER, "/"+context.Path)
-	self.RequestHandler(context.Context)
-	context.Context.Request.Header.Del(PATH_HEADER)
-	return !NotFound(context.Context)
+	path := filepath.Join(self.Root, context.Path)
+	http.ServeFile(NewResponseWriterWrapper(context), context.Request.Direct, path)
+	if context.Response.Status != http.StatusNotFound {
+		context.Response.Bypass = true
+		return true
+	} else {
+		return false
+	}
+}
+
+// https://stackoverflow.com/a/47286697
+
+type ResponseWriterWrapper struct {
+	http.ResponseWriter
+	context *Context
+}
+
+func NewResponseWriterWrapper(context *Context) *ResponseWriterWrapper {
+	return &ResponseWriterWrapper{
+		ResponseWriter: context.Response.Direct,
+		context:        context,
+	}
+}
+
+func (self *ResponseWriterWrapper) WriteHeader(status int) {
+	self.context.Response.Status = status
+	self.ResponseWriter.WriteHeader(status)
+}
+
+func (self *ResponseWriterWrapper) Write(p []byte) (int, error) {
+	if self.context.Response.Status != http.StatusNotFound {
+		return self.ResponseWriter.Write(p)
+	} else {
+		return len(p), nil
+	}
 }

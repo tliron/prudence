@@ -7,7 +7,7 @@ exports.chores = {
         const cachePrefix = backend.getCachePrefix(context.variables.name);
         context.cacheGroups.push(cachePrefix);
         context.cacheKey = cachePrefix + '.chores';
-        context.contentType = 'application/json';
+        context.response.contentType = 'application/json';
     },
 
     present: function(context) {
@@ -32,7 +32,7 @@ exports.chores = {
 
     modify: function(context) {
         context.log.info('modify');
-        const chores = prudence.decode(context.request(), 'json');
+        const chores = prudence.decode(context.request.body, 'json');
         backend.setChores(context.variables.name, chores);
         prudence.invalidateCacheGroup(backend.getCachePrefix(context.variables.name));
         context.done = true;

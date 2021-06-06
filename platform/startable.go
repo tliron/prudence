@@ -14,9 +14,6 @@ func Start(startables []Startable) error {
 	startGroup = NewStartGroup(startables)
 	startGroup.Start()
 
-	// Block forever
-	<-make(chan bool, 0)
-
 	return nil
 }
 
@@ -24,14 +21,6 @@ func Stop() {
 	if startGroup != nil {
 		log.Info("stopping")
 		startGroup.Stop()
-	}
-}
-
-func Restart() {
-	if startGroup != nil {
-		log.Info("restarting")
-		startGroup.Stop()
-		startGroup.Start()
 	}
 }
 

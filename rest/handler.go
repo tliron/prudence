@@ -1,9 +1,11 @@
 package rest
 
 import (
+	"bytes"
 	"fmt"
+	"net/http"
 
-	"github.com/valyala/fasthttp"
+	"github.com/tliron/kutil/util"
 )
 
 //
@@ -44,8 +46,7 @@ type defaultNotFound struct{}
 // Handler interface
 // HandleFunc signature
 func (self defaultNotFound) Handle(context *Context) bool {
-	context.Context.Response.Reset()
-	context.Context.SetStatusCode(fasthttp.StatusNotFound)
-	context.Context.SetBodyString("404 Not Found\n")
+	context.Response.Buffer = bytes.NewBuffer(util.StringToBytes("404 Not Found\n"))
+	context.Response.Status = http.StatusNotFound
 	return true
 }

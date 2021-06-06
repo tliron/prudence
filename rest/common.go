@@ -11,22 +11,8 @@ var log = logging.GetLogger("prudence.rest")
 var logCache = logging.GetLogger("prudence.cache")
 
 const (
-	PATH_HEADER   = "X-Prudence-Path"
 	CACHED_HEADER = "X-Prudence-Cached"
 )
-
-//
-// Logger
-//
-
-type Logger struct {
-	log logging.Logger
-}
-
-// fasthttp.Logger interface
-func (self Logger) Printf(format string, args ...interface{}) {
-	self.log.Errorf(format, args...)
-}
 
 //
 // WrappingWriter

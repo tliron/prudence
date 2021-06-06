@@ -18,12 +18,34 @@ func init() {
 	runCommand.Flags().BoolVarP(&watch, "watch", "w", true, "whether to watch dependent files and restart if they are changed")
 }
 
+/*
+type X struct{}
+
+func (self X) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
+	path := filepath.Join("examples/hello-world/myapp/static", request.URL.Path)
+	http.ServeFile(responseWriter, request, path)
+}
+*/
+
 var runCommand = &cobra.Command{
 	Use:   "run [Script PATH or URL]",
 	Short: "Run",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		util.OnExit(platform.Stop)
+
+		/*
+			server := http.Server{
+				Addr:         "localhost:8080",
+				ReadTimeout:  time.Duration(time.Second * 5),
+				WriteTimeout: time.Duration(time.Second * 5),
+				Handler:      X{},
+			}
+			listener, err := net.Listen("tcp", "localhost:8080")
+			util.FailOnError(err)
+			err = server.Serve(listener)
+			util.FailOnError(err)
+		*/
 
 		context := urlpkg.NewContext()
 		util.OnExit(func() {
@@ -39,21 +61,27 @@ var runCommand = &cobra.Command{
 			}
 		})
 
+		restart := func(id string, module *kutiljs.Module) {
+			if module != nil {
+				log.Infof("module changed: %s", module.Id)
+			} else if id != "" {
+				log.Infof("file changed: %s", id)
+			}
+
+			environment.ClearCache()
+			_, err := environment.RequireID(args[0])
+			util.FailOnError(err)
+		}
+
 		if watch {
-			err := environment.Watch(func(id string, module *kutiljs.Module) {
-				if module != nil {
-					log.Infof("module changed: %s", module.Id)
-				} else {
-					log.Infof("file changed: %s", id)
-				}
-				platform.Restart()
-			})
-			if err != nil {
+			if err := environment.Watch(restart); err != nil {
 				log.Warningf("watch feature not supported on this platform")
 			}
 		}
 
-		_, err := environment.RequireID(args[0])
-		util.FailOnError(err)
+		restart("", nil)
+
+		// Block forever
+		<-make(chan bool, 0)
 	},
 }

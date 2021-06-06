@@ -1,15 +1,18 @@
 package rest
 
 import (
+	"context"
+	"crypto/tls"
 	"net"
+	"sync"
+	"time"
 
-	"github.com/fasthttp/http2"
+	"net/http"
+
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
-	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
-	"github.com/valyala/fasthttp"
 )
 
 func init() {
@@ -28,7 +31,8 @@ type Server struct {
 	Debug    bool
 	Handler  HandleFunc
 
-	server fasthttp.Server
+	server  *http.Server
+	started sync.WaitGroup
 }
 
 func NewServer(name string) *Server {
@@ -66,70 +70,79 @@ func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error
 	return &self, nil
 }
 
-func (self *Server) Listen() (net.Listener, error) {
-	return net.Listen("tcp4", self.Address)
-}
-
-// Startable interface
-func (self *Server) Start() error {
-	log.Infof("starting server: %s", self.Address)
-
-	if listener, err := self.Listen(); err == nil {
-		self.server = fasthttp.Server{
-			Handler:                       self.Handle,
-			Name:                          self.Name,
-			LogAllErrors:                  true,
-			Logger:                        Logger{logging.GetLogger("prudence.server")},
-			DisableHeaderNamesNormalizing: true,
-			NoDefaultContentType:          true,
-		}
-
-		if self.Secure {
-			certificate, privateKey, err := util.CreateSelfSignedX509("Prudence", self.Address)
-			if err != nil {
-				return err
-			}
-
-			err = self.server.AppendCertEmbed(certificate, privateKey)
-			if err != nil {
-				return err
-			}
-
-			if self.Protocol == "http2" {
-				// TODO: BROKEN
-				http2.ConfigureServer(&self.server)
-			}
-
-			if err := self.server.ServeTLS(listener, "", ""); err == nil {
-				log.Infof("server stopped: %s", self.Address)
-				return nil
+func (self *Server) newListener(secure bool) (net.Listener, error) {
+	if listener, err := net.Listen("tcp", self.Address); err == nil {
+		if secure {
+			if certificate, privateKey, err := util.CreateSelfSignedX509("Prudence", self.Address); err == nil {
+				config := tls.Config{
+					Certificates: []tls.Certificate{
+						{
+							Certificate: [][]byte{certificate},
+							PrivateKey:  privateKey,
+						},
+					},
+				}
+				return tls.NewListener(listener, &config), nil
 			} else {
-				return err
+				return nil, err
 			}
 		} else {
-			if err := self.server.Serve(listener); err == nil {
-				log.Infof("server stopped: %s", self.Address)
-				return nil
-			} else {
-				return err
-			}
+			return listener, nil
 		}
 	} else {
-		return err
+		return nil, err
 	}
 }
 
 // Startable interface
-func (self *Server) Stop() error {
-	log.Infof("stopping server: %s", self.Address)
-	return self.server.Shutdown()
+func (self *Server) Start() error {
+	self.started.Add(1)
+	defer self.started.Done()
+
+	log.Infof("starting server: %s", self.Address)
+
+	var err error
+	var listener net.Listener
+	if listener, err = self.newListener(self.Secure); err == nil {
+		defer listener.Close()
+
+		self.server = &http.Server{
+			Addr:         self.Address,
+			ReadTimeout:  time.Duration(time.Second * 5),
+			WriteTimeout: time.Duration(time.Second * 5),
+			Handler:      self,
+		}
+
+		err = self.server.Serve(listener)
+
+		if err == http.ErrServerClosed {
+			err = nil
+			self.server = nil
+		}
+	}
+
+	return err
 }
 
-// fasthttp.RequestHandler signature
-func (self *Server) Handle(context *fasthttp.RequestCtx) {
+// Startable interface
+func (self *Server) Stop() error {
+	if self.server != nil {
+		log.Infof("stopping server: %s", self.Address)
+		err := self.server.Shutdown(context.TODO())
+		self.started.Wait()
+		log.Infof("stopped server: %s", self.Address)
+		return err
+	} else {
+		return nil
+	}
+}
+
+// http.Handler interface
+func (self *Server) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
 	if self.Handler != nil {
-		context_ := NewContext(context)
-		context_.Debug = self.Debug
-		self.Handler(context_)
+		context := NewContext(responseWriter, request)
+		context.Debug = self.Debug
+		self.Handler(context)
+		context.Response.flush()
 	}
 }

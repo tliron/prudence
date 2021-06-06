@@ -21,7 +21,7 @@ exports.present = function(context) {
         return null;
     });
 
-    context.contentType = 'application/json'
+    context.response.contentType = 'application/json'
     context.write('{"counter": ' + counter + '}\n');
 };
 

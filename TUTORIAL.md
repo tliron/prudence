@@ -33,10 +33,10 @@ This function's argument is either a single startable object or a list of starta
 So, you can start several servers at the same time, e.g. to listen on different ports or
 interfaces.
 
-Prudence will automatically restart the server(s) if any of the dependent files (JavaScript
-source code or others, such as includes) are changed. To do this it "watches" these files
-using filesystem services. To turn this feature off run Prudence with the `--watch=false`
-flag. Note that restarting the server(s) does *not* delete any cached representations, even 
+Prudence will automatically restart itself if any of the dependent files (JavaScript source
+code or others, such as includes) are changed. To do this it "watches" these files using
+filesystem services. To turn this feature off run Prudence with the `--watch=false` flag.
+Note that restarting the server(s) does *not* delete any cached representations, even 
 if you're using the in-memory cache backend.
 
 We have a server running. Now, let's add an application!
@@ -138,7 +138,7 @@ Now let's create the representation, `myapp/person/json.js`:
     exports.present = function(context) {
         const data = {name: context.variables.name};
         context.write(JSON.stringify(data));
-        context.contentType = 'application/json';
+        context.response.contentType = 'application/json';
     };
 
 The name of this exported function, "present", is required by Prudence. The "functions"

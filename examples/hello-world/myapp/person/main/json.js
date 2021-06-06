@@ -11,7 +11,7 @@ exports.construct = function(context) {
     const cachePrefix = backend.getCachePrefix(context.variables.name);
     context.cacheGroups.push(cachePrefix);
     context.cacheKey = cachePrefix + '.main';
-    context.contentType = 'application/json';
+    context.response.contentType = 'application/json';
 };
 
 // The "describe" hook (optional) optimizes for client-side caching

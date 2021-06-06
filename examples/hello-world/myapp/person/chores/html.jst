@@ -6,7 +6,7 @@
 
     <h1>
         Chores for: <%== 'name' %>
-        <% const scope = context.query.scope; if (scope && scope.includes('all')) { %>(all of them)<% } %>
+        <% const scope = context.request.query.scope; if (scope && scope.includes('all')) { %>(all of them)<% } %>
     </h1>
 
 <%# embed another cacheable representation (and set a custom cache key for it) %>
@@ -14,7 +14,7 @@
 
 <%$$%>
 
-(these are escaped: \<% )
+(these are escaped: \<% and \%>)
 
 <%!!%>
 

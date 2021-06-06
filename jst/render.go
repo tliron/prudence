@@ -23,8 +23,9 @@ func RenderJST(content string, jsContext *js.Context) (string, error) {
 	last := 0
 
 	// Escape
-	content = strings.ReplaceAll(content, "\\<%", "<% context.writeString('<%'); %>")
-	content = strings.ReplaceAll(content, "\\%>", "<% context.writeString('%>'); %>")
+	// TODO bad solution
+	content = strings.ReplaceAll(content, "\\<%", "<% context.writeString('<'+'%'); %>")
+	content = strings.ReplaceAll(content, "\\%>", "<% context.writeString('%'+'>'); %>")
 
 	if matches := jstRe.FindAllStringSubmatchIndex(content, -1); matches != nil {
 		for _, match := range matches {

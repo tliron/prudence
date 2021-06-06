@@ -150,9 +150,6 @@ Prudence, just like "Router", "Resource", and "Static". Example:
         return true
     }
 
-Note that Prudence relies on [fasthttp](https://github.com/valyala/fasthttp) for its low-level
-handling of HTTP, so be sure to check its documentation, too.
-
 ### Startables
 
 If your type implements the "platform.Startable" interface then it can be used as an argument for

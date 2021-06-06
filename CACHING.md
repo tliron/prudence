@@ -65,7 +65,7 @@ edit our `json.js` file and add an additional hook function, "construct":
 
     exports.construct = function(context) {
         context.cacheKey = 'myapp.person.' + context.variables.name;
-        context.contentType = 'application/json';
+        context.response.contentType = 'application/json';
     };
 
 You'll notice that we were already setting the content type in the "present" function.

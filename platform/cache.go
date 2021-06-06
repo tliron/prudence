@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"strings"
 	"time"
-
-	"github.com/valyala/fasthttp"
 )
 
 //
@@ -37,7 +35,7 @@ func GetCacheBackend() CacheBackend {
 
 type CachedRepresentation struct {
 	Groups     []CacheKey
-	Headers    [][][]byte // list of key, value tuples
+	Headers    map[string][]string
 	Body       map[EncodingType][]byte
 	Expiration time.Time
 }
@@ -73,55 +71,79 @@ func (self *CachedRepresentation) GetBody(encoding EncodingType) ([]byte, bool) 
 			if plain, _ := self.GetBody(EncodingTypePlain); plain != nil {
 				log.Debug("creating brotli body from plain")
 				buffer := bytes.NewBuffer(nil)
-				fasthttp.WriteBrotli(buffer, plain)
-				body = buffer.Bytes()
-				self.Body[EncodingTypeBrotli] = body
-				return body, true
+				if err := EncodeBrotli(plain, buffer); err == nil {
+					body = buffer.Bytes()
+					self.Body[EncodingTypeBrotli] = body
+					return body, true
+				} else {
+					log.Errorf("%s", err)
+					return nil, false
+				}
 			}
 
 		case EncodingTypeGZip:
 			if plain, _ := self.GetBody(EncodingTypePlain); plain != nil {
 				log.Debug("creating gzip body from plain")
 				buffer := bytes.NewBuffer(nil)
-				fasthttp.WriteGzip(buffer, plain)
-				body = buffer.Bytes()
-				self.Body[EncodingTypeGZip] = body
-				return body, true
+				if err := EncodeGZip(plain, buffer); err == nil {
+					body = buffer.Bytes()
+					self.Body[EncodingTypeGZip] = body
+					return body, true
+				} else {
+					log.Errorf("%s", err)
+					return nil, false
+				}
 			}
 
-		case EncodingTypeDeflate:
+		case EncodingTypeFlate:
 			if plain, _ := self.GetBody(EncodingTypePlain); plain != nil {
-				log.Debug("creating deflate body from plain")
+				log.Debug("creating flate body from plain")
 				buffer := bytes.NewBuffer(nil)
-				fasthttp.WriteDeflate(buffer, plain)
-				body = buffer.Bytes()
-				self.Body[EncodingTypeDeflate] = body
-				return body, true
+				if err := EncodeFlate(plain, buffer); err == nil {
+					body = buffer.Bytes()
+					self.Body[EncodingTypeFlate] = body
+					return body, true
+				} else {
+					log.Errorf("%s", err)
+					return nil, false
+				}
 			}
 
 		case EncodingTypePlain:
 			// Try decoding an existing body
-			if deflate, ok := self.Body[EncodingTypeDeflate]; ok {
-				log.Debug("creating plain body from default")
+			if deflate, ok := self.Body[EncodingTypeFlate]; ok {
+				log.Debug("creating plain body from flate")
 				buffer := bytes.NewBuffer(nil)
-				fasthttp.WriteInflate(buffer, deflate)
-				body = buffer.Bytes()
-				self.Body[EncodingTypePlain] = body
-				return body, true
+				if err := DecodeFlate(deflate, buffer); err == nil {
+					body = buffer.Bytes()
+					self.Body[EncodingTypePlain] = body
+					return body, true
+				} else {
+					log.Errorf("%s", err)
+					return nil, false
+				}
 			} else if gzip, ok := self.Body[EncodingTypeGZip]; ok {
 				log.Debug("creating plain body from gzip")
 				buffer := bytes.NewBuffer(nil)
-				fasthttp.WriteGunzip(buffer, gzip)
-				body = buffer.Bytes()
-				self.Body[EncodingTypePlain] = body
-				return body, true
+				if err := DecodeGZip(gzip, buffer); err == nil {
+					body = buffer.Bytes()
+					self.Body[EncodingTypePlain] = body
+					return body, true
+				} else {
+					log.Errorf("%s", err)
+					return nil, false
+				}
 			} else if brotli, ok := self.Body[EncodingTypeBrotli]; ok {
 				log.Debug("creating plain body from brotli")
 				buffer := bytes.NewBuffer(nil)
-				fasthttp.WriteUnbrotli(buffer, brotli)
-				body = buffer.Bytes()
-				self.Body[EncodingTypePlain] = body
-				return body, true
+				if err := DecodeBrotli(brotli, buffer); err == nil {
+					body = buffer.Bytes()
+					self.Body[EncodingTypePlain] = body
+					return body, true
+				} else {
+					log.Errorf("%s", err)
+					return nil, false
+				}
 			}
 		}
 
