@@ -28,8 +28,8 @@ to build RESTful pages and APIs. The emphasis was on doing REST right, allowing 
 with server-side and client-side caching. The threading model was highly concurrent, which was
 against the trend of Node.js-style single-threadedness. Prudence 1 was written in Java, fueled by
 [Restlet](https://github.com/restlet/restlet-framework-java) and
-[Hazelcast](https://github.com/hazelcast/hazelcast). It was LGPL-licensed and used svn as its VCS
-(eventually migrating to git). Do you remember
+[Hazelcast](https://github.com/hazelcast/hazelcast). It was LGPL-licensed and used Subversion as
+its VCS (eventually migrating to git). Do you remember
 [Google Code](https://code.google.com/archive/p/savory-prudence/)? It was pretty cool.
 
 The JVM is both complex and complicated, thus much of the work focused not on web technologies

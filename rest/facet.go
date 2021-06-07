@@ -61,7 +61,7 @@ func (self *Facet) NegotiateBestRepresentation(context *Context) (*Representatio
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
 	// Example: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
 	//TODO: sorted by preference
-	clientContentTypes := strings.Split(context.Request.Header.Get("Accept"), ",")
+	clientContentTypes := strings.Split(context.Request.Header.Get(HeaderAccept), ",")
 	for _, clientContentType := range clientContentTypes {
 		for serverContentType, functions := range self.Representations {
 			if clientContentType == serverContentType {

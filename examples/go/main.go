@@ -66,7 +66,7 @@ func presentJson(context *rest.Context) error {
 }
 
 func presentDefault(context *rest.Context) error {
-	context.WriteString(context.ContentType)
+	context.WriteString(context.Response.ContentType)
 	fmt.Fprintf(context, "\n%s\n", context.Variables)
 	return nil
 }

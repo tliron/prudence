@@ -8,10 +8,18 @@ import (
 
 var log = logging.GetLogger("prudence.rest")
 
-var logCache = logging.GetLogger("prudence.cache")
-
 const (
-	CACHED_HEADER = "X-Prudence-Cached"
+	HeaderAccept          = "Accept"
+	HeaderAcceptEncoding  = "Accept-Encoding"
+	HeaderCacheControl    = "Cache-Control"
+	HeaderCached          = "X-Prudence-Cached"
+	HeaderContentEncoding = "Content-Encoding"
+	HeaderContentType     = "Content-Type"
+	HeaderETag            = "ETag"
+	HeaderIfModifiedSince = "If-Modified-Since"
+	HeaderIfNoneMatch     = "If-None-Match"
+	HeaderLastModified    = "Last-Modified"
+	HeaderServer          = "Server"
 )
 
 //

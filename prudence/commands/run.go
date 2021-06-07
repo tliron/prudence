@@ -18,43 +18,23 @@ func init() {
 	runCommand.Flags().BoolVarP(&watch, "watch", "w", true, "whether to watch dependent files and restart if they are changed")
 }
 
-/*
-type X struct{}
-
-func (self X) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
-	path := filepath.Join("examples/hello-world/myapp/static", request.URL.Path)
-	http.ServeFile(responseWriter, request, path)
-}
-*/
-
 var runCommand = &cobra.Command{
 	Use:   "run [Script PATH or URL]",
 	Short: "Run",
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		startId := args[0]
+
 		util.OnExit(platform.Stop)
 
-		/*
-			server := http.Server{
-				Addr:         "localhost:8080",
-				ReadTimeout:  time.Duration(time.Second * 5),
-				WriteTimeout: time.Duration(time.Second * 5),
-				Handler:      X{},
-			}
-			listener, err := net.Listen("tcp", "localhost:8080")
-			util.FailOnError(err)
-			err = server.Serve(listener)
-			util.FailOnError(err)
-		*/
-
-		context := urlpkg.NewContext()
+		urlContext := urlpkg.NewContext()
 		util.OnExit(func() {
-			if err := context.Release(); err != nil {
+			if err := urlContext.Release(); err != nil {
 				log.Errorf("%s", err.Error())
 			}
 		})
 
-		environment := js.NewEnvironment(context)
+		environment := js.NewEnvironment(urlContext, arguments)
 		util.OnExit(func() {
 			if err := environment.Release(); err != nil {
 				log.Errorf("%s", err.Error())
@@ -69,7 +49,7 @@ var runCommand = &cobra.Command{
 			}
 
 			environment.ClearCache()
-			_, err := environment.RequireID(args[0])
+			_, err := environment.RequireID(startId)
 			util.FailOnError(err)
 		}
 

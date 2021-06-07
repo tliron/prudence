@@ -20,7 +20,7 @@ exports.construct = function(context) {
 // Safely assume that "construct" has already been called (if it exists)
 exports.describe = function(context) {
     context.log.info('describe');
-    context.signature = backend.getSignature(context.variables.name);
+    context.response.signature = backend.getSignature(context.variables.name);
 };
 
 // The "present" hook (required) generates the representation

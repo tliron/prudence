@@ -8,6 +8,7 @@ import (
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	urlpkg "github.com/tliron/kutil/url"
+	"github.com/tliron/kutil/util"
 	platform "github.com/tliron/prudence/platform"
 	rest "github.com/tliron/prudence/rest"
 )
@@ -21,14 +22,16 @@ type PrudenceAPI struct {
 	js.FormatAPI
 	js.FileAPI
 
+	Arguments       map[string]string
 	Log             logging.Logger
 	JsContext       *js.Context
 	DefaultNotFound rest.Handler
 }
 
-func NewPrudenceAPI(urlContext *urlpkg.Context, jsContext *js.Context) *PrudenceAPI {
+func NewPrudenceAPI(urlContext *urlpkg.Context, jsContext *js.Context, arguments map[string]string) *PrudenceAPI {
 	return &PrudenceAPI{
 		FileAPI:         js.NewFileAPI(urlContext),
+		Arguments:       arguments,
 		Log:             log,
 		JsContext:       jsContext,
 		DefaultNotFound: rest.DefaultNotFound,
@@ -36,6 +39,14 @@ func NewPrudenceAPI(urlContext *urlpkg.Context, jsContext *js.Context) *Prudence
 }
 
 func (self *PrudenceAPI) LoadString(id string) (string, error) {
+	if bytes, err := self.LoadBytes(id); err == nil {
+		return util.BytesToString(bytes), nil
+	} else {
+		return "", err
+	}
+}
+
+func (self *PrudenceAPI) LoadBytes(id string) ([]byte, error) {
 	if url_, err := self.JsContext.Resolve(id); err == nil {
 		if fileUrl, ok := url_.(*urlpkg.FileURL); ok {
 			if self.JsContext.Environment.Watcher != nil {
@@ -43,9 +54,9 @@ func (self *PrudenceAPI) LoadString(id string) (string, error) {
 			}
 		}
 
-		return urlpkg.ReadString(url_)
+		return urlpkg.ReadBytes(url_)
 	} else {
-		return "", err
+		return nil, err
 	}
 }
 

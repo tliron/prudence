@@ -19,13 +19,30 @@ And then run it from a terminal:
     prudence run start.js -v
 
 If there were no errors then you should see a log message about the server being up and
-running. The command will now block until you kill it, e.g. by pressing CTRL+C.
+running. The program will now block until you kill it, e.g. by pressing CTRL+C.
 
 Let's open another terminal and test it out:
 
     curl localhost:8080 -v
 
 You should see a successful response with a 200 status code.
+
+By default the server is unencrypted HTTP/1.1. To secure the connection ("https:" with
+support for HTTP/2) you need to set the certificate and key PEMs, either literally or by
+loading them from a file:
+
+    prudence.start(new prudence.Server({
+        address: 'localhost:8080',
+        secure: {
+            certificate: prudence.loadString('secret/crt.pem'),
+            key: prudence.loadString('secret/key.pem')
+        }
+    }));
+
+For testing you can set `secure: {}` to automatically create an self-signed certificate.
+To see it in the terminal:
+
+    curl --insecure https://localhost:8080 -v
 
 ### "prudence.start"
 
@@ -34,8 +51,8 @@ So, you can start several servers at the same time, e.g. to listen on different 
 interfaces.
 
 Prudence will automatically restart itself if any of the dependent files (JavaScript source
-code or others, such as includes) are changed. To do this it "watches" these files using
-filesystem services. To turn this feature off run Prudence with the `--watch=false` flag.
+code or others, such as loaded/included files) are changed. To do this it "watches" these files
+using filesystem services. To turn this feature off run Prudence with the `--watch=false` flag.
 Note that restarting the server(s) does *not* delete any cached representations, even 
 if you're using the in-memory cache backend.
 

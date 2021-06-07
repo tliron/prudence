@@ -17,9 +17,9 @@ func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepr
 	body := make(map[platform.EncodingType][]byte)
 
 	if withBody {
-		contentEncoding := self.Response.Header.Get("Content-Encoding")
+		contentEncoding := self.Response.Header.Get(HeaderContentEncoding)
 		if encodingType := GetEncodingType(contentEncoding); encodingType != platform.EncodingTypeUnsupported {
-			body[encodingType] = copyBytes(self.Response.Buffer.Bytes())
+			body[encodingType] = self.Response.Buffer.Bytes()
 		} else {
 			self.Log.Warningf("unsupported encoding: %s", contentEncoding)
 		}
@@ -27,7 +27,10 @@ func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepr
 
 	headers := make(map[string][]string)
 	for name, values := range self.Response.Header {
-		if name != "Cache-Control" {
+		switch name {
+		case HeaderCacheControl:
+			// Skip
+		default:
 			headers[name] = ard.Copy(values).([]string)
 		}
 	}
@@ -78,7 +81,7 @@ func (self *Context) DeleteCachedRepresentation() {
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
 		key := self.NewCacheKey()
 		cacheBackend.DeleteRepresentation(key)
-		logCache.Debugf("representation deleted: %s", key)
+		self.Log.Debugf("representation deleted: %s", key)
 	}
 }
 
@@ -104,32 +107,29 @@ func (self *Context) GetCachedRepresentationBody(cached *platform.CachedRepresen
 	return cached.GetBody(NegotiateBestEncodingType(self.Request.Header))
 }
 
-func (self *Context) DescribeCachedRepresentation(cached *platform.CachedRepresentation) bool {
-	self.Response.Buffer.Reset()
+func (self *Context) PresentCachedRepresentation(cached *platform.CachedRepresentation, withBody bool) bool {
+	self.Response.Reset()
 
-	if self.Debug {
-		self.Response.Header.Set(CACHED_HEADER, self.CacheKey)
-	}
-
+	header := self.Response.Header
 	if cached.Headers != nil {
 		for name, values := range cached.Headers {
 			for _, value := range values {
-				self.Response.Header.Add(name, value)
+				header.Add(name, value)
 			}
 		}
 	}
 
-	return !self.isNotModified()
-}
+	if self.Debug {
+		header.Set(HeaderCached, self.CacheKey)
+	}
 
-func (self *Context) PresentCachedRepresentation(cached *platform.CachedRepresentation, withBody bool) bool {
-	if !self.DescribeCachedRepresentation(cached) {
+	if self.isNotModified(true) {
 		return false
 	}
 
 	// Match client-side caching with server-side caching
 	maxAge := int(cached.TimeToLive())
-	self.Response.Header.Set("Cache-Control", fmt.Sprintf("max-age=%d", maxAge))
+	self.Response.Header.Set(HeaderCacheControl, fmt.Sprintf("max-age=%d", maxAge))
 
 	if withBody {
 		body, changed := self.GetCachedRepresentationBody(cached)
@@ -141,7 +141,7 @@ func (self *Context) PresentCachedRepresentation(cached *platform.CachedRepresen
 }
 
 func (self *Context) WriteCachedRepresentation(cached *platform.CachedRepresentation) (bool, int, error) {
-	if body, changed := cached.GetBody(platform.EncodingTypePlain); body != nil {
+	if body, changed := cached.GetBody(platform.EncodingTypeIdentity); body != nil {
 		n, err := self.Write(body)
 		return changed, n, err
 	} else {

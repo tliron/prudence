@@ -17,7 +17,7 @@ exports.chores = {
 
     describe: function(context) {
         context.log.info('describe');
-        context.signature = backend.getSignature(context.variables.name);
+        context.response.signature = backend.getSignature(context.variables.name);
     },
 
     erase: function(context) {

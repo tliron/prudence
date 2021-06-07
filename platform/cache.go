@@ -68,7 +68,7 @@ func (self *CachedRepresentation) GetBody(encoding EncodingType) ([]byte, bool) 
 	} else {
 		switch encoding {
 		case EncodingTypeBrotli:
-			if plain, _ := self.GetBody(EncodingTypePlain); plain != nil {
+			if plain, _ := self.GetBody(EncodingTypeIdentity); plain != nil {
 				log.Debug("creating brotli body from plain")
 				buffer := bytes.NewBuffer(nil)
 				if err := EncodeBrotli(plain, buffer); err == nil {
@@ -82,7 +82,7 @@ func (self *CachedRepresentation) GetBody(encoding EncodingType) ([]byte, bool) 
 			}
 
 		case EncodingTypeGZip:
-			if plain, _ := self.GetBody(EncodingTypePlain); plain != nil {
+			if plain, _ := self.GetBody(EncodingTypeIdentity); plain != nil {
 				log.Debug("creating gzip body from plain")
 				buffer := bytes.NewBuffer(nil)
 				if err := EncodeGZip(plain, buffer); err == nil {
@@ -96,7 +96,7 @@ func (self *CachedRepresentation) GetBody(encoding EncodingType) ([]byte, bool) 
 			}
 
 		case EncodingTypeFlate:
-			if plain, _ := self.GetBody(EncodingTypePlain); plain != nil {
+			if plain, _ := self.GetBody(EncodingTypeIdentity); plain != nil {
 				log.Debug("creating flate body from plain")
 				buffer := bytes.NewBuffer(nil)
 				if err := EncodeFlate(plain, buffer); err == nil {
@@ -109,14 +109,14 @@ func (self *CachedRepresentation) GetBody(encoding EncodingType) ([]byte, bool) 
 				}
 			}
 
-		case EncodingTypePlain:
+		case EncodingTypeIdentity:
 			// Try decoding an existing body
 			if deflate, ok := self.Body[EncodingTypeFlate]; ok {
 				log.Debug("creating plain body from flate")
 				buffer := bytes.NewBuffer(nil)
 				if err := DecodeFlate(deflate, buffer); err == nil {
 					body = buffer.Bytes()
-					self.Body[EncodingTypePlain] = body
+					self.Body[EncodingTypeIdentity] = body
 					return body, true
 				} else {
 					log.Errorf("%s", err)
@@ -127,7 +127,7 @@ func (self *CachedRepresentation) GetBody(encoding EncodingType) ([]byte, bool) 
 				buffer := bytes.NewBuffer(nil)
 				if err := DecodeGZip(gzip, buffer); err == nil {
 					body = buffer.Bytes()
-					self.Body[EncodingTypePlain] = body
+					self.Body[EncodingTypeIdentity] = body
 					return body, true
 				} else {
 					log.Errorf("%s", err)
@@ -138,7 +138,7 @@ func (self *CachedRepresentation) GetBody(encoding EncodingType) ([]byte, bool) 
 				buffer := bytes.NewBuffer(nil)
 				if err := DecodeBrotli(brotli, buffer); err == nil {
 					body = buffer.Bytes()
-					self.Body[EncodingTypePlain] = body
+					self.Body[EncodingTypeIdentity] = body
 					return body, true
 				} else {
 					log.Errorf("%s", err)

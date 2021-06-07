@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"net/http"
 	"time"
-
-	"github.com/tliron/kutil/util"
 )
 
 //
@@ -36,8 +34,9 @@ func NewResponse(responseWriter http.ResponseWriter) *Response {
 	}
 }
 
-func (self *Response) Body() string {
-	return util.BytesToString(self.Buffer.Bytes())
+func (self *Response) Reset() {
+	self.Header = make(http.Header)
+	self.Buffer.Reset()
 }
 
 func (self *Response) flush() {
@@ -62,15 +61,31 @@ func (self *Response) flush() {
 	self.Direct.Write(self.Buffer.Bytes())
 }
 
-func (self *Response) eTag() string {
-	if self.Signature != "" {
-		if self.WeakSignature {
-			return "W/\"" + self.Signature + "\""
+func (self *Response) eTag(fromHeader bool) string {
+	if fromHeader {
+		return self.Header.Get(HeaderETag)
+	} else {
+		if self.Signature != "" {
+			if self.WeakSignature {
+				return "W/\"" + self.Signature + "\""
+			} else {
+				return "\"" + self.Signature + "\""
+			}
 		} else {
-			return "\"" + self.Signature + "\""
+			return ""
+		}
+	}
+}
+
+func (self *Response) lastModified(fromHeader bool) time.Time {
+	if fromHeader {
+		if lastModified, err := http.ParseTime(self.Header.Get(HeaderLastModified)); err == nil {
+			return lastModified
+		} else {
+			return time.Time{}
 		}
 	} else {
-		return ""
+		return self.Timestamp
 	}
 }
 
@@ -79,9 +94,9 @@ func (self *Response) setContentType() {
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
 	if self.ContentType != "" {
 		if self.CharSet != "" {
-			self.Header.Set("Content-Type", self.ContentType+";charset="+self.CharSet)
+			self.Header.Set(HeaderContentType, self.ContentType+";charset="+self.CharSet)
 		} else {
-			self.Header.Set("Content-Type", self.ContentType)
+			self.Header.Set(HeaderContentType, self.ContentType)
 		}
 	}
 }
@@ -89,8 +104,8 @@ func (self *Response) setContentType() {
 func (self *Response) setETag() {
 	// ETag
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag
-	if eTag := self.eTag(); eTag != "" {
-		self.Header.Set("ETag", eTag)
+	if eTag := self.eTag(false); eTag != "" {
+		self.Header.Set(HeaderETag, eTag)
 	}
 }
 
@@ -98,6 +113,6 @@ func (self *Response) setLastModified() {
 	// Last-Modified
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
 	if !self.Timestamp.IsZero() {
-		self.Header.Set("Last-Modified", self.Timestamp.Format(http.TimeFormat))
+		self.Header.Set(HeaderLastModified, self.Timestamp.Format(http.TimeFormat))
 	}
 }

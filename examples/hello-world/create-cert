@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/../../scripts/_env"
+
+SECRET=$HERE/secret
+
+mkdir --parents "$SECRET"
+
+openssl req \
+    -newkey rsa:2048 -nodes -keyout "$SECRET/server.key" \
+    -x509 -days 365 -subj "/C=US/ST=IL/L=Chicago/O=Prudence/OU=Org/CN=localhost:8080" -out "$SECRET/server.crt"

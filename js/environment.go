@@ -9,9 +9,9 @@ import (
 	_ "github.com/tliron/prudence/render"
 )
 
-func NewEnvironment(urlContext *urlpkg.Context) *js.Environment {
+func NewEnvironment(urlContext *urlpkg.Context, arguments map[string]string) *js.Environment {
 	environment := js.NewEnvironment(urlContext)
-	environment.Extensions = newExtensions()
+	environment.Extensions = newExtensions(arguments)
 	environment.Precompile = precompile
 	return environment
 }

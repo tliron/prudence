@@ -9,8 +9,6 @@ var startGroup *StartGroup
 func Start(startables []Startable) error {
 	Stop()
 
-	log.Info("starting")
-
 	startGroup = NewStartGroup(startables)
 	startGroup.Start()
 
@@ -19,7 +17,6 @@ func Start(startables []Startable) error {
 
 func Stop() {
 	if startGroup != nil {
-		log.Info("stopping")
 		startGroup.Stop()
 	}
 }
@@ -53,23 +50,26 @@ func NewStartGroup(startables []Startable) *StartGroup {
 }
 
 func (self *StartGroup) Start() {
+	log.Info("starting")
+
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
 	for _, startable := range self.Startables {
-		startable_ := startable // closure capture
-		go func() {
+		go func(startable Startable) {
 			self.started.Add(1)
 			defer self.started.Done()
 
-			if err := startable_.Start(); err != nil {
+			if err := startable.Start(); err != nil {
 				log.Errorf("%s", err.Error())
 			}
-		}()
+		}(startable)
 	}
 }
 
 func (self *StartGroup) Stop() {
+	log.Info("stopping")
+
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
@@ -80,4 +80,6 @@ func (self *StartGroup) Stop() {
 	}
 
 	self.started.Wait()
+
+	log.Info("stopped")
 }

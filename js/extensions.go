@@ -9,12 +9,12 @@ import (
 	"github.com/tliron/prudence/platform"
 )
 
-func newExtensions() []js.Extension {
+func newExtensions(arguments map[string]string) []js.Extension {
 	var extensions []js.Extension
 
 	extensions = append(extensions, js.Extension{
 		Name:   "prudence",
-		Create: createPrudenceExtension,
+		Create: newPrudenceExtensionCreator(arguments),
 	})
 
 	extensions = append(extensions, js.Extension{
@@ -39,26 +39,27 @@ func newExtensions() []js.Extension {
 
 var globals = js.NewThreadSafeObject()
 
-// CreateExtensionFunc signature
-func createPrudenceExtension(context *js.Context) goja.Value {
-	prudence := context.Environment.Runtime.NewObject()
+func newPrudenceExtensionCreator(arguments map[string]string) js.CreateExtensionFunc {
+	return func(context *js.Context) goja.Value {
+		prudence := context.Environment.Runtime.NewObject()
 
-	// API
-	prudence_ := context.Environment.Runtime.ToValue(NewPrudenceAPI(context.Environment.URLContext, context)).ToObject(context.Environment.Runtime)
-	for _, key := range prudence_.Keys() {
-		prudence.Set(key, prudence_.Get(key))
+		// Copy API
+		prudence_ := context.Environment.Runtime.ToValue(NewPrudenceAPI(context.Environment.URLContext, context, arguments)).ToObject(context.Environment.Runtime)
+		for _, key := range prudence_.Keys() {
+			prudence.Set(key, prudence_.Get(key))
+		}
+
+		// Globals
+		prudence.Set("globals", globals.NewDynamicObject(context.Environment.Runtime))
+
+		// Type constructors
+		platform.OnTypes(func(type_ string, create platform.CreateFunc) bool {
+			prudence.Set(type_, newTypeConstructor(create, context))
+			return true
+		})
+
+		return prudence
 	}
-
-	// Globals
-	prudence.Set("globals", globals.NewDynamicObject(context.Environment.Runtime))
-
-	// Type constructors
-	platform.OnTypes(func(type_ string, create platform.CreateFunc) bool {
-		prudence.Set(type_, newTypeConstructor(create, context))
-		return true
-	})
-
-	return prudence
 }
 
 func newTypeConstructor(create platform.CreateFunc, context *js.Context) func(constructor goja.ConstructorCall) *goja.Object {

@@ -11,8 +11,8 @@ import (
 
 func GetEncodingType(name string) platform.EncodingType {
 	switch name {
-	case "":
-		return platform.EncodingTypePlain
+	case "identity", "":
+		return platform.EncodingTypeIdentity
 	case "br":
 		return platform.EncodingTypeBrotli
 	case "gzip":
@@ -25,14 +25,14 @@ func GetEncodingType(name string) platform.EncodingType {
 }
 
 func NegotiateBestEncodingType(header http.Header) platform.EncodingType {
-	clientEncodings := strings.Split(header.Get("Accept-Encoding"), ",")
+	clientEncodings := strings.Split(header.Get(HeaderAcceptEncoding), ",")
 	for _, clientEncoding := range clientEncodings {
 		if type_ := GetEncodingType(clientEncoding); type_ != platform.EncodingTypeUnsupported {
 			return type_
 		}
 	}
 
-	return platform.EncodingTypePlain
+	return platform.EncodingTypeIdentity
 }
 
 //
@@ -57,13 +57,13 @@ func SetBestEncodeWriter(context *Context) {
 	type_ := NegotiateBestEncodingType(context.Request.Header)
 	switch type_ {
 	case platform.EncodingTypeBrotli:
-		context.Response.Header.Set("Content-Encoding", "br")
+		context.Response.Header.Set(HeaderContentEncoding, "br")
 		context.writer = NewEncodeWriter(context.writer, type_)
 	case platform.EncodingTypeGZip:
-		context.Response.Header.Set("Content-Encoding", "gzip")
+		context.Response.Header.Set(HeaderContentEncoding, "gzip")
 		context.writer = NewEncodeWriter(context.writer, type_)
 	case platform.EncodingTypeFlate:
-		context.Response.Header.Set("Content-Encoding", "deflate")
+		context.Response.Header.Set(HeaderContentEncoding, "deflate")
 		context.writer = NewEncodeWriter(context.writer, type_)
 	}
 }

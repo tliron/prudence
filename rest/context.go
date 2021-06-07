@@ -193,13 +193,13 @@ func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) go
 
 	CallJavaScript(runtime, present, self)
 
-	self.EndSignature()
+	self.flushWriters()
 
 	body := buffer.Bytes()
 
 	// To cache
 	if (self.CacheDuration > 0.0) && (self.CacheKey != "") {
-		self.StoreCachedRepresentationFromBody(platform.EncodingTypePlain, body)
+		self.StoreCachedRepresentationFromBody(platform.EncodingTypeIdentity, body)
 	}
 
 	self.writer = writer
@@ -221,13 +221,13 @@ func (self *Context) flushWriters() {
 	}
 }
 
-func (self *Context) isNotModified() bool {
+func (self *Context) isNotModified(fromHeader bool) bool {
 	// If-None-Match
 	// (Has precedence over If-Modified-Since)
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
-	if eTag := self.Response.eTag(); eTag != "" {
-		if ifNoneMatch := self.Request.Header.Get("If-None-Match"); ifNoneMatch != "" {
-			if ifNoneMatch == eTag {
+	if serverETag := self.Response.eTag(fromHeader); serverETag != "" {
+		if clientETag := self.Request.Header.Get(HeaderIfNoneMatch); clientETag != "" {
+			if clientETag == serverETag {
 				self.Response.Status = http.StatusNotModified
 				self.Log.Debug("not modified: ETag")
 				return true
@@ -237,10 +237,12 @@ func (self *Context) isNotModified() bool {
 
 	// If-Modified-Since
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
-	if !self.Response.Timestamp.IsZero() {
-		if ifModifiedSince := self.Request.Header.Get("If-Modified-Since"); ifModifiedSince != "" {
-			if ifModifiedSince_, err := http.ParseTime(ifModifiedSince); err == nil {
-				if ifModifiedSince_.Before(self.Response.Timestamp) {
+	if serverTimestamp := self.Response.lastModified(fromHeader); !serverTimestamp.IsZero() {
+		if ifModifiedSince := self.Request.Header.Get(HeaderIfModifiedSince); ifModifiedSince != "" {
+			if clientTimestamp, err := http.ParseTime(ifModifiedSince); err == nil {
+				// modified = server > client
+				// not modified = client <= server
+				if !serverTimestamp.After(clientTimestamp) {
 					self.Response.Status = http.StatusNotModified
 					self.Log.Debug("not modified: Last-Modified")
 					return true
@@ -257,10 +259,10 @@ func (self *Context) setCacheControl() {
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
 	if self.CacheDuration < 0.0 {
 		// Negative means don't store and *also* invalidate the existing client cache
-		self.Response.Header.Set("Cache-Control", "no-store,max-age=0")
+		self.Response.Header.Set(HeaderCacheControl, "no-store,max-age=0")
 	} else if self.CacheDuration > 0.0 {
 		// Match client-side caching with server-side caching
 		maxAge := int(self.CacheDuration)
-		self.Response.Header.Set("Cache-Control", fmt.Sprintf("max-age=%d", maxAge))
+		self.Response.Header.Set(HeaderCacheControl, fmt.Sprintf("max-age=%d", maxAge))
 	}
 }

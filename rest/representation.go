@@ -107,7 +107,7 @@ func (self *Representation) Handle(context *Context) bool {
 	case "HEAD":
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD
 
-		// Avoid wasting resources on writing for HEAD
+		// Avoid wasting resources on writing
 		context.writer = io.Discard
 
 		if self.construct(context) {
@@ -141,7 +141,7 @@ func (self *Representation) Handle(context *Context) bool {
 }
 
 func (self *Representation) construct(context *Context) bool {
-	context.CacheKey = context.Request.URL.String()
+	context.CacheKey = context.Path
 	if self.Construct != nil {
 		if err := self.Construct(context); err != nil {
 			context.Error(err)
@@ -177,7 +177,7 @@ func (self *Representation) describe(context *Context) bool {
 			return false
 		}
 
-		if context.isNotModified() {
+		if context.isNotModified(false) {
 			return false
 		}
 	}
@@ -198,7 +198,7 @@ func (self *Representation) present(context *Context, withBody bool) {
 			}
 		}
 
-		if context.isNotModified() {
+		if context.isNotModified(false) {
 			return
 		}
 	}

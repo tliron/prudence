@@ -24,12 +24,13 @@ func init() {
 //
 
 type Server struct {
-	Name     string
-	Address  string
-	Protocol string
-	Secure   bool
-	Debug    bool
-	Handler  HandleFunc
+	Name        string
+	Address     string
+	Secure      bool
+	Certificate string
+	Key         string
+	Debug       bool
+	Handler     HandleFunc
 
 	server  *http.Server
 	started sync.WaitGroup
@@ -49,22 +50,23 @@ func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error
 	var self Server
 
 	config_ := ard.NewNode(config)
-	self.Address, _ = config_.Get("address").String(false)
-	self.Protocol, _ = config_.Get("protocol").String(false)
-	if self.Protocol == "" {
-		self.Protocol = "http"
+	self.Name, _ = config_.Get("name").String(false)
+	if self.Name == "" {
+		self.Name = "Prudence"
 	}
-	self.Secure, _ = config_.Get("secure").Boolean(false)
+	self.Address, _ = config_.Get("address").String(false)
+	secure := config_.Get("secure")
+	if secure.Data != nil {
+		self.Secure = true
+	}
+	self.Certificate, _ = secure.Get("certificate").String(true)
+	self.Key, _ = secure.Get("key").String(true)
 	self.Debug, _ = config_.Get("debug").Boolean(false)
 	if handler := config_.Get("handler").Data; handler != nil {
 		var err error
 		if self.Handler, err = GetHandleFunc(handler); err != nil {
 			return nil, err
 		}
-	}
-	self.Name, _ = config_.Get("name").String(false)
-	if self.Name == "" {
-		self.Name = "Prudence"
 	}
 
 	return &self, nil
@@ -73,19 +75,20 @@ func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error
 func (self *Server) newListener(secure bool) (net.Listener, error) {
 	if listener, err := net.Listen("tcp", self.Address); err == nil {
 		if secure {
-			if certificate, privateKey, err := util.CreateSelfSignedX509("Prudence", self.Address); err == nil {
-				config := tls.Config{
-					Certificates: []tls.Certificate{
-						{
-							Certificate: [][]byte{certificate},
-							PrivateKey:  privateKey,
-						},
-					},
+			var tlsConfig *tls.Config
+			var err error
+			if (self.Certificate != "") || (self.Key != "") {
+				if tlsConfig, err = util.CreateTLSConfig(util.StringToBytes(self.Certificate), (util.StringToBytes(self.Key))); err != nil {
+					return nil, err
 				}
-				return tls.NewListener(listener, &config), nil
-			} else {
+			} else if tlsConfig, err = util.CreateSelfSignedTLSConfig("Prudence", self.Address); err != nil {
 				return nil, err
 			}
+
+			// This is *not* set with "h2" when calling Server.Serve!
+			tlsConfig.NextProtos = []string{"h2", "http/1.1"}
+
+			return tls.NewListener(listener, tlsConfig), nil
 		} else {
 			return listener, nil
 		}
@@ -99,7 +102,11 @@ func (self *Server) Start() error {
 	self.started.Add(1)
 	defer self.started.Done()
 
-	log.Infof("starting server: %s", self.Address)
+	if self.Secure {
+		log.Infof("starting secure server: %s", self.Address)
+	} else {
+		log.Infof("starting server: %s", self.Address)
+	}
 
 	var err error
 	var listener net.Listener
@@ -141,6 +148,9 @@ func (self *Server) Stop() error {
 func (self *Server) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
 	if self.Handler != nil {
 		context := NewContext(responseWriter, request)
+		if self.Name != "" {
+			context.Response.Header.Set(HeaderServer, self.Name)
+		}
 		context.Debug = self.Debug
 		self.Handler(context)
 		context.Response.flush()
