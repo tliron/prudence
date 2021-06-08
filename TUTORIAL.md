@@ -27,6 +27,20 @@ Let's open another terminal and test it out:
 
 You should see a successful response with a 200 status code.
 
+### "prudence.start"
+
+This function's argument is either a single startable object or an array of startable objects.
+So, you can start several servers at the same time, e.g. to listen on different ports or
+interfaces.
+
+Prudence will automatically restart itself if any of the dependent files (JavaScript source
+code or others, such as loaded/included files) are changed. To do this it "watches" these files
+using filesystem services. To turn this feature off run Prudence with the `--watch=false` flag.
+Note that restarting the server(s) does *not* delete any cached representations, even 
+if you're using the in-memory cache backend.
+
+### TLS
+
 By default the server is unencrypted HTTP/1.1. To secure the connection ("https:" with
 support for HTTP/2) you need to set the certificate and key PEMs, either literally or by
 loading them from a file:
@@ -44,17 +58,21 @@ To see it in the terminal:
 
     curl --insecure https://localhost:8080 -v
 
-### "prudence.start"
+### NCSA
 
-This function's argument is either a single startable object or a list of startable objects.
-So, you can start several servers at the same time, e.g. to listen on different ports or
-interfaces.
+To enable an [NCSA Common log](https://en.wikipedia.org/wiki/Common_Log_Format) run Prudence
+with the `--ncsa` flag. You can give it a path to a log file or the special values "stdout"
+or "stderr":
 
-Prudence will automatically restart itself if any of the dependent files (JavaScript source
-code or others, such as loaded/included files) are changed. To do this it "watches" these files
-using filesystem services. To turn this feature off run Prudence with the `--watch=false` flag.
-Note that restarting the server(s) does *not* delete any cached representations, even 
-if you're using the in-memory cache backend.
+    prudence run start.js --ncsa=/var/log/prudence.log -v
+
+If you have multiple servers you can use a "ncsa" property that will be added as a prefix to
+the `--ncsa` filename:
+
+    prudence.start(new prudence.Server({
+        address: 'localhost:8080',
+        ncsa: 'main'
+    }));
 
 We have a server running. Now, let's add an application!
 
@@ -121,6 +139,8 @@ a "Router" handler. Routers, as you can see above, allow for multiple "routes", 
 its own handler. Each route is attempted *in order*. In this case we are trying to handle
 the reqest with a "Static" handler, and if that fails (file not found) it will move on to
 the next route, which is Prudence's default 404 Not Found handler.
+
+Note that it's absolutely possible to use the same router with multiple started servers.
 
 We've learned how to server static files. What about dynamic resources?
 

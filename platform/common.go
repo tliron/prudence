@@ -4,6 +4,6 @@ import (
 	"github.com/tliron/kutil/logging"
 )
 
-var NCSAPrefix string
+var NCSAFilename string
 
 var log = logging.GetLogger("prudence.platform")

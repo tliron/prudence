@@ -18,6 +18,7 @@ func Start(startables []Startable) error {
 func Stop() {
 	if startGroup != nil {
 		startGroup.Stop()
+		startGroup = nil
 	}
 }
 

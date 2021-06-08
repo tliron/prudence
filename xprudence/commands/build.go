@@ -18,6 +18,7 @@ var modules []string
 var directories []string
 var replacements map[string]string
 var version string
+var local string
 var output string
 var executable string
 var go_ string
@@ -27,8 +28,9 @@ func init() {
 	rootCommand.AddCommand(buildCommand)
 	buildCommand.Flags().StringArrayVarP(&modules, "module", "m", nil, "add a module by name (may include version after \"@\")")
 	buildCommand.Flags().StringArrayVarP(&directories, "directory", "d", nil, "add a module from a directory (must contain go.mod)")
-	buildCommand.Flags().StringToStringVarP(&replacements, "replace", "r", nil, "replace a module (format is module=path)")
+	buildCommand.Flags().StringToStringVarP(&replacements, "replace", "r", make(map[string]string), "replace a module (format is module=path)")
 	buildCommand.Flags().StringVarP(&version, "version", "e", "", "Prudence version (leave empty to use the latest version)")
+	buildCommand.Flags().StringVarP(&local, "local", "c", "", "path to local Prudence source")
 	buildCommand.Flags().StringVarP(&output, "output", "o", "", "output directory (defaults to $GOBIN or $GOPATH/bin or $HOME/go/bin)")
 	buildCommand.Flags().StringVarP(&executable, "executable", "x", "prudence", "Prudence executable name")
 	buildCommand.Flags().StringVarP(&go_, "go", "g", "go", "go binary")
@@ -72,12 +74,20 @@ func Build() {
 	ConvertDirectories()
 	CreateMain(sourceDirectory)
 	Command(rootDirectory, nil, go_, "mod", "init", "github.com/tliron/prudence-x")
-	FixGoMod(rootDirectory)
 
-	if version != "" {
+	if local != "" {
+		replacements["github.com/tliron/prudence"] = local
+	} else if version != "" {
 		log.Infof("getting Prudence version %q", version)
 		Command(rootDirectory, nil, go_, "get", "github.com/tliron/prudence@"+version)
+	} else {
+		log.Info("getting latest version of Prudence")
+		Command(rootDirectory, nil, go_, "get", "github.com/tliron/prudence")
+		version = Command(rootDirectory, nil, go_, "list", "-m", "-f", "{{ .Version }}", "github.com/tliron/prudence")
+		version = strings.TrimSpace(version)
 	}
+
+	FixGoMod(rootDirectory)
 
 	for _, plugin := range modules {
 		plugin_ := strings.SplitN(plugin, "@", 2)
@@ -98,7 +108,6 @@ func Build() {
 	util.FailOnError(err)
 
 	path := filepath.Join(output, executable)
-	log.Infof("building %s", path)
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05 MST")
 
@@ -111,6 +120,7 @@ func Build() {
 
 	ldflags := fmt.Sprintf("-X 'github.com/tliron/kutil/version.GitVersion=%s' -X 'github.com/tliron/kutil/version.Timestamp=%s'", version_, timestamp)
 
+	log.Infof("building: %s version %s", path, version_)
 	Command(sourceDirectory, []string{"GOBIN=" + output}, go_, "install", "-ldflags", ldflags, ".")
 	terminal.Printf("built: %s\n", path)
 }
@@ -168,7 +178,7 @@ func CreateMain(dir string) {
 }
 
 func FixGoMod(dir string) {
-	if (replacements != nil) && (len(replacements) > 0) {
+	if len(replacements) > 0 {
 		name := filepath.Join(dir, "go.mod")
 		file, err := os.OpenFile(name, os.O_APPEND|os.O_WRONLY, 0600)
 		util.FailOnError(err)
@@ -184,14 +194,15 @@ func FixGoMod(dir string) {
 	}
 }
 
-func Command(dir string, env []string, name string, arg ...string) {
+func Command(dir string, env []string, name string, arg ...string) string {
 	cmd := exec.Command(name, arg...)
 	cmd.Dir = dir
 	if env != nil {
 		cmd.Env = append(os.Environ(), env...)
 	}
-	_, err := cmd.Output()
+	output, err := cmd.Output()
 	FailOnCommandError(err)
+	return util.BytesToString(output)
 }
 
 func FailOnCommandError(err error) {

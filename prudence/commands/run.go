@@ -5,6 +5,7 @@ import (
 	kutiljs "github.com/tliron/kutil/js"
 	urlpkg "github.com/tliron/kutil/url"
 	"github.com/tliron/kutil/util"
+	"github.com/tliron/kutil/version"
 	"github.com/tliron/prudence/js"
 	"github.com/tliron/prudence/platform"
 )
@@ -16,7 +17,7 @@ func init() {
 	rootCommand.AddCommand(runCommand)
 	runCommand.Flags().StringToStringVarP(&arguments, "argument", "a", make(map[string]string), "arguments (format is name=value)")
 	runCommand.Flags().BoolVarP(&watch, "watch", "w", true, "whether to watch dependent files and restart if they are changed")
-	runCommand.Flags().StringVarP(&platform.NCSAPrefix, "ncsa", "n", "", "NCSA log filename prefix (or special values \"stdout\" and \"stderr\")")
+	runCommand.Flags().StringVarP(&platform.NCSAFilename, "ncsa", "n", "", "NCSA log filename (or special values \"stdout\" and \"stderr\")")
 }
 
 var runCommand = &cobra.Command{
@@ -59,6 +60,8 @@ var runCommand = &cobra.Command{
 				log.Warningf("watch feature not supported on this platform")
 			}
 		}
+
+		log.Infof("Prudence version %s", version.GitRevision)
 
 		restart("", nil)
 

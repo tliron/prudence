@@ -32,7 +32,7 @@ type Server struct {
 	Secure      bool
 	Certificate string
 	Key         string
-	NCSA        string
+	NCSAPrefix  string
 	Debug       bool
 	Handler     HandleFunc
 
@@ -65,7 +65,7 @@ func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error
 	}
 	self.Certificate, _ = secure.Get("certificate").String(true)
 	self.Key, _ = secure.Get("key").String(true)
-	self.NCSA, _ = config_.Get("ncsa").String(true)
+	self.NCSAPrefix, _ = config_.Get("ncsa").String(true)
 	self.Debug, _ = config_.Get("debug").Boolean(false)
 	if handler := config_.Get("handler").Data; handler != nil {
 		var err error
@@ -121,32 +121,9 @@ func (self *Server) Start() error {
 		var handler http.Handler = self
 
 		// NCSA logging
-		if platform.NCSAPrefix != "" {
-			var writer io.Writer
-
-			switch platform.NCSAPrefix {
-			case "stdout":
-				writer = os.Stdout
-			case "stderr":
-				writer = os.Stderr
-			default:
-				if self.NCSA != "" {
-					path := platform.NCSAPrefix + self.NCSA
-					if file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600); err == nil {
-						defer file.Close()
-						log.Infof("NCSA log: %s", path)
-						writer = file
-					} else {
-						return err
-					}
-				}
-			}
-
-			if writer != nil {
-				logger := requestlog.NewNCSALogger(writer, func(err error) {
-					log.Errorf("%s", err.Error())
-				})
-				handler = requestlog.NewHandler(logger, self)
+		if logger, err := self.getNcsaLogger(); err == nil {
+			if logger != nil {
+				handler = requestlog.NewHandler(logger, handler)
 			}
 		}
 
@@ -192,4 +169,59 @@ func (self *Server) ServeHTTP(responseWriter http.ResponseWriter, request *http.
 		self.Handler(context)
 		context.Response.flush()
 	}
+}
+
+var ncsaLoggers map[string]*requestlog.NCSALogger = make(map[string]*requestlog.NCSALogger)
+var ncsaLoggersLock sync.Mutex
+
+func (self *Server) getNcsaLogger() (*requestlog.NCSALogger, error) {
+	var path string
+	switch platform.NCSAFilename {
+	case "stdout", "stderr":
+		path = platform.NCSAFilename
+	default:
+		path = self.NCSAPrefix + platform.NCSAFilename
+	}
+
+	if path == "" {
+		return nil, nil
+	}
+
+	var logger *requestlog.NCSALogger
+	var ok bool
+
+	ncsaLoggersLock.Lock()
+	defer ncsaLoggersLock.Unlock()
+
+	if logger, ok = ncsaLoggers[path]; !ok {
+		var writer io.Writer
+
+		switch path {
+		case "stdout":
+			writer = os.Stdout
+
+		case "stderr":
+			writer = os.Stderr
+
+		default:
+			if file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600); err == nil {
+				util.OnExit(func() {
+					file.Close()
+				})
+				writer = file
+			} else {
+				return nil, err
+			}
+		}
+
+		logger = requestlog.NewNCSALogger(writer, func(err error) {
+			log.Errorf("%s", err.Error())
+		})
+
+		ncsaLoggers[path] = logger
+	}
+
+	log.Infof("NCSA log for %s: %s", self.Address, path)
+
+	return logger, nil
 }
