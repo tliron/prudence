@@ -16,11 +16,11 @@ prudence.setCache(new prudence.MemoryCache());
 
 prudence.start(new prudence.Server({
     debug: true,
+    ncsa: 'localhost', // only used when the "--ncsa" flag is set
     address: 'localhost:8080',
     handler: require('myapp/router.js').handler,
-    // An empty object will generate a self-signed certificate
-    secure: (prudence.arguments.secure === 'true') ? {} : null
-    /* Or specify:
+    secure: (prudence.arguments.secure === 'true') ? {} : null // an empty object will generate a self-signed certificate
+    /* Full "secure":
     secure: {
         certificate: prudence.loadString('secret/server.crt'),
         key: prudence.loadString('secret/server.key')

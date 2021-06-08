@@ -11,4 +11,5 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/tdewolff/minify/v2 v2.9.17
 	github.com/tliron/kutil v0.1.38
+	gocloud.dev v0.23.0
 )

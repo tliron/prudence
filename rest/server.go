@@ -3,7 +3,9 @@ package rest
 import (
 	"context"
 	"crypto/tls"
+	"io"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
+	"gocloud.dev/server/requestlog"
 )
 
 func init() {
@@ -29,6 +32,7 @@ type Server struct {
 	Secure      bool
 	Certificate string
 	Key         string
+	NCSA        string
 	Debug       bool
 	Handler     HandleFunc
 
@@ -61,6 +65,7 @@ func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error
 	}
 	self.Certificate, _ = secure.Get("certificate").String(true)
 	self.Key, _ = secure.Get("key").String(true)
+	self.NCSA, _ = config_.Get("ncsa").String(true)
 	self.Debug, _ = config_.Get("debug").Boolean(false)
 	if handler := config_.Get("handler").Data; handler != nil {
 		var err error
@@ -113,11 +118,43 @@ func (self *Server) Start() error {
 	if listener, err = self.newListener(self.Secure); err == nil {
 		defer listener.Close()
 
+		var handler http.Handler = self
+
+		// NCSA logging
+		if platform.NCSAPrefix != "" {
+			var writer io.Writer
+
+			switch platform.NCSAPrefix {
+			case "stdout":
+				writer = os.Stdout
+			case "stderr":
+				writer = os.Stderr
+			default:
+				if self.NCSA != "" {
+					path := platform.NCSAPrefix + self.NCSA
+					if file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600); err == nil {
+						defer file.Close()
+						log.Infof("NCSA log: %s", path)
+						writer = file
+					} else {
+						return err
+					}
+				}
+			}
+
+			if writer != nil {
+				logger := requestlog.NewNCSALogger(writer, func(err error) {
+					log.Errorf("%s", err.Error())
+				})
+				handler = requestlog.NewHandler(logger, self)
+			}
+		}
+
 		self.server = &http.Server{
 			Addr:         self.Address,
 			ReadTimeout:  time.Duration(time.Second * 5),
 			WriteTimeout: time.Duration(time.Second * 5),
-			Handler:      self,
+			Handler:      handler,
 		}
 
 		err = self.server.Serve(listener)

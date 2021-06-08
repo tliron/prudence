@@ -16,6 +16,7 @@ func init() {
 	rootCommand.AddCommand(runCommand)
 	runCommand.Flags().StringToStringVarP(&arguments, "argument", "a", make(map[string]string), "arguments (format is name=value)")
 	runCommand.Flags().BoolVarP(&watch, "watch", "w", true, "whether to watch dependent files and restart if they are changed")
+	runCommand.Flags().StringVarP(&platform.NCSAPrefix, "ncsa", "n", "", "NCSA log filename prefix (or special values \"stdout\" and \"stderr\")")
 }
 
 var runCommand = &cobra.Command{
