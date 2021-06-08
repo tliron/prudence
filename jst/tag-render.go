@@ -20,7 +20,7 @@ func HandleRender(context *platform.JSTContext, code string) bool {
 	} else {
 		// Start render
 		context.Builder.WriteString("context.startRender(")
-		context.Builder.WriteString(strings.Trim(code, " \n"))
+		context.Builder.WriteString(strings.TrimSpace(code))
 		context.Builder.WriteString(", prudence.jsContext);\n")
 	}
 

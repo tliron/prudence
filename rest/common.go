@@ -12,13 +12,13 @@ const (
 	HeaderAccept          = "Accept"
 	HeaderAcceptEncoding  = "Accept-Encoding"
 	HeaderCacheControl    = "Cache-Control"
-	HeaderCached          = "X-Prudence-Cached"
 	HeaderContentEncoding = "Content-Encoding"
 	HeaderContentType     = "Content-Type"
 	HeaderETag            = "ETag"
 	HeaderIfModifiedSince = "If-Modified-Since"
 	HeaderIfNoneMatch     = "If-None-Match"
 	HeaderLastModified    = "Last-Modified"
+	HeaderPrudenceCached  = "X-Prudence-Cached"
 	HeaderServer          = "Server"
 )
 

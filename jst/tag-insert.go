@@ -18,7 +18,7 @@ func HandleInsert(context *platform.JSTContext, code string) bool {
 	context.Builder.WriteString("const __args")
 	context.Builder.WriteString(suffix)
 	context.Builder.WriteString(" = [")
-	context.Builder.WriteString(strings.Trim(code, " \n"))
+	context.Builder.WriteString(strings.TrimSpace(code))
 	context.Builder.WriteString("];\n")
 
 	context.Builder.WriteString("var __insert")

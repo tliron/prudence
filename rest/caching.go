@@ -28,7 +28,7 @@ func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepr
 	headers := make(map[string][]string)
 	for name, values := range self.Response.Header {
 		switch name {
-		case HeaderCacheControl:
+		case HeaderCacheControl, HeaderServer, HeaderPrudenceCached:
 			// Skip
 		default:
 			headers[name] = ard.Copy(values).([]string)
@@ -120,7 +120,7 @@ func (self *Context) PresentCachedRepresentation(cached *platform.CachedRepresen
 	}
 
 	if self.Debug {
-		header.Set(HeaderCached, self.CacheKey)
+		header.Set(HeaderPrudenceCached, self.CacheKey)
 	}
 
 	if self.isNotModified(true) {

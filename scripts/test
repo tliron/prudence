@@ -4,27 +4,31 @@ set -e
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
+if [ "$1" == -s ]; then
+    SECURE=true
+fi
+
 function c () {
-    if [ "$PROTOCOL" == https ]; then
-        curl --silent --insecure "https://$1" "${@:2}"
+    if [ "$SECURE" == true ]; then
+        curl --silent --insecure "https://localhost:8080/$1" "${@:2}"
     else
-        curl --silent "http://$1" "${@:2}"
+        curl --silent "http://localhost:8080/$1" "${@:2}"
     fi
 }
 
-c localhost:8080/person/Tal/chores \
+c person/Tal/chores \
     --request PUT \
     --data '["cleaning", "shopping", "cooking"]'
 
-c localhost:8080/person/Tal/chores?scope=all \
+c person/Tal/chores?scope=all \
     --header 'Accept: text/html' \
     --header 'Accept-Encoding: br' | brotli --decompress
 
-c localhost:8080/person/Tal/chores?scope=all \
+c person/Tal/chores?scope=all \
     --header 'Accept: text/html' \
     --header 'Accept-Encoding: gzip' | gunzip
 
-c localhost:8080/person/Tal/chores?scope=all \
+c person/Tal/chores?scope=all \
     --header 'Accept: text/html' \
     --header 'Accept-Encoding: deflate' | openssl zlib -d
 

@@ -61,14 +61,6 @@ Captures the enclosed text into a context variable. Does *not* write it. Example
 
 See "Embed" for possible uses.
 
-### Code: `<%`
-
-Insert any JavaScript code. Example:
-
-    <% for (var i = 0; i < 10; i++) { %>
-        <p>Number <%= i %></p>
-    <% } %>
-
 ### Comment: `<%# anything %>`
 
 The content of the tag is ignored. Can be useful for quickly disabling other tags
@@ -145,6 +137,14 @@ Renders the enclosed text before writing it. Example:
     <%^^%>
 
 Note that any other JST tags inside the enclosed text are processed as usual.
+
+### Scriptlet: `<%`
+
+Insert any JavaScript code. Example:
+
+    <% for (var i = 0; i < 10; i++) { %>
+        <p>Number <%= i %></p>
+    <% } %>
 
 ### Signature: [`<%$%>` or `<%$ bool_expr %>`] and `<%$$%>`
 

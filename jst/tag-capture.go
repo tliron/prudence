@@ -20,7 +20,7 @@ func HandleCapture(context *platform.JSTContext, code string) bool {
 	} else {
 		// Start render
 		context.Builder.WriteString("context.startCapture(")
-		context.Builder.WriteString(strings.Trim(code, " \n"))
+		context.Builder.WriteString(strings.TrimSpace(code))
 		context.Builder.WriteString(");\n")
 	}
 

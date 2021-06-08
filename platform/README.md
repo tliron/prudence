@@ -36,7 +36,7 @@ example we indeed get away with calling it simply "myplugin", which we initializ
 
 Your module's Go code will likely, at the very least, import this package,
 "github.com/tliron/prudence/platform". And it would also have at least one "init()" function to
-register your extensions.
+register your extensions. See below for details.
 
 Otherwise, there are no special requirements. You can, for example, use any package name you want
 and import anything else. In our example we will call our package "plugin".
@@ -48,9 +48,10 @@ JavaScript APIs
 Prudence's JavaScript engine, [goja](https://github.com/dop251/goja), has excellent integration
 with Go code, converting values and functions to and from JavaScript for you. This means that in
 many cases you can just hand over normal Go code and not worry about JavaScript specificities.
-That said, you can interact more directly with JavaScript types. See the discussion at
-[Runtime.ToValue](https://pkg.go.dev/github.com/dop251/goja?utm_source=godoc#Runtime.ToValue) for
-more information.
+That said, you can receive and create goja types directly for deeper integration, including support
+for constructor functions (JavaScript's "new" keyword). See the discussion at
+[Runtime.ToValue](https://pkg.go.dev/github.com/dop251/goja?utm_source=godoc#Runtime.ToValue)
+for more information.
 
 Let's create a plugin that exposes the [BadgerDB](https://github.com/dgraph-io/badger) API to
 JavaScript:
@@ -67,11 +68,7 @@ JavaScript:
     }
 
     func (self API) Open(path string) (*badger.DB, error) {
-        if db, err := badger.Open(badger.DefaultOptions(path)); err == nil {
-            return db, nil
-        } else {
-            return nil, err
-        }
+        return badger.Open(badger.DefaultOptions(path))
     }
 
 That's really all there is to it! "badger.open" will return a database instance and all its
@@ -107,13 +104,7 @@ Custom Types
 Prudence has built-in types like "Server", "Router", "Static", "MemoryCacheBackend", etc.,
 and you can add your own. To do this, you need to register a "create" function:
 
-    package plugin
-
-    import (
-        "github.com/tliron/kutil/ard"
-        "github.com/tliron/kutil/js"
-        "github.com/tliron/prudence/platform"
-    )
+    import "github.com/tliron/kutil/js"
 
     func init() {
         platform.RegisterType("MyType", CreateMyType)
@@ -122,15 +113,14 @@ and you can add your own. To do this, you need to register a "create" function:
     type MyType struct{}
 
     // platform.CreateFunc signature
-    func CreateMyType(config ard.StringMap, context *js.Context) (interface{}, error) {
+    func CreateMyType(config map[string]interface{}, context *js.Context) (interface{}, error) {
         return MyType{}
     }
 
-The "config" argument is a "map[string]interface{}" with arbitrary data provided in
-JavaScript. If not provided it will be an empty map (not a "nil" value). The "context" argument
-provides access to the JavaScript runtime environment in which the object is being created. This is
-useful especially for calling "context.Resolve", which will let you process relative URLs in the
-"config".
+The "config" argument contains the arbitrary data provided in JavaScript's "new". If not provided
+it will be an empty map (not a "nil" value). The "context" argument provides access to the JavaScript
+runtime environment in which the object is being created. This is useful especially for calling
+"context.Resolve", which will let you process relative URLs in the "config".
 
 Like the JavaScript APIs discussed above, your custom types can really do anything you want them to
 do. However, you're likely going to be interacting with the Prudence platform in the following ways.
@@ -139,6 +129,8 @@ do. However, you're likely going to be interacting with the Prudence platform in
 
 If your type implements the "rest.Handler" interface then it can be used as a handler anywhere in
 Prudence, just like "Router", "Resource", and "Static". Example:
+
+    import "github.com/tliron/prudence/rest"
 
     type MyType struct{
         message string
@@ -164,13 +156,13 @@ Example:
         stop chan bool
     }
 
-    // rest.Handler interface
+    // platform.Startable interface
     func (self MyType) Start() error {
         <-self.stop // block until a value is sent
         return nil
     }
 
-    // rest.Handler interface
+    // platform.Startable interface
     func (self MyType) Stop() error {
         stop <- true // send a value (and unblock "Start")
         return nil
@@ -250,13 +242,6 @@ putting a `/` just before the end delimiter: `/%>`.
 
 Example:
 
-    package plugin
-
-    import (
-        "strings"
-        "github.com/tliron/prudence/platform"
-    )
-
     func init() {
         platform.RegisterTag("~", EncodeInBed)
     }
@@ -264,7 +249,7 @@ Example:
     // platform.HandleTagFunc signature
     func EncodeInBed(context *platform.JSTContext, code string) bool {
         code = code[1:]
-        context.WriteLiteral(strings.Trim(code, " \n") + " in bed")
+        context.WriteLiteral(strings.TrimSpace(code) + " in bed")
         return false
     }
 
@@ -282,17 +267,11 @@ The Prudence renderer API is quite straightforward: it accepts text as input and
 as output. What the [renderer](../render/README.md) actually does, of course, can be quite
 sophisticated. It could be an entire language implementation. Here's a trivial example:
 
-    package plugin
-
-    import (
-        "strings"
-        "github.com/tliron/kutil/js"
-        "github.com/tliron/prudence/platform"
-    )
+    import "github.com/tliron/kutil/js"
 
     func init() {
         platform.RegisterRenderer("doublespace", RenderDoubleSpace)
-
+    }
 
     // platform.RenderFunc signature
     func RenderDoubleSpace(content string, context *js.Context) (string, error) {

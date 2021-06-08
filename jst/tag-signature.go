@@ -20,7 +20,7 @@ func HandleSignature(context *platform.JSTContext, code string) bool {
 	} else {
 		// Start signature
 		context.Builder.WriteString("context.startSignature();\n")
-		if weak := strings.Trim(code, " \n"); weak != "" {
+		if weak := strings.TrimSpace(code); weak != "" {
 			context.Builder.WriteString("if (")
 			context.Builder.WriteString(weak)
 			context.Builder.WriteString(") context.response.weakSignature = true;\n")

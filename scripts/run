@@ -6,7 +6,7 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 "$HERE/build"
 
-if [ "$PROTOCOL" == https ]; then
+if [ "$1" == -s ]; then
     prudence run "$ROOT/examples/hello-world/start.js" --argument=hello=world --argument=secure=true -vv
 else
     prudence run "$ROOT/examples/hello-world/start.js" --argument=hello=world -vv

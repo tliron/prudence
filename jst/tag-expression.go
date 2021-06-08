@@ -17,12 +17,12 @@ func HandleExpression(context *platform.JSTContext, code string) bool {
 	if (len(code) > 0) && (code[0] == '=') {
 		// Variable
 		context.Builder.WriteString("context.write(String(context.variables[")
-		context.Builder.WriteString(strings.Trim(code[1:], " \n"))
+		context.Builder.WriteString(strings.TrimSpace(code[1:]))
 		context.Builder.WriteString("]));\n")
 	} else {
 		// Expression
 		context.Builder.WriteString("context.write(String(")
-		context.Builder.WriteString(strings.Trim(code, " \n"))
+		context.Builder.WriteString(strings.TrimSpace(code))
 		context.Builder.WriteString("));\n")
 	}
 
