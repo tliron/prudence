@@ -9,6 +9,7 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
+	"github.com/tliron/kutil/format"
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/util"
@@ -53,7 +54,7 @@ func NewContext(responseWriter http.ResponseWriter, request *http.Request) *Cont
 	return &self
 }
 
-func (self *Context) Rename(name string) *Context {
+func (self *Context) AddName(name string) *Context {
 	if name == "" {
 		return self
 	} else {
@@ -81,6 +82,21 @@ func (self *Context) Copy() *Context {
 	}
 }
 
+func (self *Context) Redirect(url string, status int) error {
+	// See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections
+
+	if status == 0 {
+		status = http.StatusFound // 302
+	} else if (status < 300) || (status >= 400) {
+		return fmt.Errorf("not a redirect code: %d", status)
+	}
+
+	self.Response.Reset()
+	self.Response.Status = status
+	self.Response.Header.Set(HeaderLocation, url)
+	return nil
+}
+
 func (self *Context) StartCapture(name string) {
 	self.writer = NewCaptureWriter(self.writer, name, func(name string, value string) {
 		self.Variables[name] = value
@@ -89,7 +105,6 @@ func (self *Context) StartCapture(name string) {
 
 func (self *Context) EndCapture() error {
 	if captureWriter, ok := self.writer.(*CaptureWriter); ok {
-		self.Log.Debug("end capture")
 		err := captureWriter.Close()
 		self.writer = captureWriter.GetWrappedWriter()
 		return err
@@ -100,7 +115,6 @@ func (self *Context) EndCapture() error {
 
 func (self *Context) StartRender(renderer string, jsContext *js.Context) error {
 	if renderWriter, err := NewRenderWriter(self.writer, renderer, jsContext); err == nil {
-		self.Log.Debugf("start render: %s", renderer)
 		self.writer = renderWriter
 		return nil
 	} else {
@@ -110,7 +124,6 @@ func (self *Context) StartRender(renderer string, jsContext *js.Context) error {
 
 func (self *Context) EndRender() error {
 	if renderWriter, ok := self.writer.(*RenderWriter); ok {
-		self.Log.Debug("end render")
 		err := renderWriter.Close()
 		self.writer = renderWriter.GetWrappedWriter()
 		return err
@@ -127,14 +140,12 @@ func (self *Context) EndRender() error {
 // http://www.tbray.org/ongoing/When/200x/2007/07/31/Design-for-the-Web
 func (self *Context) StartSignature() {
 	if _, ok := self.writer.(*HashWriter); !ok {
-		self.Log.Debug("start signature")
 		self.writer = NewHashWriter(self.writer)
 	}
 }
 
 func (self *Context) EndSignature() error {
 	if hashWriter, ok := self.writer.(*HashWriter); ok {
-		self.Log.Debug("end signature")
 		self.Response.Signature = hashWriter.Hash()
 		self.writer = hashWriter.writer
 		return nil
@@ -143,7 +154,7 @@ func (self *Context) EndSignature() error {
 	}
 }
 
-func (self *Context) Error(err error) {
+func (self *Context) InternalServerError(err error) {
 	self.Log.Errorf("%s", err)
 	self.Response.Status = http.StatusInternalServerError
 }
@@ -155,6 +166,22 @@ func (self *Context) Write(b []byte) (int, error) {
 
 func (self *Context) WriteString(s string) (int, error) {
 	return self.writer.Write(util.StringToBytes(s))
+}
+
+func (self *Context) WriteJson(value ard.Value, indent string) (int, error) {
+	if s, err := format.Encode(value, "json", indent, false); err == nil {
+		return self.WriteString(s)
+	} else {
+		return 0, err
+	}
+}
+
+func (self *Context) WriteYaml(value ard.Value, indent string) (int, error) {
+	if s, err := format.Encode(value, "yaml", indent, false); err == nil {
+		return self.WriteString(s)
+	} else {
+		return 0, err
+	}
 }
 
 func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) goja.Value {
@@ -212,7 +239,7 @@ func (self *Context) flushWriters() {
 	for true {
 		if wrappedWriter, ok := self.writer.(WrappingWriter); ok {
 			if err := wrappedWriter.Close(); err != nil {
-				self.Error(err)
+				self.InternalServerError(err)
 			}
 			self.writer = wrappedWriter.GetWrappedWriter()
 		} else {

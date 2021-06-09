@@ -69,7 +69,7 @@ func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error
 	self.Debug, _ = config_.Get("debug").Boolean(false)
 	if handler := config_.Get("handler").Data; handler != nil {
 		var err error
-		if self.Handler, err = GetHandleFunc(handler); err != nil {
+		if self.Handler, err = GetHandleFunc(handler, context); err != nil {
 			return nil, err
 		}
 	}
@@ -167,7 +167,9 @@ func (self *Server) ServeHTTP(responseWriter http.ResponseWriter, request *http.
 		}
 		context.Debug = self.Debug
 		self.Handler(context)
-		context.Response.flush()
+		if err := context.Response.flush(); err != nil {
+			log.Errorf("%s", err.Error())
+		}
 	}
 }
 

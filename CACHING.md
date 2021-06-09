@@ -3,6 +3,11 @@ Prudence: Caching Guide
 
 Make sure you're up-to-speed with [the basics](TUTORIAL.md) first!
 
+Table of Contents:
+
+* [Server-Side Caching](#server-side-caching)
+* [Client-Side Caching](#client-side-caching)
+
 
 Server-Side Caching
 -------------------
@@ -74,7 +79,7 @@ you can delete that line from "present":
 
     exports.present = function(context) {
         const data = {name: context.variables.name};
-        context.write(JSON.stringify(data));
+        context.writeJson(data);
         context.cacheDuration = 5;
     };
 
@@ -90,7 +95,7 @@ they would be different representations).
 
 Also note that "construct" is called before the "erase", "modify", and "call" hooks.
 
-## Cache Keys
+### Cache Keys
 
 We've' also modified the cache key in our "construct". By default the cache key is the
 complete URL, which is a sensible default, but might not be the most efficient.

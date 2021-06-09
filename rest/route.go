@@ -41,7 +41,7 @@ func CreateRoute(config ard.StringMap, context *js.Context) (interface{}, error)
 		return nil, err
 	}
 	if handler := config_.Get("handler").Data; handler != nil {
-		if self.Handler, err = GetHandleFunc(handler); err != nil {
+		if self.Handler, err = GetHandleFunc(handler, context); err != nil {
 			return nil, err
 		}
 	}
@@ -53,7 +53,7 @@ func CreateRoute(config ard.StringMap, context *js.Context) (interface{}, error)
 // HandleFunc signature
 func (self *Route) Handle(context *Context) bool {
 	if matches := self.Match(context.Path); matches != nil {
-		if context_ := context.Rename(self.Name); context == context_ {
+		if context_ := context.AddName(self.Name); context == context_ {
 			context = context.Copy()
 		} else {
 			context = context_
@@ -63,11 +63,11 @@ func (self *Route) Handle(context *Context) bool {
 			switch key {
 			case PATH_VARIABLE:
 				context.Path = value
-				context.Log.Debugf("set path = %s", value)
+				//context.Log.Debugf("set path = %s", value)
 
 			default:
 				context.Variables[key] = value
-				context.Log.Debugf("set variable %s = %s", key, value)
+				//context.Log.Debugf("set variable %s = %s", key, value)
 			}
 		}
 

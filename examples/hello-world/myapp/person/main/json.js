@@ -28,7 +28,5 @@ exports.describe = function(context) {
 exports.present = function(context) {
     context.log.info('present');
     context.cacheDuration = 5;
-    prudence.encode(backend.getPerson(context.variables.name), 'json', '  ', context);
-    // The above is equivalent to this:
-    //context.write(JSON.stringify(backend.getPerson(context), null, '  ')+'\n');
+    context.writeJson(backend.getPerson(context.variables.name), '  ');
 };

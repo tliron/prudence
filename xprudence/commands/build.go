@@ -111,6 +111,8 @@ func Build() {
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05 MST")
 
+	// Note: When "local" is set, the version will *not* be automatically figured out
+	// and any "version" provided will be used as is without validation
 	version_ := version
 	if version_ == "" {
 		version_ = "custom"

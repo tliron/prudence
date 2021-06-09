@@ -61,7 +61,7 @@ var runCommand = &cobra.Command{
 			}
 		}
 
-		log.Infof("Prudence version %s", version.GitRevision)
+		log.Noticef("Prudence version %s", version.GitVersion)
 
 		restart("", nil)
 

@@ -144,7 +144,7 @@ func (self *Representation) construct(context *Context) bool {
 	context.CacheKey = context.Path
 	if self.Construct != nil {
 		if err := self.Construct(context); err != nil {
-			context.Error(err)
+			context.InternalServerError(err)
 			return false
 		}
 	}
@@ -173,7 +173,7 @@ func (self *Representation) tryCache(context *Context, withBody bool) bool {
 func (self *Representation) describe(context *Context) bool {
 	if self.Describe != nil {
 		if err := self.Describe(context); err != nil {
-			context.Error(err)
+			context.InternalServerError(err)
 			return false
 		}
 
@@ -193,7 +193,7 @@ func (self *Representation) present(context *Context, withBody bool) {
 		// Present
 		if self.Present != nil {
 			if err := self.Present(context); err != nil {
-				context.Error(err)
+				context.InternalServerError(err)
 				return
 			}
 		}
@@ -219,7 +219,7 @@ func (self *Representation) present(context *Context, withBody bool) {
 func (self *Representation) erase(context *Context) {
 	if self.Erase != nil {
 		if err := self.Erase(context); err != nil {
-			context.Error(err)
+			context.InternalServerError(err)
 			return
 		}
 
@@ -249,7 +249,7 @@ func (self *Representation) erase(context *Context) {
 func (self *Representation) modify(context *Context) {
 	if self.Modify != nil {
 		if err := self.Modify(context); err != nil {
-			context.Error(err)
+			context.InternalServerError(err)
 			return
 		}
 
@@ -279,7 +279,7 @@ func (self *Representation) modify(context *Context) {
 func (self *Representation) call(context *Context) {
 	if self.Call != nil {
 		if err := self.Call(context); err != nil {
-			context.Error(err)
+			context.InternalServerError(err)
 			return
 		}
 	}

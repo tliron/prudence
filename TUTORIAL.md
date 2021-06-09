@@ -3,6 +3,16 @@ Prudence: Tutorial
 
 Let's learn by example and build a web application using Prudence.
 
+Table of Contents:
+
+* [The Server](#the-server)
+* [The Router](#the-router)
+* [A Dynamic Resource](#a-dynamic-resource)
+* [Effects](#effects)
+* [JavaScript Templates (JST)](#javascript-templates-jst)
+* [Rendering](#rendering)
+* [Next Steps](#next-steps)
+
 
 The Server
 ----------
@@ -140,9 +150,36 @@ its own handler. Each route is attempted *in order*. In this case we are trying 
 the reqest with a "Static" handler, and if that fails (file not found) it will move on to
 the next route, which is Prudence's default 404 Not Found handler.
 
-Note that it's absolutely possible to use the same router with multiple started servers.
+Note that it's possible to use the same router with multiple servers.
 
-We've learned how to server static files. What about dynamic resources?
+Also note that if none of Prudence's built-in handlers do what you need, then you can always
+implement a handler directly in JavaScript. A common use case is programmatic redirection,
+a.k.a. URL rewriting:
+
+    exports.handler = new prudence.Router({
+        name: 'myapp',
+        routes: [{
+            handler: function(context) {
+                const p = context.path.indexOf('/product/');
+                if (p != -1) {
+                    context.redirect('https://supplier.com/?product=' + context.path.substr(p+9), 301);
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }, {
+            handler: new prudence.Static({
+                root: 'files/'
+            })
+        }, {
+            handler: prudence.defaultNotFound
+        }]
+    });
+
+(You can also write it in Go. See the [extension guide](platform/README.md).)
+
+We've learned how to serve static files. What about dynamic resources?
 
 
 A Dynamic Resource
@@ -174,7 +211,7 @@ Now let's create the representation, `myapp/person/json.js`:
 
     exports.present = function(context) {
         const data = {name: context.variables.name};
-        context.write(JSON.stringify(data));
+        context.writeJson(data);
         context.response.contentType = 'application/json';
     };
 
@@ -321,9 +358,15 @@ hook is more specialized in that it allows for the "async" response and is somet
 ignore the request body. So, it's generally better to use "erase" for erasure if you can. Its
 semantics are more optimal for that.
 
-As with "erase" you must set "context.done" to true if the modification happened. There is no
+As with "erase" you can set "context.done" to true if the modification happened. There is no
 support for "context.async". However, you can optionally set "context.created" to true to let
 the client know that the resource was created rather than changed.
+
+Another option is *not* to set "context.done" to true and instead do a 303 (See Other) redirect.
+This is often used for web pages, so that if the user refreshes the page then the PUT will not
+happen again, possibly unintentionally:
+
+    context.redirect(newUrl, 303);
 
 Though not required, it's often a good idea with PUT to return the modified representation,
 essentially what we see in the next GET. So it might make sense to just call "present". Example:

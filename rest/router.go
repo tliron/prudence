@@ -62,7 +62,7 @@ func (self *Router) AddRoute(route *Route) {
 // Handler interface
 // HandleFunc signature
 func (self *Router) Handle(context *Context) bool {
-	context = context.Rename(self.Name)
+	context = context.AddName(self.Name)
 
 	for _, handler := range self.Handlers {
 		if handled := handler(context); handled {

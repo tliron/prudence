@@ -18,6 +18,7 @@ const (
 	HeaderIfModifiedSince = "If-Modified-Since"
 	HeaderIfNoneMatch     = "If-None-Match"
 	HeaderLastModified    = "Last-Modified"
+	HeaderLocation        = "Location"
 	HeaderPrudenceCached  = "X-Prudence-Cached"
 	HeaderServer          = "Server"
 )

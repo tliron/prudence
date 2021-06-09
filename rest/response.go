@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"net/http"
 	"time"
+
+	"github.com/tliron/kutil/ard"
 )
 
 //
@@ -13,6 +15,7 @@ import (
 type Response struct {
 	Status      int
 	Header      http.Header
+	Cookies     []*http.Cookie
 	ContentType string
 	CharSet     string
 	Language    string
@@ -39,9 +42,18 @@ func (self *Response) Reset() {
 	self.Buffer.Reset()
 }
 
-func (self *Response) flush() {
+func (self *Response) AddCookie(config ard.StringMap) error {
+	if cookie, err := CreateCookie(config, nil); err == nil {
+		self.Cookies = append(self.Cookies, cookie.(*http.Cookie))
+		return nil
+	} else {
+		return err
+	}
+}
+
+func (self *Response) flush() error {
 	if self.Bypass {
-		return
+		return nil
 	}
 
 	status := self.Status
@@ -57,8 +69,13 @@ func (self *Response) flush() {
 		}
 	}
 
+	for _, cookie := range self.Cookies {
+		http.SetCookie(self.Direct, cookie)
+	}
+
 	self.Direct.WriteHeader(status)
-	self.Direct.Write(self.Buffer.Bytes())
+	_, err := self.Direct.Write(self.Buffer.Bytes())
+	return err
 }
 
 func (self *Response) eTag(fromHeader bool) string {

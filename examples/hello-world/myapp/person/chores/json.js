@@ -12,7 +12,7 @@ exports.chores = {
 
     present: function(context) {
         context.log.info('present');
-        prudence.encode(backend.getPerson(context.variables.name).chores, 'json', '  ', context);
+        context.writeJson(backend.getPerson(context.variables.name).chores, '  ');
     },
 
     describe: function(context) {
