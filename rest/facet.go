@@ -2,7 +2,6 @@ package rest
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
@@ -20,13 +19,13 @@ func init() {
 type Facet struct {
 	*Route
 
-	Representations Representations
+	Representations *Representations
 }
 
 func NewFacet(name string) *Facet {
 	self := Facet{
 		Route:           NewRoute(name),
-		Representations: make(Representations),
+		Representations: new(Representations),
 	}
 	self.Handler = self.Handle
 	return &self
@@ -34,9 +33,7 @@ func NewFacet(name string) *Facet {
 
 // CreateFunc signature
 func CreateFacet(config ard.StringMap, context *js.Context) (interface{}, error) {
-	self := Facet{
-		Representations: make(Representations),
-	}
+	var self Facet
 
 	if route, err := CreateRoute(config, context); err == nil {
 		self.Route = route.(*Route)
@@ -57,28 +54,10 @@ func CreateFacet(config ard.StringMap, context *js.Context) (interface{}, error)
 	return &self, nil
 }
 
-func (self *Facet) NegotiateBestRepresentation(context *Context) (*Representation, string, bool) {
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
-	// Example: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
-	//TODO: sorted by preference
-	clientContentTypes := strings.Split(context.Request.Header.Get(HeaderAccept), ",")
-	for _, clientContentType := range clientContentTypes {
-		for serverContentType, functions := range self.Representations {
-			if clientContentType == serverContentType {
-				return functions, serverContentType, true
-			}
-		}
-	}
-
-	// Default representation
-	functions, ok := self.Representations[""]
-	return functions, "", ok
-}
-
 // Handler interface
 // HandleFunc signature
 func (self *Facet) Handle(context *Context) bool {
-	if representation, contentType, ok := self.NegotiateBestRepresentation(context); ok {
+	if representation, contentType, ok := self.Representations.NegotiateBest(context); ok {
 		context = context.Copy()
 		context.Response.ContentType = contentType
 		return representation.Handle(context)

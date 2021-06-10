@@ -26,14 +26,14 @@ func main() {
 	main := rest.NewFacet("main")
 	main.PathTemplates, err = rest.NewPathTemplates("{name}")
 	util.FailOnError(err)
-	main.Representations["application/json"] = jsonRepresentation
-	main.Representations[""] = defaultRepresentation
+	main.Representations.Add(rest.NewContentType("application/json"), jsonRepresentation)
+	main.Representations.Add(rest.ContentType{}, defaultRepresentation)
 
 	age := rest.NewFacet("age")
 	age.PathTemplates, err = rest.NewPathTemplates("{name}/age")
 	util.FailOnError(err)
-	age.Representations["application/json"] = jsonRepresentation
-	age.Representations[""] = defaultRepresentation
+	age.Representations.Add(rest.NewContentType("application/json"), jsonRepresentation)
+	age.Representations.Add(rest.ContentType{}, defaultRepresentation)
 
 	person := rest.NewResource("person")
 	person.AddFacet(main)

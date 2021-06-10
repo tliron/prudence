@@ -289,32 +289,70 @@ func (self *Representation) call(context *Context) {
 // Representations
 //
 
-type Representations map[string]*Representation
+type RepresentationEntry struct {
+	ContentType    ContentType
+	Representation *Representation
+}
 
-func CreateRepresentations(config ard.Value, runtime *goja.Runtime) (Representations, error) {
-	self := make(Representations)
+type Representations struct {
+	Entries []*RepresentationEntry
+}
 
-	representations := platform.AsConfigList(config)
-	for _, representation := range representations {
+func CreateRepresentations(config ard.Value, runtime *goja.Runtime) (*Representations, error) {
+	var self Representations
+
+	for _, representation := range platform.AsConfigList(config) {
 		representation_ := ard.NewNode(representation)
 		if representation__, err := CreateRepresentation(representation_, runtime); err == nil {
 			contentTypes := platform.AsStringList(representation_.Get("contentTypes").Data)
+			if len(contentTypes) > 0 {
+				for _, contentType := range contentTypes {
+					self.Add(NewContentType(contentType), representation__)
+				}
+			} else {
+				self.Add(ContentType{}, representation__)
+			}
 			// TODO:
 			//charSets := asStringList(representation_.Get("charSets").Data)
 			//languages := asStringList(representation_.Get("languages").Data)
-
-			if len(contentTypes) == 0 {
-				// Default representation
-				self[""] = representation__
-			} else {
-				for _, contentType := range contentTypes {
-					self[contentType] = representation__
-				}
-			}
 		} else {
 			return nil, err
 		}
 	}
 
-	return self, nil
+	return &self, nil
+}
+
+func (self *Representations) Add(contentType ContentType, representation *Representation) {
+	self.Entries = append(self.Entries, &RepresentationEntry{
+		ContentType:    contentType,
+		Representation: representation,
+	})
+}
+
+func (self *Representations) NegotiateBest(context *Context) (*Representation, string, bool) {
+	contentTypePreferences := ParseContentTypePreferences(context.Request.Header.Get(HeaderAccept))
+	fmt.Printf("%s", contentTypePreferences)
+
+	for _, contentTypePreference := range contentTypePreferences {
+		for _, entry := range self.Entries {
+			if contentTypePreference.Matches(entry.ContentType, false) {
+				return entry.Representation, entry.ContentType.Name, true
+			}
+		}
+	}
+
+	// Default representation
+	for _, entry := range self.Entries {
+		if entry.ContentType.Name == "" {
+			return entry.Representation, "", true
+		}
+	}
+
+	// Any representation
+	for _, entry := range self.Entries {
+		return entry.Representation, entry.ContentType.Name, true
+	}
+
+	return nil, "", false
 }

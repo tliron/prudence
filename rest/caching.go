@@ -104,7 +104,9 @@ func (self *Context) StoreCachedRepresentationFromBody(encoding platform.Encodin
 }
 
 func (self *Context) GetCachedRepresentationBody(cached *platform.CachedRepresentation) ([]byte, bool) {
-	return cached.GetBody(NegotiateBestEncodingType(self.Request.Header))
+	encodingPreferences := ParseEncodingPreferences(self.Request.Header.Get(HeaderAcceptEncoding))
+	type_ := encodingPreferences.NegotiateBest(self)
+	return cached.GetBody(type_)
 }
 
 func (self *Context) PresentCachedRepresentation(cached *platform.CachedRepresentation, withBody bool) bool {

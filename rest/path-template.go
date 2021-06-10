@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	PATH_VARIABLE    = "__path"
-	PATH_VARIABLE_RE = `(?P<` + PATH_VARIABLE + `>.*)`
+	PathVariable    = "__path"
+	ParthVariableRe = `(?P<` + PathVariable + `>.*)`
 )
 
 //
@@ -61,7 +61,7 @@ func NewPathTemplate(path string) (*PathTemplate, error) {
 				builder.WriteString(`(?P<`)
 
 			case '*':
-				builder.WriteString(PATH_VARIABLE_RE)
+				builder.WriteString(ParthVariableRe)
 
 			default:
 				builder.WriteString(regexp.QuoteMeta(string(rune_)))
@@ -88,7 +88,6 @@ func (self *PathTemplate) Match(path string) map[string]string {
 	}
 
 	if matches := self.RegularExpression.FindStringSubmatch(path); matches != nil {
-		//log.Debugf("matched: %s", self.RegularExpression.String())
 		names := self.RegularExpression.SubexpNames()
 		map_ := make(map[string]string)
 		for index, match := range matches {
