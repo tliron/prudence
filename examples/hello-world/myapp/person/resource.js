@@ -7,7 +7,7 @@ exports.handler = new prudence.Resource({
         paths: '{name}',
         representations: { // can also be a list
             // A single JSON representation with all functions in a separate file
-            functions: require('main/json.js')
+            functions: bind('main/json.js')
             // We can also set functions individually, like so:
             // construct: require('main/json.js').construct,
             // present: function(context) { context.write('example'); }
@@ -20,10 +20,10 @@ exports.handler = new prudence.Resource({
             // HTML representation using JST
             contentTypes: 'text/html', // can also be a list
             languages: [ 'en', 'he' ], // can be a list or a single language
-            functions: require('chores/html.jst')
+            functions: bind('chores/html.jst')
         }, {
             // Default representation (JSON)
-            functions: require('chores/json.js').chores
+            functions: bind('chores/json.js', 'chores')
         }]
     }]
 });

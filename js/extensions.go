@@ -13,6 +13,11 @@ func newExtensions(arguments map[string]string) []js.Extension {
 	var extensions []js.Extension
 
 	extensions = append(extensions, js.Extension{
+		Name:   "bind",
+		Create: js.NewLateBindExtension,
+	})
+
+	extensions = append(extensions, js.Extension{
 		Name:   "prudence",
 		Create: newPrudenceExtensionCreator(arguments),
 	})

@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
+	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -16,10 +16,12 @@ import (
 
 type RepresentionFunc func(context *Context) error
 
-func NewRepresentationFunc(function interface{}, runtime *goja.Runtime) (RepresentionFunc, error) {
+func NewRepresentationFunc(function interface{}, jsContext *js.Context) (RepresentionFunc, error) {
 	if function_, ok := function.(JavaScriptFunc); ok {
 		return func(context *Context) error {
-			CallJavaScript(runtime, function_, context)
+			jsContext.Environment.Lock.Lock()
+			defer jsContext.Environment.Lock.Unlock()
+			CallJavaScript(jsContext.Environment.Runtime, function_, context)
 			return nil
 		}, nil
 	} else {
@@ -40,16 +42,23 @@ type Representation struct {
 	Call      RepresentionFunc
 }
 
-func CreateRepresentation(node *ard.Node, runtime *goja.Runtime) (*Representation, error) {
+func CreateRepresentation(node *ard.Node, context *js.Context) (*Representation, error) {
 	//panic(fmt.Sprintf("%v", node.Data))
 	var self Representation
 
 	var get func(name string) (RepresentionFunc, error)
 
 	if functions := node.Get("functions"); functions.Data != nil {
+		if bind, ok := functions.Data.(js.Bind); ok {
+			var err error
+			if functions.Data, context, err = bind.Unbind(); err != nil {
+				return nil, err
+			}
+		}
+
 		get = func(name string) (RepresentionFunc, error) {
 			if f := functions.Get(name).Data; f != nil {
-				return NewRepresentationFunc(f, runtime)
+				return NewRepresentationFunc(f, context)
 			} else {
 				return nil, nil
 			}
@@ -57,8 +66,15 @@ func CreateRepresentation(node *ard.Node, runtime *goja.Runtime) (*Representatio
 	} else {
 		// Individual function properties
 		get = func(name string) (RepresentionFunc, error) {
-			if f := node.Get(name).Data; f != nil {
-				return NewRepresentationFunc(f, runtime)
+			if function := node.Get(name).Data; function != nil {
+				if bind, ok := function.(js.Bind); ok {
+					var err error
+					if function, context, err = bind.Unbind(); err != nil {
+						return nil, err
+					}
+				}
+
+				return NewRepresentationFunc(function, context)
 			} else {
 				return nil, nil
 			}
@@ -298,12 +314,12 @@ type Representations struct {
 	Entries []*RepresentationEntry
 }
 
-func CreateRepresentations(config ard.Value, runtime *goja.Runtime) (*Representations, error) {
+func CreateRepresentations(config ard.Value, context *js.Context) (*Representations, error) {
 	var self Representations
 
 	for _, representation := range platform.AsConfigList(config) {
 		representation_ := ard.NewNode(representation)
-		if representation__, err := CreateRepresentation(representation_, runtime); err == nil {
+		if representation__, err := CreateRepresentation(representation_, context); err == nil {
 			contentTypes := platform.AsStringList(representation_.Get("contentTypes").Data)
 			if len(contentTypes) > 0 {
 				for _, contentType := range contentTypes {
@@ -332,8 +348,6 @@ func (self *Representations) Add(contentType ContentType, representation *Repres
 
 func (self *Representations) NegotiateBest(context *Context) (*Representation, string, bool) {
 	contentTypePreferences := ParseContentTypePreferences(context.Request.Header.Get(HeaderAccept))
-	fmt.Printf("%s", contentTypePreferences)
-
 	for _, contentTypePreference := range contentTypePreferences {
 		for _, entry := range self.Entries {
 			if contentTypePreference.Matches(entry.ContentType, false) {

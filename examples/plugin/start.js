@@ -5,7 +5,7 @@ myplugin.print('Hello from our API!');
 const resource = new prudence.Resource({
     facets: {
         representations: {
-            functions: require('count.js')
+            functions: bind('count.js')
         }
     }
 });

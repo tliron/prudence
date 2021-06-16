@@ -120,6 +120,8 @@ Then, edit your `start.js` with this code:
         handler: require('myapp/router.js').handler
     }));
 
+### "exports" and "require"
+
 Prudence is a [CommonJS-style modular](http://www.commonjs.org/specs/modules/1.0/)
 JavaScript environment. Simply put, any module can "export" values, including functions,
 by placing them in its "exports" global. Other modules can use "require" to access those
@@ -192,7 +194,7 @@ code:
         facets: {
             paths: '{name}',
             representations: {
-                functions: require('json.js')
+                functions: bind('json.js')
             }
         }
     });
@@ -205,6 +207,33 @@ more content types. For example, you might have one representation for HTML and 
 representation for both JSON and YAML. You can think of the "Resource" as encapsulating state
 with all facets making use of the same basic state.
 
+### "bind"
+
+A "bind" works a lot like a "require": it runs the the JavaScript code and returns the "exports".
+The difference is that you cannot use the "bind" result in JavaScript. Instead, it prepares the
+"exports" for hooking into Prudence's multi-threaded environment, such that multiple requests
+can be handled simultaneously.
+
+Actually, if you replace "bind" with "require" it will still work, but it won't perform as well
+under load because Prudence will have to switch to JavaScript's single-threaded execution
+environment and requests will have have to wait in line to be handled.
+
+Note that you do not have to use "bind" for Prudence's built-in types, such as "Resource" and
+"Router". It is only necessary for JavaScript handling code.
+
+One consequence of "bind" is that it creates a new execution environment for the bound code. Bound
+code will thus not share the same JavaScript globals as other code. To get around this divide you
+can use "prudence.globals", which are available to all code.
+
+Writing code for a multi-threaded environment is not trivial. You might need to rely on
+synchronization techniques for accessing shared data, for example a mutex created by calling
+"prudence.mutex". You can indeed store such a mutex "prudence.globals".
+
+To bind to a specific export rather than all the exports put its name in the second argument.
+For example:
+
+    present: bind('json.js', 'present')
+
 ### "present"
 
 Now let's create the representation, `myapp/person/json.js`:
@@ -216,7 +245,7 @@ Now let's create the representation, `myapp/person/json.js`:
     };
 
 The name of this exported function, "present", is required by Prudence. The "functions"
-property in the representation in `resource.js` uses a call to "require" to hook to
+property in the representation in `resource.js` uses a call to "bind" to hook to
 functions with specific names. (We'll get to the other optional hooks later on in this
 tutorial.)
 
@@ -281,20 +310,22 @@ Our application is more complex now, so let's follow a request one step at a tim
 9. "present" sets the content type to JSON and writes JSON to the response using the
    "name" variable that was extracted via the path wildcard.
 
-
 ### More JavaScript
 
-You might be wondering at this point what APIs are available for your JavaScript code. Can
-you use libraries downloaded from [npm](https://www.npmjs.com/)? The answer is a qualified no.
-Most of those libraries are designed to work with [Node.js](https://nodejs.org/), which is a
-JavaScipt environment that is very different from Prudence's. And some are designed for web
-browsers, which are different yet again. Generic JavaScript code will work, but anything that
-relies on platform-specific APIs will not.
+You might be wondering at this point what APIs are available for your JavaScript code in
+Prudence. Can you use libraries downloaded from [npm](https://www.npmjs.com/)? The answer is
+a qualified no. Most of those libraries are designed to work with [Node.js](https://nodejs.org/),
+which is a JavaScipt environment that is very different from Prudence's. And some are designed
+for web browsers, which are different yet again. Generic JavaScript code will work, but anything
+that relies on platform-specific APIs will not.
 
 Prudence provides you with an alternative solution: the ability to use almost any Go library
 as-is in JavaScript. There's a growing ecosystem of great Go libraries that can help you write
 your application, including database drivers. To learn how to use them see the
 [extension guide](platform/README.md#javascript-apis).
+
+(To be clear, you can definitely use [npm](https://www.npmjs.com/) JavaScript libraries in your
+client-side code! That code is run in clients' browsers, not in Prudence.)
 
 
 Effects
@@ -412,9 +443,9 @@ Let's start simple and add another representation to our `resource.js`:
             paths: '{name}',
             representations: [{
                 contentTypes: 'text/html',
-                functions: require('html.jst')
+                functions: bind('html.jst')
             }, {
-                functions: require('json.js')
+                functions: bind('json.js')
             }]
         }
     });

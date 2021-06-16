@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"net/http"
@@ -36,7 +37,7 @@ type Server struct {
 	Debug       bool
 	Handler     HandleFunc
 
-	server  *http.Server
+	server  atomic.Value
 	started sync.WaitGroup
 }
 
@@ -127,18 +128,20 @@ func (self *Server) Start() error {
 			}
 		}
 
-		self.server = &http.Server{
+		server := &http.Server{
 			Addr:         self.Address,
 			ReadTimeout:  time.Duration(time.Second * 5),
 			WriteTimeout: time.Duration(time.Second * 5),
 			Handler:      handler,
 		}
 
-		err = self.server.Serve(listener)
+		self.server.Store(server)
+
+		err = server.Serve(listener)
 
 		if err == http.ErrServerClosed {
 			err = nil
-			self.server = nil
+			self.server = atomic.Value{}
 		}
 	}
 
@@ -147,9 +150,10 @@ func (self *Server) Start() error {
 
 // Startable interface
 func (self *Server) Stop() error {
-	if self.server != nil {
+	server := self.server.Load().(*http.Server)
+	if server != nil {
 		log.Infof("stopping server: %s", self.Address)
-		err := self.server.Shutdown(context.TODO())
+		err := server.Shutdown(context.TODO())
 		self.started.Wait()
 		log.Infof("stopped server: %s", self.Address)
 		return err

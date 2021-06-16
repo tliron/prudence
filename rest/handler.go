@@ -29,10 +29,19 @@ type Handler interface {
 }
 
 func GetHandleFunc(value interface{}, jsContext *js.Context) (HandleFunc, error) {
+	if bind, ok := value.(js.Bind); ok {
+		var err error
+		if value, jsContext, err = bind.Unbind(); err != nil {
+			return nil, err
+		}
+	}
+
 	if handler, ok := value.(Handler); ok {
 		return handler.Handle, nil
 	} else if function, ok := value.(JavaScriptFunc); ok {
 		return func(context *Context) bool {
+			jsContext.Environment.Lock.Lock()
+			defer jsContext.Environment.Lock.Unlock()
 			handled := CallJavaScript(jsContext.Environment.Runtime, function, context)
 			if handled_, ok := handled.(bool); ok {
 				return handled_
