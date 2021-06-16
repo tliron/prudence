@@ -38,11 +38,9 @@ func GetHandleFunc(value interface{}, jsContext *js.Context) (HandleFunc, error)
 
 	if handler, ok := value.(Handler); ok {
 		return handler.Handle, nil
-	} else if function, ok := value.(JavaScriptFunc); ok {
+	} else if function, ok := value.(js.JavaScriptFunc); ok {
 		return func(context *Context) bool {
-			jsContext.Environment.Lock.Lock()
-			defer jsContext.Environment.Lock.Unlock()
-			handled := CallJavaScript(jsContext.Environment.Runtime, function, context)
+			handled := jsContext.Environment.Call(function, context)
 			if handled_, ok := handled.(bool); ok {
 				return handled_
 			} else {

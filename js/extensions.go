@@ -14,7 +14,7 @@ func newExtensions(arguments map[string]string) []js.Extension {
 
 	extensions = append(extensions, js.Extension{
 		Name:   "bind",
-		Create: js.NewLateBindExtension,
+		Create: js.CreateLateBindExtension,
 	})
 
 	extensions = append(extensions, js.Extension{

@@ -150,8 +150,7 @@ func (self *Server) Start() error {
 
 // Startable interface
 func (self *Server) Stop() error {
-	server := self.server.Load().(*http.Server)
-	if server != nil {
+	if server, ok := self.server.Load().(*http.Server); ok {
 		log.Infof("stopping server: %s", self.Address)
 		err := server.Shutdown(context.TODO())
 		self.started.Wait()

@@ -50,11 +50,12 @@ var runCommand = &cobra.Command{
 				log.Infof("file changed: %s", id)
 			}
 
-			environment.Lock.Lock()
-			defer environment.Lock.Unlock()
 			environment.ClearCache()
 
+			environment.Lock.Lock()
 			_, err := environment.RequireID(startId)
+			environment.Lock.Unlock()
+
 			util.FailOnError(err)
 		}
 

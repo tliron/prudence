@@ -1,5 +1,5 @@
 
-const backend = require('../backend.js');
+const backend = require('../backend');
 
 // The "construct" hook (optional) optimizes for server-side caching
 // It should be a very fast function

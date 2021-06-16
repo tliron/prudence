@@ -185,11 +185,11 @@ func (self *Context) WriteYaml(value ard.Value, indent string) (int, error) {
 }
 
 func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) goja.Value {
-	var present JavaScriptFunc
+	var present js.JavaScriptFunc
 	if len(function.Arguments) > 0 {
 		var ok bool
 		present_ := function.Arguments[0].Export()
-		if present, ok = present_.(JavaScriptFunc); !ok {
+		if present, ok = present_.(js.JavaScriptFunc); !ok {
 			panic(runtime.NewGoError(fmt.Errorf("\"present\" not a function: %T", present_)))
 		}
 	} else {
@@ -218,7 +218,7 @@ func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) go
 	writer := self.writer
 	self.writer = buffer
 
-	CallJavaScript(runtime, present, self)
+	js.Call(runtime, present, self)
 
 	self.flushWriters()
 

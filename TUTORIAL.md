@@ -117,7 +117,7 @@ Then, edit your `start.js` with this code:
 
     prudence.start(new prudence.Server({
         address: 'localhost:8080',
-        handler: require('myapp/router.js').handler
+        handler: require('./myapp/router').handler
     }));
 
 ### "exports" and "require"
@@ -194,7 +194,7 @@ code:
         facets: {
             paths: '{name}',
             representations: {
-                functions: bind('json.js')
+                functions: bind('./json')
             }
         }
     });
@@ -232,7 +232,7 @@ synchronization techniques for accessing shared data, for example a mutex create
 To bind to a specific export rather than all the exports put its name in the second argument.
 For example:
 
-    present: bind('json.js', 'present')
+    present: bind('./json.js', 'present')
 
 ### "present"
 
@@ -255,7 +255,7 @@ Now, edit your `myapp/router.js` with this code:
         name: 'myapp',
         routes: [{
             paths: 'person/*',
-            handler: require('person/resource.js').handler
+            handler: require('./person/resource').handler
         }, {
             handler: new prudence.Static({
                 root: 'files/'
@@ -443,9 +443,9 @@ Let's start simple and add another representation to our `resource.js`:
             paths: '{name}',
             representations: [{
                 contentTypes: 'text/html',
-                functions: bind('html.jst')
+                functions: bind('./html.jst')
             }, {
-                functions: bind('json.js')
+                functions: bind('./json')
             }]
         }
     });

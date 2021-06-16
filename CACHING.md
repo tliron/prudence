@@ -122,8 +122,8 @@ named for the individual hooks. `resource.js` could look something like this:
             paths: '{name}',
             representations: {
                 contentTypes: 'text/html',
-                construct: require('html.js').construct,
-                present: require('html.jst').present
+                construct: bind('./html', 'construct'),
+                present: bind('./html.jst', 'present')
             }
         }
     });

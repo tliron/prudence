@@ -1,5 +1,5 @@
 
-const backend = require('../backend.js');
+const backend = require('../backend');
 
 exports.chores = {
     construct: function(context) {

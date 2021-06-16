@@ -17,11 +17,9 @@ import (
 type RepresentionFunc func(context *Context) error
 
 func NewRepresentationFunc(function interface{}, jsContext *js.Context) (RepresentionFunc, error) {
-	if function_, ok := function.(JavaScriptFunc); ok {
+	if function_, ok := function.(js.JavaScriptFunc); ok {
 		return func(context *Context) error {
-			jsContext.Environment.Lock.Lock()
-			defer jsContext.Environment.Lock.Unlock()
-			CallJavaScript(jsContext.Environment.Runtime, function_, context)
+			jsContext.Environment.Call(function_, context)
 			return nil
 		}, nil
 	} else {

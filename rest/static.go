@@ -33,7 +33,7 @@ func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error
 	config_ := ard.NewNode(config)
 
 	root, _ := config_.Get("root").String(false)
-	if rootUrl, err := context.Resolve(root); err == nil {
+	if rootUrl, err := context.Resolve(root, true); err == nil {
 		root = rootUrl.(*urlpkg.FileURL).Path
 	} else {
 		return nil, err

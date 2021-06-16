@@ -17,7 +17,7 @@ prudence.setCache(new prudence.MemoryCache());
 prudence.start([
     new prudence.Server({
         address: 'localhost:8080',
-        handler: require('myapp/router.js').handler,
+        handler: require('./myapp/router').handler,
         secure: (prudence.arguments.secure === 'true') ? {} : null, // an empty object will generate a self-signed certificate
         /* Full "secure":
         secure: {
@@ -30,6 +30,6 @@ prudence.start([
     new prudence.Server({
         address: 'localhost:8081',
         ncsa: '8081',
-        handler: require('myapp/router.js').handler
+        handler: require('./myapp/router').handler
     })
 ]);
