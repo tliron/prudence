@@ -5,9 +5,13 @@ import (
 )
 
 var startGroup *StartGroup
+var startGroupLock sync.Mutex
 
 func Start(startables []Startable) error {
 	Stop()
+
+	startGroupLock.Lock()
+	defer startGroupLock.Unlock()
 
 	startGroup = NewStartGroup(startables)
 	startGroup.Start()
@@ -16,6 +20,9 @@ func Start(startables []Startable) error {
 }
 
 func Stop() {
+	startGroupLock.Lock()
+	defer startGroupLock.Unlock()
+
 	if startGroup != nil {
 		startGroup.Stop()
 		startGroup = nil

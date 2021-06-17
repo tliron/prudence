@@ -37,6 +37,12 @@ Let's open another terminal and test it out:
 
 You should see a successful response with a 200 status code.
 
+### TypeScript
+
+In this tutorial we will be using JavaScript. However, Prudence also supports
+[TypeScript](https://www.typescriptlang.org/). See the [example](examples/typescript/) for
+more information.
+
 ### "prudence.start"
 
 This function's argument is either a single startable object or an array of startable objects.
@@ -74,7 +80,7 @@ To enable an [NCSA Common log](https://en.wikipedia.org/wiki/Common_Log_Format) 
 with the `--ncsa` flag. You can give it a path to a log file or the special values "stdout"
 or "stderr":
 
-    prudence run start.js --ncsa=/var/log/prudence.log -v
+    prudence run start.js --ncsa=/var/log/ncsa.log -v
 
 If you have multiple servers you can use a "ncsa" property that will be added as a prefix to
 the `--ncsa` filename:
@@ -129,9 +135,6 @@ exports. Prudence caches the module's exports, so that any module is only ever e
 once.
 
 The "require" here will give us access to the "exports.handler" from `router.js`.
-
-Quit Prudence with CTRL+C and restart it. (Yes, it restarted automatically when we edited
-this file, but because we changed the server itself we need to quit Prudence entirely.)
 
 You should have a running static file server now. You can use `curl` again to test it, or
 open a web browser to [`http://localhost:8080`](http://localhost:8080). The Prudence

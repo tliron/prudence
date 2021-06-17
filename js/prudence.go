@@ -49,8 +49,8 @@ func (self *PrudenceAPI) LoadString(id string) (string, error) {
 func (self *PrudenceAPI) LoadBytes(id string) ([]byte, error) {
 	if url_, err := self.JsContext.Resolve(id, true); err == nil {
 		if fileUrl, ok := url_.(*urlpkg.FileURL); ok {
-			if self.JsContext.Environment.Watcher != nil {
-				self.JsContext.Environment.Watcher.Add(fileUrl.Path)
+			if err := self.JsContext.Environment.Watch(fileUrl.Path); err != nil {
+				return nil, err
 			}
 		}
 

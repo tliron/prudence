@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 	kutiljs "github.com/tliron/kutil/js"
 	urlpkg "github.com/tliron/kutil/url"
@@ -50,17 +52,22 @@ var runCommand = &cobra.Command{
 				log.Infof("file changed: %s", id)
 			}
 
-			environment.ClearCache()
-
 			environment.Lock.Lock()
+			environment.ClearCache()
 			_, err := environment.RequireID(startId)
 			environment.Lock.Unlock()
+
+			// After the first TypeScript transpilation we will refer
+			// to the JavaScript
+			if filepath.Ext(startId) == ".ts" {
+				startId = startId[:len(startId)-2] + "js"
+			}
 
 			util.FailOnError(err)
 		}
 
 		if watch {
-			if err := environment.Watch(restart); err != nil {
+			if err := environment.StartWatcher(restart); err != nil {
 				log.Warningf("watch feature not supported on this platform")
 			}
 		}

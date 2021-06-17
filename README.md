@@ -49,6 +49,8 @@ Feature Highlights
   [Here's](https://github.com/tliron/prudence/tree/main/examples/go) an example in pure Go.)
 * Additionally supports [JavaScript Templates (JST)](jst/README.md) for generating HTML pages by
   combining design with code scriptlets. And there's sugar.
+* If you prefer [TypeScript](https://www.typescriptlang.org/) then Prudence can automatically
+  transpile it to JavaScript for you.
 * Pluggable server-side cache backends. Store your generated representations in fast distributed
   stores such as [Memcached](https://memcached.org/), [Redis](https://redis.io/), etc.
 * [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you
