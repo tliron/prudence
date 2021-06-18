@@ -42,8 +42,6 @@ func newExtensions(arguments map[string]string) []js.Extension {
 	return extensions
 }
 
-var globals = js.NewThreadSafeObject()
-
 func newPrudenceExtensionCreator(arguments map[string]string) js.CreateExtensionFunc {
 	return func(context *js.Context) goja.Value {
 		prudence := context.Environment.Runtime.NewObject()
@@ -55,7 +53,7 @@ func newPrudenceExtensionCreator(arguments map[string]string) js.CreateExtension
 		}
 
 		// Globals
-		prudence.Set("globals", globals.NewDynamicObject(context.Environment.Runtime))
+		prudence.Set("globals", Globals.NewDynamicObject(context.Environment.Runtime))
 
 		// Type constructors
 		platform.OnTypes(func(type_ string, create platform.CreateFunc) bool {

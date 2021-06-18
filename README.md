@@ -29,7 +29,7 @@ Documentation
 * [Tutorial](TUTORIAL.md)
 * [Caching guide](CACHING.md)
 * [Examples](examples/README.md)
-* [JavaScript API](js/README.md)
+* [JavaScript/TypeScript API](js/README.md)
 * [JavaScript Templates (JST)](jst/README.md)
 * [Renderers](render/README.md)
 * [Extension guide](platform/README.md)
@@ -46,11 +46,11 @@ Feature Highlights
   architectures.
 * Prudence is written in Go for reliability and performance but allows you to use straightforward
   JavaScript for assembling and configuring your application. (JavaScript is *not required*.
-  [Here's](https://github.com/tliron/prudence/tree/main/examples/go) an example in pure Go.)
+  [Here's](https://github.com/tliron/prudence/tree/main/examples/go/) an example in pure Go.)
+* Or use [TypeScript](https://www.typescriptlang.org/)! Prudence has type declarations for all built-in
+  APIs. ([Here's](https://github.com/tliron/prudence/tree/main/examples/typescript/) an example.)
 * Additionally supports [JavaScript Templates (JST)](jst/README.md) for generating HTML pages by
   combining design with code scriptlets. And there's sugar.
-* If you prefer [TypeScript](https://www.typescriptlang.org/) then Prudence can automatically
-  transpile it to JavaScript for you.
 * Pluggable server-side cache backends. Store your generated representations in fast distributed
   stores such as [Memcached](https://memcached.org/), [Redis](https://redis.io/), etc.
 * [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you

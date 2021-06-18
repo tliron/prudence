@@ -1,0 +1,4 @@
+{
+    "extends": "../../assets/typescript/prudence/tsconfig.json",
+    "include": [ "**/*" ]
+}

@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+tsc --watch --project "$ROOT/examples/typescript"

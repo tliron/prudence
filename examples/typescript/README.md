@@ -1,49 +1,56 @@
 Prudence: TypeScript Example
 ============================
 
-If you prefer [TypeScript](https://www.typescriptlang.org/) then Prudence will automatically
-transpile it to JavaScript for you. To do this Prudence needs the
-[`tsc` command](https://www.typescriptlang.org/docs/handbook/compiler-options.html) installed.
+[TypeScript](https://www.typescriptlang.org/) is JavaScript on steroids. It's fully compatible
+with JavaScript but is a vastly more powerful and more elegant language. Its best feature is that
+it's typed so that many errors can be avoided before runtime. Also, typed languages are more
+pleasurable work with in IDEs, with support for code completion, refactoring, and more.
 
-It may already be availabe for your operating system. For example, in the Fedora world:
+Prudence comes with a [base TypeScript project](../../assets/typescript/prudence/) that declares
+all the built-in APIs and is ready to use. All you need to do is to extend it in your project's
+`tsconfig.json`, like we do in this example:
+
+    {
+        "extends": "../../assets/typescript/prudence/tsconfig.json",
+        "include": [ "**/*" ]
+    }
+
+
+How to Run
+----------
+
+Like most other TypeScript environments Prudence doesn't execute TypeScript code directly. Instead,
+it expects TypeScript to be transpiled into JavaScript.
+
+Make sure the transpiler, [`tsc`](https://www.typescriptlang.org/docs/handbook/compiler-options.html),
+is installed. It may very well be included in your operating system's repository. For example, in the
+Fedora world:
 
     sudo dnf install nodejs-typescript
 
-In the Debian world:
+Or in the Debian world:
 
     sudo apt install node-typescript
 
-You can then refer to TypeScript files as you would to JavaScript files:
+You can then run `tsc` to transpile your `.ts` files into `.js` files and even use `--watch` so that
+changes will be picked up and re-transpiled. When combined with Prudence's `--watch=true` (the default)
+this will allow live editing of TypeScript. For example:
 
-    prudence run examples/typescript/start.ts
+    tsc --watch --project examples/typescript
+
+And then run Prudence in another terminal:
+
+    prudence run examples/typescript/start.js
+
+If you edit `start.ts` then `start.js` will also be updated and Prudence will restart the servers.
 
 
-Features and Limitations
-------------------------
+A Note on Modules
+-----------------
 
-Everything in TypeScript needs to be declared. For now we do not have declarations for the
-Prudence APIs, but you can get away with declaring them as "any":
+TypeScript's "import" statement refers to other `.ts` files, but this is transpiled into a JavaScript
+"require" with the same name, which will actually require the corresponding `.js` file. Prudence
+itself is entirely unaware of the existence of `.ts` files.
 
-    declare const prudence: any;
-    declare const bind: any;
-
-Prudence can only transpile TypeScript if it's in the local filesystem, not on URLs. Transpiling
-will place a JavaScript file in the same directory as your TypeScript file with just the extension
-changed from `.ts` to `.js`. For example, `myapp/main.ts` will produce `myapp/main.js`.
-
-In TypeScript you will "import" and "export" instead of CommonJS's "require" an "exports", e.g.:
-
-    import {resource} from './myapp/resource';
-
-Note that "require" lets you specify a complete path, including an extension, however "import"
-is stricter and does not allow extensions. TypeScript will be using the `.ts` file, but Prudence
-will be using the `.js` file.
-
-A consequence of this is that when using `--watch=true` (the default) Prudence will restart on changes
-to `.ts` files *only if* you referred to them *directly*. In the case of this example it would be
-`start.ts`, which we use in the `prudence run` command, and `lib/main.ts`, which we use in the call to
-"bind" in `resource.ts`. Thus if you change `resource.ts` Prudence will not restart because it never
-refers to it directly. You can get around this limitation via a quick `touch` to any file Prudence does
-knows about, e.g.:
-
-    touch examples/typescript/start.ts
+On the other hand, TypeScript is unaware that "bind" is a special kind of "import". The bind will work,
+but TypeScript will not actually check that the bound file implements the right hooks.

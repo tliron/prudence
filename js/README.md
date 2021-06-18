@@ -1,9 +1,8 @@
 Prudence: JavaScript
 ====================
 
-Eventually we hope to have detailed API documentation.
+Eventually we hope to have generated API documentation.
 
-For now, here's the documentation of the APIs as they appear in Go:
-
-* [`prudence`](https://pkg.go.dev/github.com/tliron/prudence/js#PrudenceAPI)
-* [`context`](https://pkg.go.dev/github.com/tliron/prudence/rest#Context)
+For now the
+[TypeScript API](https://github.com/tliron/prudence/blob/main/assets/typescript/prudence/index.d.ts)
+would be the best place to start.

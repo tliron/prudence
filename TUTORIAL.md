@@ -13,6 +13,12 @@ Table of Contents:
 * [Rendering](#rendering)
 * [Next Steps](#next-steps)
 
+### TypeScript
+
+In this tutorial we will be using JavaScript. However, Prudence also supports
+[TypeScript](https://www.typescriptlang.org/). See the
+[example](https://github.com/tliron/prudence/tree/main/examples/typescript) to get started.
+
 
 The Server
 ----------
@@ -36,12 +42,6 @@ Let's open another terminal and test it out:
     curl localhost:8080 -v
 
 You should see a successful response with a 200 status code.
-
-### TypeScript
-
-In this tutorial we will be using JavaScript. However, Prudence also supports
-[TypeScript](https://www.typescriptlang.org/). See the [example](examples/typescript/) for
-more information.
 
 ### "prudence.start"
 

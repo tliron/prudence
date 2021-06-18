@@ -24,9 +24,9 @@ type Response struct {
 	WeakSignature bool
 	Timestamp     time.Time
 
-	Direct http.ResponseWriter
 	Buffer *bytes.Buffer
 	Bypass bool
+	Direct http.ResponseWriter
 }
 
 func NewResponse(responseWriter http.ResponseWriter) *Response {

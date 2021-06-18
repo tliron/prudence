@@ -1,7 +1,5 @@
 
-declare var prudence: any;
-
-export function present(context: any) {
+export function present(context: Context) {
     context.response.contentType = 'text/html';
     context.writeString(`<html>
 <body>

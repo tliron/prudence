@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"path/filepath"
-
 	"github.com/spf13/cobra"
 	kutiljs "github.com/tliron/kutil/js"
 	urlpkg "github.com/tliron/kutil/url"
@@ -56,12 +54,6 @@ var runCommand = &cobra.Command{
 			environment.ClearCache()
 			_, err := environment.RequireID(startId)
 			environment.Lock.Unlock()
-
-			// After the first TypeScript transpilation we will refer
-			// to the JavaScript
-			if filepath.Ext(startId) == ".ts" {
-				startId = startId[:len(startId)-2] + "js"
-			}
 
 			util.FailOnError(err)
 		}
