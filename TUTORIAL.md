@@ -157,7 +157,7 @@ the next route, which is Prudence's default 404 Not Found handler.
 
 Note that it's possible to use the same router with multiple servers.
 
-Also note that if none of Prudence's built-in handlers do what you need, then you can always
+Also note that if none of Prudence's built-in handlers do what you need then you can always
 implement a handler directly in JavaScript. A common use case is programmatic redirection,
 a.k.a. URL rewriting:
 
@@ -182,9 +182,63 @@ a.k.a. URL rewriting:
         }]
     });
 
-(You can also write it in Go. See the [extension guide](platform/README.md).)
+Actually, the above solution is not best. It's better to put the handler function in a separate
+file and "bind" it, like so:
 
-We've learned how to serve static files. What about dynamic resources?
+    exports.handler = new prudence.Router({
+        name: 'myapp',
+        routes: [{
+            handler: bind('./rewrite', 'handler')
+        }, {
+            handler: new prudence.Static({
+                root: 'files/'
+            })
+        }, {
+            handler: prudence.defaultNotFound
+        }]
+    });
+
+The `rewrite.js` file:
+
+    exports.handler = function(context) {
+        const p = context.path.indexOf('/product/');
+        if (p != -1) {
+            context.redirect('https://supplier.com/?product=' + context.path.substr(p+9), 301);
+            return true;
+        } else {
+            return false;
+        }
+    };
+
+Why is this better? And what is "bind"?
+
+### "bind"
+
+A "bind" works a lot like a "require": it runs the the JavaScript code and returns the "exports".
+The difference is that you cannot use the bound functions in JavaScript. Instead, "bind" prepares
+the "exports" for hooking into Prudence's multi-threaded environment so that multiple requests will
+be handled simultaneously by the bound code.
+
+If you use "require" instead of "bind" it will still work, but it won't perform as well under load
+because Prudence will have to switch to JavaScript's single-threaded execution environment and requests
+will have have to wait in line to be handled.
+
+Note that you do not have to use "bind" for Prudence's built-in types, such as "Resource" and
+"Router". It is only necessary for JavaScript code.
+
+One consequence of "bind" is that it creates a new execution environment for the bound code. Bound
+code will thus not share the same JavaScript globals as other code. To get around this divide you
+can use "prudence.globals", which are truly global.
+
+Writing code for a multi-threaded environment is not trivial. You might need to rely on
+synchronization techniques for accessing shared data, for example a mutex created by calling
+"prudence.mutex". You can even store such a mutex "prudence.globals".
+
+By the way, another option for improving performance is to write critical handlers in Go. (See the
+[extension guide](platform/README.md)). However, as always, avoid premature optimization. A "bound"
+JavaScript function will take you very far indeed.
+
+OK, so we've learned how to serve static files. What about dynamic resources?
 
 
 A Dynamic Resource
@@ -210,32 +264,8 @@ more content types. For example, you might have one representation for HTML and 
 representation for both JSON and YAML. You can think of the "Resource" as encapsulating state
 with all facets making use of the same basic state.
 
-### "bind"
-
-A "bind" works a lot like a "require": it runs the the JavaScript code and returns the "exports".
-The difference is that you cannot use the "bind" result in JavaScript. Instead, it prepares the
-"exports" for hooking into Prudence's multi-threaded environment, such that multiple requests
-can be handled simultaneously.
-
-Actually, if you replace "bind" with "require" it will still work, but it won't perform as well
-under load because Prudence will have to switch to JavaScript's single-threaded execution
-environment and requests will have have to wait in line to be handled.
-
-Note that you do not have to use "bind" for Prudence's built-in types, such as "Resource" and
-"Router". It is only necessary for JavaScript handling code.
-
-One consequence of "bind" is that it creates a new execution environment for the bound code. Bound
-code will thus not share the same JavaScript globals as other code. To get around this divide you
-can use "prudence.globals", which are available to all code.
-
-Writing code for a multi-threaded environment is not trivial. You might need to rely on
-synchronization techniques for accessing shared data, for example a mutex created by calling
-"prudence.mutex". You can indeed store such a mutex "prudence.globals".
-
-To bind to a specific export rather than all the exports put its name in the second argument.
-For example:
-
-    present: bind('./json.js', 'present')
+You'll notice that we're using "bind" again, this time without the second argument, which will
+bind *all* the exported functions.
 
 ### "present"
 
@@ -248,9 +278,8 @@ Now let's create the representation, `myapp/person/json.js`:
     };
 
 The name of this exported function, "present", is required by Prudence. The "functions"
-property in the representation in `resource.js` uses a call to "bind" to hook to
-functions with specific names. (We'll get to the other optional hooks later on in this
-tutorial.)
+property in `resource.js` expects this and other hook names. (We'll get to the other optional
+hooks later on in this tutorial.)
 
 Now, edit your `myapp/router.js` with this code:
 

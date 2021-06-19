@@ -101,8 +101,8 @@ JavaScript functions to Go code:
 Custom Types
 ------------
 
-Prudence has built-in types like "Server", "Router", "Static", "MemoryCacheBackend", etc.,
-and you can add your own. To do this, you need to register a "create" function:
+Prudence has built-in types like "Server", "Router", "Static", "MemoryCache", etc., and you can add your
+own. To do this, you need to register a "create" function:
 
     import "github.com/tliron/kutil/js"
 

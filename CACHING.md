@@ -13,7 +13,7 @@ Server-Side Caching
 -------------------
 
 Server-side caching is extremely important for real-world web sites. Even a one-second
-cache on your pages can ensure that you'll be handle sudden spikes in usage without
+cache on your pages can ensure that you'll be able to handle sudden spikes in usage without
 hammering your backend.
 
 Let's set up a cache. Add this to your `start.js` *before* you create and start the

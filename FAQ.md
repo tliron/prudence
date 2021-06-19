@@ -11,14 +11,19 @@ encourages good programming practices and reduces the chance for bugs.
 
 ### JavaScript? Really?
 
-It's probably
-[not anyone's favorite language](https://archive.org/details/wat_destroyallsoftware), but it's
+First off, Prudence supports [TypeScript](https://www.typescriptlang.org/), which is a big step
+forward for the JavaScript ecosystem. TypeScript is a nice language!
+
+As for the underlying JavaScript, it's probably
+[not anyone's favorite](https://archive.org/details/wat_destroyallsoftware), but it's
 familiar, mature, standardized (as [ECMAScript](https://en.wikipedia.org/wiki/ECMAScript)), and does
 the job. From a certain angle it's essentially the Scheme language (because it has powerful closures
 and functions are first class citizens) but with a crusty C syntax.
 
 Our chosen ECMAScript engine is [goja](https://github.com/dop251/goja), which is 100% Go and does
-not require any external dependencies.
+not require any external dependencies. It complies with ECMAScript 5.1, but if you really don't want
+to use TypeScript and yet still want a more advanced version of JavaScript you can use tools like
+[Babel](https://babeljs.io/) or [swc](https://swc.rs/) to transpile it to 5.1.
 
 ### Wasn't Prudence originally in Java?
 
