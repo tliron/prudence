@@ -134,6 +134,11 @@ by placing them in its "exports" global. Other modules can use "require" to acce
 exports. Prudence caches the module's exports, so that any module is only ever executed
 once.
 
+"require" first looks for the module relative to the current module's path and then relative
+to the general path. You can set the general path using the `--path` flag for `prudence`
+or via the `PRUDENCE_PATH` environment variable. If an extension is not provided then `.js` will
+be added.
+
 The "require" here will give us access to the "exports.handler" from `router.js`.
 
 You should have a running static file server now. You can use `curl` again to test it, or

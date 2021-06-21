@@ -1,6 +1,10 @@
 package commands
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/spf13/cobra"
 	kutiljs "github.com/tliron/kutil/js"
 	urlpkg "github.com/tliron/kutil/url"
@@ -10,11 +14,13 @@ import (
 	"github.com/tliron/prudence/platform"
 )
 
+var paths []string
 var arguments map[string]string
 var watch bool
 
 func init() {
 	rootCommand.AddCommand(runCommand)
+	runCommand.Flags().StringArrayVarP(&paths, "path", "p", nil, "library path (appended after PRUDENCE_PATH environment variable)")
 	runCommand.Flags().StringToStringVarP(&arguments, "argument", "a", make(map[string]string), "arguments (format is name=value)")
 	runCommand.Flags().BoolVarP(&watch, "watch", "w", true, "whether to watch dependent files and restart if they are changed")
 	runCommand.Flags().StringVarP(&platform.NCSAFilename, "ncsa", "n", "", "NCSA log filename (or special values \"stdout\" and \"stderr\")")
@@ -36,7 +42,24 @@ var runCommand = &cobra.Command{
 			}
 		})
 
-		environment := js.NewEnvironment(urlContext, arguments)
+		var path_ []urlpkg.URL
+
+		parsePaths := func(paths []string) {
+			for _, path := range paths {
+				if !strings.HasSuffix(path, "/") {
+					path += "/"
+				}
+				pathUrl, err := urlpkg.NewValidURL(path, nil, urlContext)
+				log.Infof("library path: %s", pathUrl.String())
+				util.FailOnError(err)
+				path_ = append(path_, pathUrl)
+			}
+		}
+
+		parsePaths(filepath.SplitList(os.Getenv("PRUDENCE_PATH")))
+		parsePaths(paths)
+
+		environment := js.NewEnvironment(urlContext, path_, arguments)
 		util.OnExit(func() {
 			if err := environment.Release(); err != nil {
 				log.Errorf("%s", err.Error())

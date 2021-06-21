@@ -186,11 +186,14 @@ var ncsaLoggersLock sync.Mutex
 
 func (self *Server) getNcsaLogger() (*requestlog.NCSALogger, error) {
 	var path string
-	switch platform.NCSAFilename {
-	case "stdout", "stderr":
-		path = platform.NCSAFilename
-	default:
-		path = self.NCSAPrefix + platform.NCSAFilename
+
+	if platform.NCSAFilename != "" {
+		switch platform.NCSAFilename {
+		case "stdout", "stderr":
+			path = platform.NCSAFilename
+		default:
+			path = self.NCSAPrefix + platform.NCSAFilename
+		}
 	}
 
 	if path == "" {
