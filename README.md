@@ -24,7 +24,7 @@ Documentation
 * [Tutorial](TUTORIAL.md)
 * [Caching guide](CACHING.md)
 * [Examples](examples/README.md)
-* [JavaScript/TypeScript API](js/README.md)
+* [JavaScript/TypeScript API](https://prudence.threecrickets.com/assets/typescript/prudence/docs/)
 * [JavaScript Templates (JST)](jst/README.md)
 * [Renderers](render/README.md)
 * [Extension guide](platform/README.md)

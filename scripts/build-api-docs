@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+cd "$ROOT/assets/typescript/prudence"
+
+rm --recursive --force docs/
+
+npm install typedoc typescript
+npx typedoc

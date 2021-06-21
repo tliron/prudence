@@ -1,0 +1,5 @@
+{
+    "name": "Prudence JavaScript and TypeScript APIs",
+    "entryPoints": ["index.d.ts"],
+    "out": "./docs"
+}
