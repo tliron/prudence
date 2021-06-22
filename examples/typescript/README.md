@@ -6,21 +6,24 @@ with JavaScript but is a vastly more powerful and more elegant language. Its bes
 it's typed so that many errors can be avoided before runtime. Also, typed languages are more
 pleasurable work with in IDEs, with support for code completion, refactoring, and more.
 
-Prudence comes with a [base TypeScript project](../../assets/typescript/prudence/) that declares
-all the built-in APIs and is ready to use. All you need to do is to extend it in your project's
-`tsconfig.json`, like we do in this example:
+Prudence comes with a
+[base TypeScript project](https://github.com/tliron/prudence/tree/main/assets/typescript/prudence/)
+that declares all the built-in APIs and is ready to use. All you need to do is to extend it in your
+project's `tsconfig.json`, like we do in this example:
 
     {
         "extends": "../../assets/typescript/prudence/tsconfig.json",
         "include": [ "**/*" ]
     }
 
+Also see the [API documentation](https://prudence.threecrickets.com/assets/typescript/prudence/docs/).
+
 
 How to Run
 ----------
 
 Like most other TypeScript environments Prudence doesn't execute TypeScript code directly. Instead,
-it expects TypeScript to be transpiled into JavaScript.
+it transpiles TypeScript into JavaScript.
 
 Make sure the transpiler, [`tsc`](https://www.typescriptlang.org/docs/handbook/compiler-options.html),
 is installed. It may very well be included in your operating system's repository. For example, in the
@@ -32,15 +35,14 @@ Or in the Debian world:
 
     sudo apt install node-typescript
 
-You can then run `tsc` to transpile your `.ts` files into `.js` files and even use `--watch` so that
-changes will be picked up and re-transpiled. When combined with Prudence's `--watch=true` (the default)
-this will allow live editing of TypeScript. For example:
+Prudence can now run `tsc` for you, including re-running it automatically when any `.ts` files are
+changed (when `--watch=true`, the default). To enable TypeScript support use the `--typescript` flag
+to point to the directory where your `tsconfig.json` is:
 
-    tsc --watch --project examples/typescript
+    prudence run examples/typescript/start.js --typescript=examples/typescript
 
-And then run Prudence in another terminal:
-
-    prudence run examples/typescript/start.js
+Note that we are running the `.js` file. (If it doesn't exist yet, it will be created by transpiler
+from `start.ts`.)
 
 If you edit `start.ts` then `start.js` will also be updated and Prudence will restart the servers.
 
