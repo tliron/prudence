@@ -1,12 +1,14 @@
 
-// A Badger database
-// See: https://pkg.go.dev/github.com/dgraph-io/badger/v3#section-documentation
-const db = myplugin.badger(prudence.joinFilePath(__dirname, 'db'));
+prudence.once('db', function() {
+    // A Badger database
+    // See: https://pkg.go.dev/github.com/dgraph-io/badger/v3#section-documentation
+    prudence.globals.db = myplugin.badger(prudence.joinFilePath(__dirname, 'db'));
+});
 
 exports.present = function(context) {
-    var counter;
+    let counter;
 
-    db.update(function(txn) {
+    prudence.globals.db.update(function(txn) {
         try {
             txn.get('counter').value(function(value) {
                 counter = parseInt(prudence.bytesToString(value));

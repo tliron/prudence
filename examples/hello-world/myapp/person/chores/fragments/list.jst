@@ -1,7 +1,7 @@
 <% 
 const backend = require('../../backend');
 const chores = backend.getPerson(context.variables.name).chores;
-for (var i = 0; i < chores.length; i++) {
+for (let i = 0; i < chores.length; i++) {
 %>
     <p>
         Chore: <%= chores[i] %>

@@ -21,7 +21,7 @@ func HandleInsert(context *platform.JSTContext, code string) bool {
 	context.Builder.WriteString(strings.TrimSpace(code))
 	context.Builder.WriteString("];\n")
 
-	context.Builder.WriteString("var __insert")
+	context.Builder.WriteString("let __insert")
 	context.Builder.WriteString(suffix)
 	context.Builder.WriteString(" = prudence.loadString(__args")
 	context.Builder.WriteString(suffix)

@@ -237,7 +237,8 @@ can use "prudence.globals", which are truly global.
 
 Writing code for a multi-threaded environment is not trivial. You might need to rely on
 synchronization techniques for accessing shared data, for example a mutex created by calling
-"prudence.mutex". You can even store such a mutex "prudence.globals".
+"prudence.mutex". You can even store such a mutex in "prudence.globals". For an example, see our
+[`backend.js` file in the hello-world](https://github.com/tliron/prudence/blob/main/examples/hello-world/myapp/person/backend.js).
 
 By the way, another option for improving performance is to write critical handlers in Go. (See the
 [extension guide](platform/README.md)). However, as always, avoid premature optimization. A "bound"
@@ -504,7 +505,7 @@ Now, let's create `myapp/person/html.jst`
         </h1>
         <div>
             Some numbers:
-    <% for (var i = 0; i < 10; i++) { %>
+    <% for (let i = 0; i < 10; i++) { %>
             <div><%= i %></div>
     <% } %>
         </div>
@@ -556,7 +557,7 @@ rendering markup languages, such as
 
 Programmatic use of "prudence.render":
 
-    var content = prudence.loadString('readme.md');
+    let content = prudence.loadString('readme.md');
     content = prudence.render(content, 'markdown');
     context.write(content);
 

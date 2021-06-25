@@ -142,7 +142,7 @@ Note that any other JST tags inside the enclosed text are processed as usual.
 
 Insert any JavaScript code. Example:
 
-    <% for (var i = 0; i < 10; i++) { %>
+    <% for (let i = 0; i < 10; i++) { %>
         <p>Number <%= i %></p>
     <% } %>
 

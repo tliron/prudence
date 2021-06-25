@@ -129,6 +129,7 @@
 								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="prudence.html#mutex-1" class="tsd-kind-icon">mutex</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="prudence.html#newxmldocument" class="tsd-kind-icon">new<wbr>Xml<wbr>Document</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="prudence.html#now" class="tsd-kind-icon">now</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="prudence.html#once" class="tsd-kind-icon">once</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="prudence.html#render" class="tsd-kind-icon">render</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="prudence.html#setcache" class="tsd-kind-icon">set<wbr>Cache</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-namespace"><a href="prudence.html#sprintf" class="tsd-kind-icon">sprintf</a></li>
@@ -151,7 +152,7 @@
 					<div class="tsd-signature tsd-kind-icon">Facet<wbr>Config<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>name<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>paths<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">; </span>representations<span class="tsd-signature-symbol">?: </span><a href="prudence.html#representationconfig" class="tsd-signature-type" data-tsd-kind="Type alias">RepresentationConfig</a><span class="tsd-signature-symbol"> | </span><a href="prudence.html#representationconfig" class="tsd-signature-type" data-tsd-kind="Type alias">RepresentationConfig</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> }</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L204">index.d.ts:204</a></li>
+							<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L205">index.d.ts:205</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -175,7 +176,7 @@
 					<div class="tsd-signature tsd-kind-icon">Handle<wbr>Function<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span>context<span class="tsd-signature-symbol">: </span><a href="../interfaces/context.html" class="tsd-signature-type" data-tsd-kind="Interface">Context</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L174">index.d.ts:174</a></li>
+							<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L175">index.d.ts:175</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -206,7 +207,7 @@
 					<div class="tsd-signature tsd-kind-icon">Representation<wbr>Config<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>call<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>construct<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>describe<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>erase<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>functions<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-symbol">{ </span>call<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>construct<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>describe<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>erase<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>modify<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>present<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">; </span>modify<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>present<span class="tsd-signature-symbol">?: </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol"> }</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L210">index.d.ts:210</a></li>
+							<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L211">index.d.ts:211</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -242,7 +243,7 @@
 					<div class="tsd-signature tsd-kind-icon">Route<wbr>Config<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>handler<span class="tsd-signature-symbol">?: </span><a href="../interfaces/prudence.handler.html" class="tsd-signature-type" data-tsd-kind="Interface">Handler</a><span class="tsd-signature-symbol"> | </span><a href="prudence.html#handlefunction" class="tsd-signature-type" data-tsd-kind="Type alias">HandleFunction</a><span class="tsd-signature-symbol">; </span>name<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>paths<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> }</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L189">index.d.ts:189</a></li>
+							<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L190">index.d.ts:190</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -269,7 +270,7 @@
 					<div class="tsd-signature tsd-kind-icon">arguments<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{}</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L105">index.d.ts:105</a></li>
+							<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L105">index.d.ts:105</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -287,7 +288,7 @@
 					<div class="tsd-signature tsd-kind-icon">default<wbr>Not<wbr>Found<span class="tsd-signature-symbol">:</span> <a href="../interfaces/prudence.handler.html" class="tsd-signature-type" data-tsd-kind="Interface">Handler</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L108">index.d.ts:108</a></li>
+							<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L108">index.d.ts:108</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -297,7 +298,7 @@
 					<div class="tsd-signature tsd-kind-icon">globals<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{}</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L106">index.d.ts:106</a></li>
+							<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L106">index.d.ts:106</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -315,7 +316,7 @@
 					<div class="tsd-signature tsd-kind-icon">log<span class="tsd-signature-symbol">:</span> <a href="../interfaces/logger.html" class="tsd-signature-type" data-tsd-kind="Interface">Logger</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L107">index.d.ts:107</a></li>
+							<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L107">index.d.ts:107</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -332,7 +333,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L122">index.d.ts:122</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L122">index.d.ts:122</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -355,7 +356,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L121">index.d.ts:121</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L121">index.d.ts:121</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -378,7 +379,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L120">index.d.ts:120</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L120">index.d.ts:120</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -401,7 +402,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L134">index.d.ts:134</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L135">index.d.ts:135</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -430,7 +431,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L123">index.d.ts:123</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L123">index.d.ts:123</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -453,7 +454,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L124">index.d.ts:124</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L124">index.d.ts:124</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -479,7 +480,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L145">index.d.ts:145</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L146">index.d.ts:146</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -505,7 +506,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L135">index.d.ts:135</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L136">index.d.ts:136</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -537,7 +538,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L117">index.d.ts:117</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L117">index.d.ts:117</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -560,7 +561,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L142">index.d.ts:142</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L143">index.d.ts:143</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -586,7 +587,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L130">index.d.ts:130</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L131">index.d.ts:131</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -621,7 +622,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L126">index.d.ts:126</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L126">index.d.ts:126</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -644,7 +645,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L113">index.d.ts:113</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L113">index.d.ts:113</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -667,7 +668,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L125">index.d.ts:125</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L125">index.d.ts:125</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -693,7 +694,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L141">index.d.ts:141</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L142">index.d.ts:142</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -716,7 +717,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L140">index.d.ts:140</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L141">index.d.ts:141</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -739,7 +740,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L139">index.d.ts:139</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L140">index.d.ts:140</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -762,7 +763,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L129">index.d.ts:129</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L129">index.d.ts:129</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <a href="../interfaces/prudence.mutex.html" class="tsd-signature-type" data-tsd-kind="Interface">Mutex</a></h4>
@@ -779,7 +780,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L136">index.d.ts:136</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L137">index.d.ts:137</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
@@ -796,10 +797,48 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L128">index.d.ts:128</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L128">index.d.ts:128</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-namespace">
+					<a name="once" class="tsd-anchor"></a>
+					<h3>once</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-namespace">
+						<li class="tsd-signature tsd-kind-icon">once<span class="tsd-signature-symbol">(</span>name<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, f<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L130">index.d.ts:130</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>name: <span class="tsd-signature-type">string</span></h5>
+								</li>
+								<li>
+									<h5>f: <span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-signature">
+											<ul class="tsd-signatures tsd-kind-type-literal">
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+											</ul>
+											<ul class="tsd-descriptions">
+												<li class="tsd-description">
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+												</li>
+											</ul>
+										</li>
+									</ul>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -813,7 +852,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L114">index.d.ts:114</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L114">index.d.ts:114</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -839,7 +878,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L112">index.d.ts:112</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L112">index.d.ts:112</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -862,7 +901,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L127">index.d.ts:127</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L127">index.d.ts:127</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -888,7 +927,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L111">index.d.ts:111</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L111">index.d.ts:111</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -911,7 +950,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L119">index.d.ts:119</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L119">index.d.ts:119</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -934,7 +973,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L144">index.d.ts:144</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L145">index.d.ts:145</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -960,7 +999,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L143">index.d.ts:143</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L144">index.d.ts:144</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -986,7 +1025,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L118">index.d.ts:118</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L118">index.d.ts:118</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1009,7 +1048,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/tliron/prudence/blob/37639048/assets/typescript/prudence/index.d.ts#L133">index.d.ts:133</a></li>
+									<li>Defined in <a href="https://github.com/tliron/prudence/blob/6eb19d03/assets/typescript/prudence/index.d.ts#L134">index.d.ts:134</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1150,6 +1189,9 @@
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-namespace">
 						<a href="prudence.html#now" class="tsd-kind-icon">now</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-namespace">
+						<a href="prudence.html#once" class="tsd-kind-icon">once</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-namespace">
 						<a href="prudence.html#render" class="tsd-kind-icon">render</a>

@@ -1,6 +1,11 @@
 
-const db = {};
-const lock = prudence.mutex();
+// "prudence.once" makes sure that the function is only ever called
+// a single time, which is very useful for global initialization
+prudence.once('backend', function() {
+    prudence.log.info('initializing backend');
+    prudence.globals.db = {};
+    prudence.globals.dbLock = prudence.mutex();
+});
 
 // Gets the signature *instead of the data*
 // Let's pretend that it is less expensive than "getPerson"
@@ -19,41 +24,41 @@ exports.getCachePrefix = function(name) {
 // (And thus it's the most expensive part of any request)
 exports.getPerson = function(name) {
     prudence.log.info('getPerson');
-    lock.lock();
+    prudence.globals.dbLock.lock();
     try {
-        var data = db[name];
+        let data = prudence.globals.db[name];
         if (!data) {
             data = {
                 name: name,
                 chores: [ 'sleeping' ]
             };
-            db[name] = data;
+            prudence.globals.db[name] = data;
         }
         return prudence.deepCopy(data);
     } finally {
-        lock.unlock();
+        prudence.globals.dbLock.unlock();
     }
 };
 
 exports.deletePerson = function(name) {
     prudence.log.info('deletePerson');
-    lock.lock();
+    prudence.globals.dbLock.lock();
     try {
-        delete db[name];
+        delete prudence.globals.db[name];
     } finally {
-        lock.unlock();
+        prudence.globals.dbLock.unlock();
     }
 };
 
 exports.setChores = function(name, chores) {
     prudence.log.info('setChores');
-    lock.lock();
+    prudence.globals.dbLock.lock();
     try {
-        db[name] = {
+        prudence.globals.db[name] = {
             name: name,
             chores: chores
         };
     } finally {
-        lock.unlock();
+        prudence.globals.dbLock.unlock();
     }
 };

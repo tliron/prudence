@@ -127,6 +127,7 @@ declare namespace prudence {
     function sprintf(f: string, ...args: any[]): string;
     function now(): any;
     function mutex(): Mutex;
+    function once(name: string, f: () => void): void;
     function go(f: () => void): void;
 
     // Format

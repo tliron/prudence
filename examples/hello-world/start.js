@@ -1,7 +1,7 @@
 
 // You can send arguments to your program via "prudence run --argument=name=value"
 
-for (var name in prudence.arguments) {
+for (let name in prudence.arguments) {
     prudence.log.infof('argument: %s = %s', name, prudence.arguments[name]);
 }
 
