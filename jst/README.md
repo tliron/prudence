@@ -79,25 +79,24 @@ equivalent it is not quite identical to this:
     // ignored
     %>
 
-### Embed: `<%& filename_expr %>` or `<%& filename_expr, cachekey_expr %>`
+### Embed: `<%& filename_expr %>` or `<%& filename_expr, cachekey_expr %>` or `<%& filename_expr, cachekey_expr, cahegroups_expr %>`
 
-This tag allows another representation to write itself into this one. Both the "construct"
-and "present" hooks of the embedded representation are called, which means that if that
-representation has been cached (with a "context.cacheDuration" > 0) then it may retrieve
-from a cache. This can allow for powerful, fine-grained caching.
+This tag allows another representation to write itself into this one. Only the "present"
+hook of the embedded representation is called. However, the embedded representation can be
+cached if it sets "context.cacheDuration" > 0 in its "present". This is suitable for `.jst`
+files, which only have a "present" hook.
+
+The long forms allow you to set the "context.cacheKey" and even "context.cacheGroups" for the
+embedded representation *before* embedding it, acting a simple version of "construct".
 
 Note that the current context will be copied into the embedded context. This means that any
-variable you set can be accessed in the embedded context. The opposite does not happen in
-order to ensure that anything the embedded representation does to the context will not
+"context.variable" you set can be accessed in the embedded context. The opposite does not happen
+in order to help ensure that anything the embedded representation does to the context will not
 interfere with the current one.
 
-The long form allows you to set the "context.cacheKey" for the embedded representation
-*before* embedding it. Note that if you do so then you should *not* change the cache key
-in the embedded representation's "construct".
+Example of longest form:
 
-Both ".js" and ".jst" files are supported. Example:
-
-    The menu is: <%& 'fragments/menu.jst', 'menu:' + context.variables.name %>
+    The menu is: <%& 'fragments/menu.jst', 'menu:' + context.variables.name, ['person'] %>
 
 ### Expression: `<%= expr %>`
 

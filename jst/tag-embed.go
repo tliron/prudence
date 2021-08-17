@@ -23,9 +23,9 @@ func HandleEmbed(context *platform.JSTContext, code string) bool {
 
 	context.Builder.WriteString("const __present")
 	context.Builder.WriteString(suffix)
-	context.Builder.WriteString(" = require(__args")
+	context.Builder.WriteString(" = bind(__args")
 	context.Builder.WriteString(suffix)
-	context.Builder.WriteString("[0]).present;\n")
+	context.Builder.WriteString("[0], 'present');\n")
 
 	context.Builder.WriteString("const __context")
 	context.Builder.WriteString(suffix)
@@ -38,6 +38,12 @@ func HandleEmbed(context *platform.JSTContext, code string) bool {
 	context.Builder.WriteString("[1] || (context.cacheKey + '|")
 	context.Builder.WriteString(suffix)
 	context.Builder.WriteString("');\n")
+
+	context.Builder.WriteString("__context")
+	context.Builder.WriteString(suffix)
+	context.Builder.WriteString(".cacheGroups = __args")
+	context.Builder.WriteString(suffix)
+	context.Builder.WriteString("[2] || [];\n")
 
 	context.Builder.WriteString("__context")
 	context.Builder.WriteString(suffix)

@@ -189,6 +189,16 @@ func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) go
 	if len(function.Arguments) > 0 {
 		var ok bool
 		present_ := function.Arguments[0].Export()
+		if bind, ok := present_.(js.Bind); ok {
+			var err error
+			var jsContext *js.Context
+			if present_, jsContext, err = bind.Unbind(); err == nil {
+				runtime = jsContext.Environment.Runtime
+			} else {
+				panic(runtime.NewGoError(err))
+			}
+		}
+
 		if present, ok = present_.(js.JavaScriptFunc); !ok {
 			panic(runtime.NewGoError(fmt.Errorf("\"present\" not a function: %T", present_)))
 		}
