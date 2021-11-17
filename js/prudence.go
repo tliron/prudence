@@ -3,6 +3,7 @@ package js
 import (
 	"fmt"
 	"html"
+	"time"
 
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
@@ -12,6 +13,8 @@ import (
 	platform "github.com/tliron/prudence/platform"
 	rest "github.com/tliron/prudence/rest"
 )
+
+const DEFAULT_TIMEOUT_SECONDS = 10.0
 
 //
 // PrudenceAPI
@@ -70,7 +73,7 @@ func (self *PrudenceAPI) UnescapeHtml(text string) string {
 
 // Platform
 
-func (self *PrudenceAPI) Start(startables interface{}) error {
+func (self *PrudenceAPI) Start(startables interface{}, timeoutSeconds float64) error {
 	var list []ard.Value
 	var ok bool
 	if list, ok = startables.(ard.List); !ok {
@@ -78,6 +81,12 @@ func (self *PrudenceAPI) Start(startables interface{}) error {
 	}
 
 	var startables_ []platform.Startable
+
+	// Should we start the cache backend first?
+	cacheBackend := platform.GetCacheBackend()
+	if startable, ok := cacheBackend.(platform.Startable); ok {
+		startables_ = append(startables_, startable)
+	}
 
 	for _, startable := range list {
 		if startable_, ok := startable.(platform.Startable); ok {
@@ -87,7 +96,11 @@ func (self *PrudenceAPI) Start(startables interface{}) error {
 		}
 	}
 
-	return platform.Start(startables_)
+	if timeoutSeconds == 0.0 {
+		timeoutSeconds = DEFAULT_TIMEOUT_SECONDS
+	}
+
+	return platform.Start(startables_, time.Duration(timeoutSeconds*float64(time.Second)))
 }
 
 func (self *PrudenceAPI) SetCache(cacheBackend platform.CacheBackend) {

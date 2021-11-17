@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"context"
+	contextpkg "context"
 	"crypto/tls"
 	"io"
 	"net"
@@ -150,13 +150,13 @@ func (self *Server) Start() error {
 }
 
 // Startable interface
-func (self *Server) Stop() error {
+func (self *Server) Stop(stopContext contextpkg.Context) error {
 	self.serverLock.Lock()
 	defer self.serverLock.Unlock()
 
 	if self.server != nil {
 		log.Infof("stopping server: %s", self.Address)
-		err := self.server.Shutdown(context.TODO())
+		err := self.server.Shutdown(stopContext)
 		self.started.Wait()
 		self.server = nil
 		log.Infof("stopped server: %s", self.Address)

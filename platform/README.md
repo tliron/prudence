@@ -149,8 +149,10 @@ If your type implements the "platform.Startable" interface then it can be used a
 built-in startable in Prudence is "Server".
 
 Note that "prudence.start" expects your "Start" implementation to be *blocking*. It will run it in
-a goroutine for you. That means that you likely should not be create another goroutine in "Start".
+a goroutine for you. That means that you likely should not create another goroutine in "Start".
 Example:
+
+    import "context"
 
     type MyType struct{
         stop chan bool
@@ -163,7 +165,7 @@ Example:
     }
 
     // platform.Startable interface
-    func (self MyType) Stop() error {
+    func (self MyType) Stop(stopContext context.Context) error {
         stop <- true // send a value (and unblock "Start")
         return nil
     }
@@ -176,6 +178,11 @@ for "prudence.setCacheBackend".
 Note that only the "LoadRepresentation" method is expected to be synchronous, meaning that it must
 return a "CachedRepresentation" if it exists in the cache. The other methods can (and perhaps should)
 be asynchronous, meaning that they can return quickly and do the actual work in the background.
+
+Also note that your cache backend type can *also* implement the "platform.Startable" interface, as above.
+Doing so will automatically have it included in the call to "prudence.start". This is useful for cache
+backends that have a service running in the background.
+
 Example using an imaginary database:
 
     // platform.CacheBackend interface

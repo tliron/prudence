@@ -1,13 +1,5 @@
 package memory
 
-// TODO:
-// https://github.com/coocood/freecache
-// https://github.com/allegro/bigcache
-// https://github.com/muesli/cache2go
-// https://github.com/bluele/gcache
-
-// https://github.com/golang/groupcache
-
 import (
 	"sync"
 	"time"

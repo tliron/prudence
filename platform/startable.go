@@ -1,31 +1,34 @@
 package platform
 
 import (
+	"context"
+	contextpkg "context"
 	"sync"
+	"time"
 )
 
-var startGroup *StartGroup
-var startGroupLock sync.Mutex
+var startableGroup *StartableGroup
+var startableGroupLock sync.Mutex
 
-func Start(startables []Startable) error {
+func Start(startables []Startable, stopTimeout time.Duration) error {
 	Stop()
 
-	startGroupLock.Lock()
-	defer startGroupLock.Unlock()
+	startableGroupLock.Lock()
+	defer startableGroupLock.Unlock()
 
-	startGroup = NewStartGroup(startables)
-	startGroup.Start()
+	startableGroup = NewStartableGroup(startables, stopTimeout)
+	startableGroup.Start()
 
 	return nil
 }
 
 func Stop() {
-	startGroupLock.Lock()
-	defer startGroupLock.Unlock()
+	startableGroupLock.Lock()
+	defer startableGroupLock.Unlock()
 
-	if startGroup != nil {
-		startGroup.Stop()
-		startGroup = nil
+	if startableGroup != nil {
+		startableGroup.Stop()
+		startableGroup = nil
 	}
 }
 
@@ -35,15 +38,16 @@ func Stop() {
 
 type Startable interface {
 	Start() error
-	Stop() error
+	Stop(stopContext contextpkg.Context) error
 }
 
 //
-// StartGroup
+// StartableGroup
 //
 
-type StartGroup struct {
-	Startables []Startable
+type StartableGroup struct {
+	Startables  []Startable
+	StopTimeout time.Duration
 
 	lock    sync.Mutex
 	started sync.WaitGroup
@@ -53,11 +57,14 @@ type StartEntry struct {
 	Startable Startable
 }
 
-func NewStartGroup(startables []Startable) *StartGroup {
-	return &StartGroup{Startables: startables}
+func NewStartableGroup(startables []Startable, stopTimeout time.Duration) *StartableGroup {
+	return &StartableGroup{
+		Startables:  startables,
+		StopTimeout: stopTimeout,
+	}
 }
 
-func (self *StartGroup) Start() {
+func (self *StartableGroup) Start() {
 	log.Info("starting")
 
 	self.lock.Lock()
@@ -75,19 +82,26 @@ func (self *StartGroup) Start() {
 	}
 }
 
-func (self *StartGroup) Stop() {
+func (self *StartableGroup) Stop() {
 	log.Info("stopping")
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
+	// Note: we are not using errgroup because we want to catch all errors,
+	// not just the first one
+
+	stopContext, cancel := contextpkg.WithTimeout(context.Background(), self.StopTimeout)
+
 	for _, startable := range self.Startables {
-		if err := startable.Stop(); err != nil {
+		if err := startable.Stop(stopContext); err != nil {
 			log.Errorf("%s", err.Error())
 		}
 	}
 
 	self.started.Wait()
+
+	cancel()
 
 	log.Info("stopped")
 }

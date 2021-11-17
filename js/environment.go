@@ -4,6 +4,7 @@ import (
 	"github.com/tliron/kutil/js"
 	urlpkg "github.com/tliron/kutil/url"
 
+	_ "github.com/tliron/prudence/distributed"
 	_ "github.com/tliron/prudence/jst"
 	_ "github.com/tliron/prudence/memory"
 	_ "github.com/tliron/prudence/render"
