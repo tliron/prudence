@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/_env"
+
+"$HERE/build"
+
+prudence run "$ROOT/examples/typescript/start.js" --typescript="$ROOT/examples/typescript" -vv "$@"

@@ -111,6 +111,8 @@ declare namespace prudence {
     function start(startables: Startable|Startable[]): void;
     function setCache(backend: CacheBackend): void;
     function invalidateCacheGroup(group: string): void;
+    function setScheduler(scheduler: Scheduler): void;
+    function schedule(cronPattern: string, f: () => void): void;
     function render(text: string, renderer: string): string;
 
     // Util
@@ -154,6 +156,17 @@ declare namespace prudence {
     }
 
     class MemoryCache implements CacheBackend {
+        constructor(config?: {});
+    }
+
+    class DistributedCache implements CacheBackend {
+        constructor(config?: {});
+    }
+
+    interface Scheduler {
+    }
+
+    class QuartzScheduler implements Scheduler {
         constructor(config?: {});
     }
 

@@ -28,7 +28,7 @@ func NewStatic(root string, indexes []string) *Static {
 	}
 }
 
-// CreateFunc signature
+// platform.CreateFunc signature
 func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error) {
 	config_ := ard.NewNode(config)
 

@@ -9,18 +9,28 @@ for (let name in prudence.arguments) {
 // (Though note that the in-memory cache is of course insufficient for large
 // and/or distributed applications)
 
-prudence.setCache(new prudence.DistributedCache());
-//prudence.setCache(new prudence.MemoryCache());
+prudence.setCache(new prudence.MemoryCache());
+//prudence.setCache(new prudence.DistributedCache());
+
+// Setting a scheduler is optional
+// It allows for running tasks using a crontab-like pattern
+
+prudence.setScheduler(new prudence.QuartzScheduler());
+
+prudence.schedule('1/10 * * * * *', function() {
+    prudence.log.info('scheduled hello!');
+});
 
 // "prudence.start" can accept a single server or a list of servers
 // Multiple servers can share the same handler
+// Note if the the cache and scheduler are startables then they will be implicitly started here
 
 prudence.start([
     new prudence.Server({
         address: 'localhost:8080',
         handler: require('./myapp/router').handler,
         secure: (prudence.arguments.secure === 'true') ? {} : null, // an empty object will generate a self-signed certificate
-        /* Full "secure":
+        /* Full "secure" example:
         secure: {
             certificate: prudence.loadString('secret/server.crt'),
             key: prudence.loadString('secret/server.key')

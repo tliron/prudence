@@ -11,6 +11,7 @@ Table of Contents:
 * [Effects](#effects)
 * [JavaScript Templates (JST)](#javascript-templates-jst)
 * [Rendering](#rendering)
+* [Scheduler](#scheduler)
 * [Next Steps](#next-steps)
 
 ### TypeScript
@@ -576,8 +577,25 @@ Or just render an area of the JST with the "render" sugar, `<%^`:
 For a list of all supported renders see the [documentation](render/README.md).
 
 
+Scheduler
+---------
+
+Prudence makes it easy to schedule jobs using a crontab-like pattern. Enable the feature
+before calling "prudence.start" in your `start.js`:
+
+    prudence.setScheduler(new prudence.QuartzScheduler());
+
+Then you can schedule any function. For example, let's run a function every 10 seconds:
+
+    prudence.schedule('1/10 * * * * *', function() {
+        prudence.log.info('scheduled hello!');
+    });
+
+Note that you can call "prudence.schedule" at any time, not just in `start.js`.
+
+
 Next Steps
 ----------
 
-You're now and expert on all the basics. It is strongly recommended to continue to the
+You're now an expert on all the basics. It is strongly recommended to continue to the
 [caching guide](CACHING.md).

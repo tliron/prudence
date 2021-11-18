@@ -93,8 +93,8 @@ func (self *StartableGroup) Stop() {
 
 	stopContext, cancel := contextpkg.WithTimeout(context.Background(), self.StopTimeout)
 
-	for _, startable := range self.Startables {
-		if err := startable.Stop(stopContext); err != nil {
+	for i := len(self.Startables) - 1; i >= 0; i-- {
+		if err := self.Startables[i].Stop(stopContext); err != nil {
 			log.Errorf("%s", err.Error())
 		}
 	}

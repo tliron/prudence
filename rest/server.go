@@ -50,7 +50,7 @@ func NewServer(name string) *Server {
 	}
 }
 
-// CreateFunc signature
+// platform.CreateFunc signature
 func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error) {
 	var self Server
 
@@ -159,7 +159,7 @@ func (self *Server) Stop(stopContext contextpkg.Context) error {
 		err := self.server.Shutdown(stopContext)
 		self.started.Wait()
 		self.server = nil
-		log.Infof("stopped server: %s", self.Address)
+		log.Infof("server stopped: %s", self.Address)
 		return err
 	} else {
 		return nil

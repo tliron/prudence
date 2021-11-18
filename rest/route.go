@@ -29,7 +29,7 @@ func NewRoute(name string) *Route {
 	}
 }
 
-// CreateFunc signature
+// platform.CreateFunc signature
 func CreateRoute(config ard.StringMap, context *js.Context) (interface{}, error) {
 	var self Route
 

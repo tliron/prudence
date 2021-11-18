@@ -44,14 +44,10 @@ Highlights
 * Or use [JavaScript Templates (JST)](jst/README.md) to generate HTML by combining design with short
   code scriptlets. And there's sugar.
 * Pluggable server-side cache backends. Store your generated representations in scalable distributed
-  stores such as [Memcached](https://memcached.org/), [Redis](https://redis.io/), etc.
+  stores such as [Memcached](https://memcached.org/), [Redis](https://redis.io/), etc. Included is
+  a straightforward distributed memory cache backend (based on [Olric](https://github.com/buraksezer/olric))
+  that is especially useful for cloud deployments, such as on Kubernetes.
+* Schedule jobs using a crontab-like pattern.
 * [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you
   to create custom builds of Prudence bundled with the plugins and APIs you need. Even when extended in
   this way Prudence still remains a single, compact executable file.
-
-
-
-TODO
-
-cron: https://github.com/reugn/go-quartz
-cache: https://github.com/golang/groupcache

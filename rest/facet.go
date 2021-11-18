@@ -31,7 +31,7 @@ func NewFacet(name string) *Facet {
 	return &self
 }
 
-// CreateFunc signature
+// platform.CreateFunc signature
 func CreateFacet(config ard.StringMap, context *js.Context) (interface{}, error) {
 	var self Facet
 

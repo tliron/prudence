@@ -40,7 +40,7 @@ func NewDistributedCacheBackend(name string) *DistributedCacheBackend {
 	return &self
 }
 
-// CreateFunc signature
+// platform.CreateFunc signature
 func CreateDistributedCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
 	name := "prudence"
 	env := "local"
@@ -52,7 +52,7 @@ func CreateDistributedCacheBackend(config ard.StringMap, context *js.Context) (i
 	}
 }
 
-// CacheBackend interface
+// platform.CacheBackend interface
 func (self *DistributedCacheBackend) LoadRepresentation(key platform.CacheKey) (*platform.CachedRepresentation, bool) {
 	self.lock.Lock()
 	dmap := self.dmap
@@ -101,17 +101,19 @@ func (self *DistributedCacheBackend) DeleteRepresentation(key platform.CacheKey)
 	}
 }
 
-// CacheBackend interface
+// platform.CacheBackend interface
 func (self *DistributedCacheBackend) DeleteGroup(name platform.CacheKey) {
 }
 
-// Startable interface
+// platform.Startable interface
 func (self *DistributedCacheBackend) Start() error {
+	log.Info("starting cache")
 	return self.olric.Start()
 }
 
-// Startable interface
+// platform.Startable interface
 func (self *DistributedCacheBackend) Stop(stopContext contextpkg.Context) error {
+	log.Info("stopping cache")
 	self.lock.Lock()
 	self.dmap = nil
 	olric_ := self.olric
@@ -121,7 +123,12 @@ func (self *DistributedCacheBackend) Stop(stopContext contextpkg.Context) error 
 	self.lock.Unlock()
 
 	if olric_ != nil {
-		return olric_.Shutdown(stopContext)
+		if err := olric_.Shutdown(stopContext); err == nil {
+			log.Info("cache stopped")
+			return nil
+		} else {
+			return err
+		}
 	} else {
 		return nil
 	}
@@ -142,7 +149,7 @@ func (self *DistributedCacheBackend) configure(env string) error {
 }
 
 func (self *DistributedCacheBackend) started() {
-	log.Notice("cache started")
+	log.Info("cache started")
 
 	self.lock.Lock()
 	defer self.lock.Unlock()

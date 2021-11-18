@@ -1,6 +1,7 @@
 package js
 
 import (
+	"errors"
 	"fmt"
 	"html"
 	"time"
@@ -82,9 +83,15 @@ func (self *PrudenceAPI) Start(startables interface{}, timeoutSeconds float64) e
 
 	var startables_ []platform.Startable
 
-	// Should we start the cache backend first?
+	// Should we start the cache backend?
 	cacheBackend := platform.GetCacheBackend()
 	if startable, ok := cacheBackend.(platform.Startable); ok {
+		startables_ = append(startables_, startable)
+	}
+
+	// Should we start the scheduler?
+	scheduler := platform.GetScheduler()
+	if startable, ok := scheduler.(platform.Startable); ok {
 		startables_ = append(startables_, startable)
 	}
 
@@ -110,6 +117,18 @@ func (self *PrudenceAPI) SetCache(cacheBackend platform.CacheBackend) {
 func (self *PrudenceAPI) InvalidateCacheGroup(group string) {
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
 		cacheBackend.DeleteGroup(platform.CacheKey(group))
+	}
+}
+
+func (self *PrudenceAPI) SetScheduler(scheduler platform.Scheduler) {
+	platform.SetScheduler(scheduler)
+}
+
+func (self *PrudenceAPI) Schedule(cronPattern string, job func()) error {
+	if scheduler := platform.GetScheduler(); scheduler != nil {
+		return scheduler.Schedule(cronPattern, job)
+	} else {
+		return errors.New("no scheduler")
 	}
 }
 

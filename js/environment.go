@@ -7,6 +7,7 @@ import (
 	_ "github.com/tliron/prudence/distributed"
 	_ "github.com/tliron/prudence/jst"
 	_ "github.com/tliron/prudence/memory"
+	_ "github.com/tliron/prudence/quartz"
 	_ "github.com/tliron/prudence/render"
 )
 
