@@ -42,6 +42,14 @@ type Startable interface {
 }
 
 //
+// HasStartables
+//
+
+type HasStartables interface {
+	GetStartables() []Startable
+}
+
+//
 // StartableGroup
 //
 

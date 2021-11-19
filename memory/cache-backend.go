@@ -41,12 +41,12 @@ func NewMemoryCacheBackend() *MemoryCacheBackend {
 	return &self
 }
 
-// CreateFunc signature
+// platform.CreateFunc signature
 func CreateMemoryCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
 	return NewMemoryCacheBackend(), nil
 }
 
-// CacheBackend interface
+// platform.CacheBackend interface
 func (self *MemoryCacheBackend) LoadRepresentation(key platform.CacheKey) (*platform.CachedRepresentation, bool) {
 	self.lock.RLock()
 	if cached, ok := self.representations[key]; ok {
@@ -69,7 +69,7 @@ func (self *MemoryCacheBackend) LoadRepresentation(key platform.CacheKey) (*plat
 	}
 }
 
-// CacheBackend interface
+// platform.CacheBackend interface
 func (self *MemoryCacheBackend) StoreRepresentation(key platform.CacheKey, cached *platform.CachedRepresentation) {
 	go func() {
 		self.lock.Lock()
@@ -104,7 +104,7 @@ func (self *MemoryCacheBackend) StoreRepresentation(key platform.CacheKey, cache
 	}()
 }
 
-// CacheBackend interface
+// platform.CacheBackend interface
 func (self *MemoryCacheBackend) DeleteRepresentation(key platform.CacheKey) {
 	go func() {
 		self.lock.Lock()
@@ -114,7 +114,7 @@ func (self *MemoryCacheBackend) DeleteRepresentation(key platform.CacheKey) {
 	}()
 }
 
-// CacheBackend interface
+// platform.CacheBackend interface
 func (self *MemoryCacheBackend) DeleteGroup(name platform.CacheKey) {
 	go func() {
 		self.lock.Lock()

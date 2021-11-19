@@ -1,4 +1,4 @@
-package quartz
+package local
 
 import (
 	"sync/atomic"

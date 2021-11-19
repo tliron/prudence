@@ -9,13 +9,17 @@ for (let name in prudence.arguments) {
 // (Though note that the in-memory cache is of course insufficient for large
 // and/or distributed applications)
 
-prudence.setCache(new prudence.MemoryCache());
-//prudence.setCache(new prudence.DistributedCache());
+if (prudence.arguments.cache === 'tiered')
+    prudence.setCache(new prudence.TieredCache({caches: [new prudence.MemoryCache(), new prudence.DistributedCache({load: './cache.yaml'})]}));
+else if (prudence.arguments.cache === 'distributed')
+    prudence.setCache(new prudence.DistributedCache({load: './cache.yaml'}));
+else
+    prudence.setCache(new prudence.MemoryCache());
 
 // Setting a scheduler is optional
 // It allows for running tasks using a crontab-like pattern
 
-prudence.setScheduler(new prudence.QuartzScheduler());
+prudence.setScheduler(new prudence.LocalScheduler());
 
 prudence.schedule('1/10 * * * * *', function() {
     prudence.log.info('scheduled hello!');

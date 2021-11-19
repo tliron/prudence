@@ -1,4 +1,4 @@
-package quartz
+package local
 
 import (
 	contextpkg "context"
@@ -7,39 +7,36 @@ import (
 	"github.com/reugn/go-quartz/quartz"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
-	"github.com/tliron/kutil/logging"
 	"github.com/tliron/prudence/platform"
 )
 
-var log = logging.GetLogger("prudence.quartz")
-
 func init() {
-	platform.RegisterType("QuartzScheduler", CreateQuartzScheduler)
+	platform.RegisterType("LocalScheduler", CreateLocalScheduler)
 }
 
 //
-// QuartzScheduler
+// LocalScheduler
 //
 
-type QuartzScheduler struct {
+type LocalScheduler struct {
 	scheduler *quartz.StdScheduler
 	queue     []func() error
 	queueLock sync.Mutex
 }
 
-func NewQuartzScheduler() *QuartzScheduler {
-	return &QuartzScheduler{
+func NewLocalScheduler() *LocalScheduler {
+	return &LocalScheduler{
 		scheduler: quartz.NewStdScheduler(),
 	}
 }
 
 // platform.CreateFunc signature
-func CreateQuartzScheduler(config ard.StringMap, context *js.Context) (interface{}, error) {
-	return NewQuartzScheduler(), nil
+func CreateLocalScheduler(config ard.StringMap, context *js.Context) (interface{}, error) {
+	return NewLocalScheduler(), nil
 }
 
 // platform.Scheduler interface
-func (self *QuartzScheduler) Schedule(cronPattern string, job func()) error {
+func (self *LocalScheduler) Schedule(cronPattern string, job func()) error {
 	if self.scheduler.IsStarted() {
 		return self.schedule(cronPattern, job)
 	} else {
@@ -54,7 +51,7 @@ func (self *QuartzScheduler) Schedule(cronPattern string, job func()) error {
 }
 
 // platform.Startable interface
-func (self *QuartzScheduler) Start() error {
+func (self *LocalScheduler) Start() error {
 	self.scheduler.Start()
 	log.Info("started Quartz scheduler")
 
@@ -71,13 +68,13 @@ func (self *QuartzScheduler) Start() error {
 }
 
 // platform.Startable interface
-func (self *QuartzScheduler) Stop(stopContext contextpkg.Context) error {
+func (self *LocalScheduler) Stop(stopContext contextpkg.Context) error {
 	self.scheduler.Stop()
 	log.Info("stopped Quartz scheduler")
 	return nil
 }
 
-func (self *QuartzScheduler) schedule(cronPattern string, job func()) error {
+func (self *LocalScheduler) schedule(cronPattern string, job func()) error {
 	log.Infof("scheduling task at: %s", cronPattern)
 
 	if trigger, err := quartz.NewCronTrigger(cronPattern); err == nil {

@@ -12,6 +12,10 @@ function p () {
 
 if [ "$1" == -s ]; then
     p --argument=secure=true
+elif [ "$1" == -d ]; then
+    p --argument=cache=distributed
+elif [ "$1" == -t ]; then
+    p --argument=cache=tiered
 else
     p
 fi

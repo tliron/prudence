@@ -83,22 +83,24 @@ func (self *PrudenceAPI) Start(startables interface{}, timeoutSeconds float64) e
 
 	var startables_ []platform.Startable
 
-	// Should we start the cache backend?
-	cacheBackend := platform.GetCacheBackend()
-	if startable, ok := cacheBackend.(platform.Startable); ok {
-		startables_ = append(startables_, startable)
+	add := func(o interface{}) bool {
+		added := false
+		if hasStartables, ok := o.(platform.HasStartables); ok {
+			startables_ = append(startables_, hasStartables.GetStartables()...)
+			added = true
+		}
+		if startable, ok := o.(platform.Startable); ok {
+			startables_ = append(startables_, startable)
+			added = true
+		}
+		return added
 	}
 
-	// Should we start the scheduler?
-	scheduler := platform.GetScheduler()
-	if startable, ok := scheduler.(platform.Startable); ok {
-		startables_ = append(startables_, startable)
-	}
+	add(platform.GetCacheBackend())
+	add(platform.GetScheduler())
 
 	for _, startable := range list {
-		if startable_, ok := startable.(platform.Startable); ok {
-			startables_ = append(startables_, startable_)
-		} else {
+		if !add(startable) {
 			return fmt.Errorf("object not startable: %T", startable)
 		}
 	}

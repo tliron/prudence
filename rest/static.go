@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
 
@@ -23,6 +24,7 @@ type Static struct {
 }
 
 func NewStatic(root string, indexes []string) *Static {
+	// TODO: support indexes
 	return &Static{
 		Root: root,
 	}
@@ -34,7 +36,11 @@ func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error
 
 	root, _ := config_.Get("root").String(false)
 	if rootUrl, err := context.Resolve(root, true); err == nil {
-		root = rootUrl.(*urlpkg.FileURL).Path
+		if rootFileUrl, ok := rootUrl.(*urlpkg.FileURL); ok {
+			root = rootFileUrl.Path
+		} else {
+			return nil, fmt.Errorf("not a file: %v", rootUrl)
+		}
 	} else {
 		return nil, err
 	}

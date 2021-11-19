@@ -70,7 +70,7 @@ var runCommand = &cobra.Command{
 			}
 		})
 
-		log.Noticef("Prudence version %s", version.GitVersion)
+		log.Noticef("Prudence version: %s", version.GitVersion)
 
 		if typescript != "" {
 			transpileTypeScript()

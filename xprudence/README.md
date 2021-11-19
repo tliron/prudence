@@ -2,7 +2,7 @@ XPrudence: The Prudence Customizer
 ==================================
 
 The downloadable distribution of Prudence contains a ready-to-use `prudence` executable
-that isbundled with all the basic types, APIs, cache backends, renderers, and JST tags.
+that is bundled with all the basic types, APIs, cache backends, renderers, and JST tags.
 However, if you want to [extend](../platform/README.md) Prudence then you'll need to make
 a custom build of `prudence` with your plugins.
 
@@ -27,9 +27,9 @@ That's just one single file that you need to distribute.
 In recognizing this advantage, `xprudence` is inspired by
 [xcaddy](https://github.com/caddyserver/xcaddy).
 
-(Note that Go does support building and loading dynamically-linked libraries as separate
-files. It's a feature intended mainly for interaction with C and other programming
-languages, not for assembling Go programs.)
+Note that Go does have support for [plugins](https://pkg.go.dev/plugin), which are
+dynamically-linked libraries provided as separate files. Unfortunately it's limited to just a
+few platforms and breaks the straigtforward advantage of having just one executable.
 
 ### Example
 
@@ -42,10 +42,10 @@ The first time you build it may take some time, but note that most of this time 
 downloading (and caching) the Go source code of the dependencies. The Go compiler/linker
 itself is very fast and subsequent builds will use the cached downloads.
 
-A common flag to use with `xprudence build` is `--directory`, which you can use several
-times to specify plugin directories that you want to add to your build. These directories
-are [Go modules](https://golang.org/ref/mod) and thus must have a `go.mod` file. The
-[extension guide](../platform/README.md) goes into more detail about their structure.
+A common flag to use with `xprudence build` is `--directory`, which you can specify several
+times to include all the plugin directories that you want to add to your build. These
+directories are [Go modules](https://golang.org/ref/mod) and thus must have a `go.mod` file.
+The [extension guide](../platform/README.md) goes into more detail about their structure.
 
 Or, you can use the `--module` flag to specify plugins as Go module names, which is useful
 if you keep your module code in a git repository. As is usual with Go modules, you can

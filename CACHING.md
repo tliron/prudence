@@ -22,10 +22,16 @@ server:
     prudence.setCache(new prudence.MemoryCache());
 
 This in-memory cache will suffice for testing and can also be great for smaller web
-sites. However, large applications will likely need a distributed cache backend, such
-as [Memcached](https://memcached.org/) or [Redis](https://redis.io/). It is also possible
-to set up Prudence with tiered caching, so that the faster in-memory cache will be
-preferred to the distributed one.
+sites. However, large applications will likely need a distributed cache backend. Included
+in Prudence is a powerful distributed memory cache based on
+[Olric](https://olric.io/):
+
+    prudence.setCache(new prudence.DistributedCache({load: './cache.yaml'}));
+
+It is also possible to set up Prudence with tiered caching, so that the faster in-memory
+cache will be preferred to the distributed one:
+
+    prudence.setCache(new prudence.TieredCache({caches: [new prudence.MemoryCache(), new prudence.DistributedCache({load: './cache.yaml'})]}));
 
 ### Cache Duration
 

@@ -6,7 +6,7 @@ Prudence
 [![Go Reference](https://pkg.go.dev/badge/github.com/tliron/prudence.svg)](https://pkg.go.dev/github.com/tliron/prudence)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tliron/prudence)](https://goreportcard.com/report/github.com/tliron/prudence)
 
-A lightweight web framework built for scale, featuring integrated
+An opinionated lightweight web framework built for scale, featuring integrated
 [RESTful](https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm) server-side and
 client-side caching. Write your code in JavaScript, TypeScript, or Go. Suitable for frontend user
 interfaces and backend APIs.
@@ -43,10 +43,9 @@ Highlights
   JavaScript or TypeScript for your application. This is the right balance between power and productivity.
 * Or use [JavaScript Templates (JST)](jst/README.md) to generate HTML by combining design with short
   code scriptlets. And there's sugar.
-* Pluggable server-side cache backends. Store your generated representations in scalable distributed
-  stores such as [Memcached](https://memcached.org/), [Redis](https://redis.io/), etc. Included is
-  a straightforward distributed memory cache backend (based on [Olric](https://github.com/buraksezer/olric))
-  that is especially useful for cloud deployments, such as on Kubernetes.
+* Pluggable server-side cache backends. Included is a powerful distributed memory cache based on
+  [Olric](https://olric.io/). Or choose [Memcached](https://memcached.org/), [Redis](https://redis.io/),
+  etc.
 * Schedule jobs using a crontab-like pattern.
 * [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you
   to create custom builds of Prudence bundled with the plugins and APIs you need. Even when extended in

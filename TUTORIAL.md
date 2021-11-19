@@ -583,7 +583,7 @@ Scheduler
 Prudence makes it easy to schedule jobs using a crontab-like pattern. Enable the feature
 before calling "prudence.start" in your `start.js`:
 
-    prudence.setScheduler(new prudence.QuartzScheduler());
+    prudence.setScheduler(new prudence.LocalScheduler());
 
 Then you can schedule any function. For example, let's run a function every 10 seconds:
 

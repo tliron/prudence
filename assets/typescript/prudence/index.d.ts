@@ -155,6 +155,10 @@ declare namespace prudence {
     interface CacheBackend {
     }
 
+    class TieredCache implements CacheBackend {
+        constructor(config?: {});
+    }
+
     class MemoryCache implements CacheBackend {
         constructor(config?: {});
     }
@@ -166,7 +170,7 @@ declare namespace prudence {
     interface Scheduler {
     }
 
-    class QuartzScheduler implements Scheduler {
+    class LocalScheduler implements Scheduler {
         constructor(config?: {});
     }
 

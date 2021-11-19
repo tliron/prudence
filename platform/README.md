@@ -8,7 +8,7 @@ the [plugin example](https://github.com/tliron/prudence/tree/main/examples/plugi
 all works together.
 
 Though you could potentially embed Prudence in your custom Go application, the more common use
-would be to customize the `prudence` command to be bundled with your plugins. That's what the
+would be to customize the `prudence` executable to be bundled with your plugins. That's what the
 [XPrudence](../xprudence/README.md) tool is for, documented separately.
 
 ### A note about versions
