@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/../../scripts/_env"
+. "$HERE/_env"
+
+HTTPS=$(kubectl get service prudence-hello-world --output=jsonpath={.spec.ports[0].nodePort})
+
+curl "https://$NODE:$HTTPS/person/Tal/chores?scope=all" \
+    --silent --insecure \
+    --header 'Accept: text/html' \
+    --header 'Accept-Encoding: gzip' | gunzip

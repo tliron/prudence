@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/../../scripts/_env"
+. "$HERE/_env"
+
+cat "$HERE/hello-world.yaml" | IMAGE=$REMOTE_IMAGE envsubst | kubectl apply "$@" -f -

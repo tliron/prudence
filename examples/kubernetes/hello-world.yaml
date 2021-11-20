@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: prudence-hello-world
+  labels:
+    app.kubernetes.io/name: prudence-hello-world
+    app.kubernetes.io/instance: prudence-hello-world
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/component: examples
+    app.kubernetes.io/part-of: prudence
+    app.kubernetes.io/managed-by: prudence
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prudence-hello-world
+      app.kubernetes.io/instance: prudence-hello-world
+      app.kubernetes.io/version: "1.0"
+      app.kubernetes.io/component: examples
+      app.kubernetes.io/part-of: prudence
+      app.kubernetes.io/managed-by: prudence
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prudence-hello-world
+        app.kubernetes.io/instance: prudence-hello-world
+        app.kubernetes.io/version: "1.0"
+        app.kubernetes.io/component: examples
+        app.kubernetes.io/part-of: prudence
+        app.kubernetes.io/managed-by: prudence
+    spec:
+      containers:
+      - name: main
+        image: $IMAGE
+        command: [ /usr/bin/prudence, run ]
+        args:
+        - /var/prudence/hello-world/start.js
+        - --ncsa=stdout
+        - --argument=secure=true
+        - --argument=cache=distributed
+        - -vv
+        ports:
+        - name: https
+          containerPort: 8080
+          protocol: TCP
+        - name: http
+          containerPort: 8081
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+
+---
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: prudence-hello-world
+  labels:
+    app.kubernetes.io/name: prudence-hello-world
+    app.kubernetes.io/instance: prudence-hello-world
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/component: examples
+    app.kubernetes.io/part-of: prudence
+    app.kubernetes.io/managed-by: prudence
+
+spec:
+  selector:
+    app.kubernetes.io/name: prudence-hello-world
+    app.kubernetes.io/instance: prudence-hello-world
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/component: examples
+    app.kubernetes.io/part-of: prudence
+    app.kubernetes.io/managed-by: prudence
+  type: NodePort
+  ports:
+  - name: https
+    port: 443
+    targetPort: https
+    protocol: TCP
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP

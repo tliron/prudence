@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/../../scripts/_env"
+. "$HERE/_env"
+
+m 'Login to docker.io'
+buildah login docker.io
+
+skopeo delete --tls-verify=false "docker://$REMOTE_IMAGE" || true
+buildah push --tls-verify=false "$LOCAL_IMAGE" "docker://$REMOTE_IMAGE"

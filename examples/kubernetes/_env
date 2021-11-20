@@ -1,0 +1,4 @@
+LOCAL_IMAGE=localhost/prudence-hello-world
+REMOTE_IMAGE=docker.io/tliron/prudence-hello-world
+BASE_IMAGE=registry.fedoraproject.org/fedora:35
+NODE=lab2

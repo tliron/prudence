@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/../../scripts/_env"
+. "$HERE/_env"
+
+HTTPS=$(kubectl get service prudence-hello-world --output=jsonpath={.spec.ports[0].nodePort})
+HTTP=$(kubectl get service prudence-hello-world --output=jsonpath={.spec.ports[1].nodePort})
+
+echo "https://$NODE:$HTTPS"
+echo "http://$NODE:$HTTP"

@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/../../scripts/_env"
+. "$HERE/_env"
+
+CONTAINER_ID=$(buildah from "$BASE_IMAGE")
+#buildah run "$CONTAINER_ID" -- dnf --assumeyes install ansible
+#buildah run "$CONTAINER_ID" -- dnf --assumeyes clean all
+buildah copy "$CONTAINER_ID" "$GOPATH/bin/prudence" /usr/bin/
+buildah copy "$CONTAINER_ID" "$ROOT/examples/hello-world" /var/prudence/hello-world
+#buildah copy "$CONTAINER_ID" "$(which helm)" /usr/bin/
+buildah config \
+	--entrypoint /usr/bin/prudence \
+	--author Prudence \
+	--created-by buildah \
+	"$CONTAINER_ID"
+buildah commit "$CONTAINER_ID" "$LOCAL_IMAGE"
