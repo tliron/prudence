@@ -50,7 +50,7 @@ func main() {
 	router.AddRoute(route)
 
 	server := rest.NewServer("")
-	server.Address = "localhost:8080"
+	server.Address = ":8080"
 	server.Handler = router.Handle
 
 	err = server.Start()

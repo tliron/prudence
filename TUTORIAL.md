@@ -27,9 +27,7 @@ The Server
 Our starting point is the `prudence run` command, which runs JavaScript code in Prudence's
 environment. So, let's create a `start.js` file with the simplest code possible:
 
-    prudence.start(new prudence.Server({
-        address: 'localhost:8080'
-    }));
+    prudence.start(new prudence.Server({address: ':8080'}));
 
 And then run it from a terminal:
 
@@ -63,7 +61,7 @@ support for HTTP/2) you need to set the certificate and key PEMs, either literal
 loading them from a file:
 
     prudence.start(new prudence.Server({
-        address: 'localhost:8080',
+        address: ':8080',
         secure: {
             certificate: prudence.loadString('secret/crt.pem'),
             key: prudence.loadString('secret/key.pem')
@@ -87,7 +85,7 @@ If you have multiple servers you can use a "ncsa" property that will be added as
 the `--ncsa` filename:
 
     prudence.start(new prudence.Server({
-        address: 'localhost:8080',
+        address: ':8080',
         ncsa: 'main'
     }));
 
@@ -123,7 +121,7 @@ references are relative to the current JavaScript file's directory.
 Then, edit your `start.js` with this code:
 
     prudence.start(new prudence.Server({
-        address: 'localhost:8080',
+        address: ':8080',
         handler: require('./myapp/router').handler
     }));
 

@@ -12,7 +12,7 @@ olricd:
   bindPort: 3320
 
   # Default Serializer implementation uses gob for encoding/decoding.
-  serializer: gob # gob is required by Prudence
+  serializer: gob # PRUDENCE: only "gob" is supported
 
   # KeepAlivePeriod denotes whether the operating system should send
   # keep-alive messages on the connection.
@@ -123,7 +123,7 @@ logging:
 
   # Default LogLevel is DEBUG. Available levels: "DEBUG", "WARN", "ERROR", "INFO"
   level: DEBUG
-  output: stderr
+  #output: stderr # PRUDENCE: ignored
 
 memberlist:
   environment: local

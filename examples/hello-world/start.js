@@ -31,7 +31,7 @@ prudence.schedule('1/10 * * * * *', function() {
 
 prudence.start([
     new prudence.Server({
-        address: 'localhost:8080',
+        address: ':8080',
         handler: require('./myapp/router').handler,
         secure: (prudence.arguments.secure === 'true') ? {} : null, // an empty object will generate a self-signed certificate
         /* Full "secure" example:
@@ -43,7 +43,7 @@ prudence.start([
         ncsa: '8080' // only used when the "--ncsa" flag is set
     }),
     new prudence.Server({
-        address: 'localhost:8081',
+        address: ':8081',
         ncsa: '8081',
         handler: require('./myapp/router').handler
     })
