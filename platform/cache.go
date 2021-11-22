@@ -151,6 +151,34 @@ func (self *CachedRepresentation) GetBody(encoding EncodingType) ([]byte, bool) 
 	}
 }
 
+func (self *CachedRepresentation) GetHeadersSize() int {
+	var size int
+	for _, headers := range self.Headers {
+		for _, header := range headers {
+			size += len(header)
+		}
+	}
+	return size
+}
+
+func (self *CachedRepresentation) GetBodySize() int {
+	var size int
+	for _, body := range self.Body {
+		size += len(body)
+	}
+	return size
+}
+
+func (self *CachedRepresentation) GetSize() int {
+	var size int
+	for _, group := range self.Groups {
+		size += len(group)
+	}
+	size += self.GetHeadersSize()
+	size += self.GetBodySize()
+	return size
+}
+
 func (self *CachedRepresentation) Update(key CacheKey) {
 	if cacheBackend := GetCacheBackend(); cacheBackend != nil {
 		cacheBackend.StoreRepresentation(key, self)

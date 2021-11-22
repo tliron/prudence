@@ -159,6 +159,10 @@ declare namespace prudence {
         constructor(config?: {});
     }
 
+    class MapCache implements CacheBackend {
+        constructor(config?: {});
+    }
+
     class MemoryCache implements CacheBackend {
         constructor(config?: {});
     }
