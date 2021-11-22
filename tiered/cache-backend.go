@@ -45,9 +45,14 @@ func CreateTieredCacheBackend(config ard.StringMap, context *js.Context) (interf
 
 // platform.CacheBackend interface
 func (self *TieredCacheBackend) LoadRepresentation(key platform.CacheKey) (*platform.CachedRepresentation, bool) {
-	for _, cacheBackend := range self.cacheBackends {
-		if representation, ok := cacheBackend.LoadRepresentation(key); ok {
-			return representation, true
+	for index, cacheBackend := range self.cacheBackends {
+		if cached, ok := cacheBackend.LoadRepresentation(key); ok {
+			// Store in previous tiers
+			for i := 0; i < index; i++ {
+				self.cacheBackends[i].StoreRepresentation(key, cached)
+			}
+
+			return cached, true
 		}
 	}
 	return nil, false

@@ -218,9 +218,7 @@ func (self *Server) getNcsaLogger() (*requestlog.NCSALogger, error) {
 
 		default:
 			if file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600); err == nil {
-				util.OnExit(func() {
-					file.Close()
-				})
+				util.OnExitError(file.Close)
 				writer = file
 			} else {
 				return nil, err

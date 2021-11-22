@@ -139,8 +139,8 @@ func GetWorkDirectory() string {
 	directory, err := os.MkdirTemp("", "xprudence-")
 	util.FailOnError(err)
 	log.Infof("created work directory %q", directory)
-	util.OnExit(func() {
-		os.RemoveAll(directory)
+	util.OnExitError(func() error {
+		return os.RemoveAll(directory)
 	})
 	return directory
 }

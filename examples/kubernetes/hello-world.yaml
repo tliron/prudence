@@ -31,9 +31,11 @@ spec:
         app.kubernetes.io/part-of: prudence
         app.kubernetes.io/managed-by: prudence
     spec:
+      serviceAccountName: prudence
       containers:
       - name: main
         image: $IMAGE
+        imagePullPolicy: Always
         command: [ /usr/bin/prudence, run ]
         args:
         - /var/prudence/hello-world/start.js
@@ -48,6 +50,9 @@ spec:
         - name: http
           containerPort: 8081
           protocol: TCP
+        - name: gossip
+          containerPort: 7946
+          protocol: UDP # and ad-hoc TCP
         readinessProbe:
           httpGet:
             path: /
@@ -86,3 +91,54 @@ spec:
     port: 80
     targetPort: http
     protocol: TCP
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+
+metadata:
+  name: prudence
+  labels:
+    app.kubernetes.io/name: prudence-hello-world
+    app.kubernetes.io/instance: prudence-hello-world
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/component: examples
+    app.kubernetes.io/part-of: prudence
+    app.kubernetes.io/managed-by: prudence
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+
+metadata:
+  name: prudence
+  labels:
+    app.kubernetes.io/name: prudence-hello-world
+    app.kubernetes.io/instance: prudence-hello-world
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/component: examples
+    app.kubernetes.io/part-of: prudence
+    app.kubernetes.io/managed-by: prudence
+
+rules:
+- apiGroups: ['']
+  resources: [ pods ]
+  verbs: [ get , list ]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+
+metadata:
+  name: prudence
+
+subjects:
+- kind: ServiceAccount
+  name: prudence
+roleRef:
+  kind: Role
+  name: prudence
+  apiGroup: rbac.authorization.k8s.io

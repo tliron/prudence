@@ -26,9 +26,7 @@ func (self API) Print(message string) {
 
 func (self API) Badger(path string) (*badger.DB, error) {
 	if db, err := badger.Open(badger.DefaultOptions(path)); err == nil {
-		util.OnExit(func() {
-			db.Close()
-		})
+		util.OnExitError(db.Close)
 		return db, nil
 	} else {
 		return nil, err

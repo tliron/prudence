@@ -43,9 +43,9 @@ Highlights
   JavaScript or TypeScript for your application. This is the right balance between power and productivity.
 * Or use [JavaScript Templates (JST)](jst/README.md) to generate HTML by combining design with short
   code scriptlets. And there's sugar.
-* Pluggable server-side cache backends. Included is a powerful distributed memory cache based on
-  [Olric](https://olric.io/). Or choose [Memcached](https://memcached.org/), [Redis](https://redis.io/),
-  etc.
+* Pluggable server-side cache backends. Included is a powerful distributed memory cache that is
+  Kuberentes-aware. Or choose backends for [Memcached](https://memcached.org/),
+  [Redis](https://redis.io/), etc. Go nuts.
 * Schedule jobs using a crontab-like pattern.
 * [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you
   to create custom builds of Prudence bundled with the plugins and APIs you need. Even when extended in

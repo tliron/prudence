@@ -10,8 +10,6 @@ CONTAINER_ID=$(buildah from "$BASE_IMAGE")
 #buildah run "$CONTAINER_ID" -- dnf --assumeyes clean all
 buildah copy "$CONTAINER_ID" "$GOPATH/bin/prudence" /usr/bin/
 buildah copy "$CONTAINER_ID" "$ROOT/examples/hello-world" /var/prudence/hello-world
-buildah copy "$CONTAINER_ID" "$HERE/cache.yaml" /var/prudence/hello-world/cache.yaml
-buildah copy "$CONTAINER_ID" "$HERE/dist/olric-cloud-plugin/olric-cloud-plugin.so" /usr/lib64/olric-cloud-plugin.so
 # TODO: add Olric CLI tools
 #buildah copy "$CONTAINER_ID" "$(which helm)" /usr/bin/
 buildah config \

@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/../../scripts/_env"
+
+"$ROOT/scripts/build"
+"$HERE/build-container-image"
+"$HERE/publish-container-image"
+kubectl delete deployment prudence-hello-world || true
+kubectl delete service prudence-hello-world || true
+"$HERE/deploy"

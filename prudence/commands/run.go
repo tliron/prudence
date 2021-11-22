@@ -40,11 +40,7 @@ var runCommand = &cobra.Command{
 		util.OnExit(platform.Stop)
 
 		urlContext := urlpkg.NewContext()
-		util.OnExit(func() {
-			if err := urlContext.Release(); err != nil {
-				log.Errorf("%s", err.Error())
-			}
-		})
+		util.OnExitError(urlContext.Release)
 
 		var path_ []urlpkg.URL
 
@@ -64,11 +60,7 @@ var runCommand = &cobra.Command{
 		parsePaths(paths)
 
 		environment := js.NewEnvironment(urlContext, path_, arguments)
-		util.OnExit(func() {
-			if err := environment.Release(); err != nil {
-				log.Errorf("%s", err.Error())
-			}
-		})
+		util.OnExitError(environment.Release)
 
 		log.Noticef("Prudence version: %s", version.GitVersion)
 

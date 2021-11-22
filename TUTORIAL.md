@@ -595,5 +595,5 @@ Note that you can call "prudence.schedule" at any time, not just in `start.js`.
 Next Steps
 ----------
 
-You're now an expert on all the basics. It is strongly recommended to continue to the
-[caching guide](CACHING.md).
+You're now an expert on all the basics and also very smart and attractive. It is recommended
+to continue to the [caching guide](CACHING.md).

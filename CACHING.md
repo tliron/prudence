@@ -1,7 +1,22 @@
-Prudence: Caching Guide
-=======================
+Prudence: Advanced Caching Guide
+================================
 
-Make sure you're up-to-speed with [the basics](TUTORIAL.md) first!
+WARNING ZONE! RED ALERT!
+
+Make sure you're up-to-speed with [the basics](TUTORIAL.md) first.
+
+We're about to add quite a bit of complexity here, and that's the reason we separated this into
+a separate tutorial. To be clear: everything you learned in the tutorial is good and proper for
+making web sites and RESTful services. You can use "present", "erase", "modify", and "call", and
+cover all the expected functionality.
+
+This guide is not about functionality. It's about optimizing for the massive scale. So, be warned:
+if you're unfamiliar with this problem domain, there's a bit of a learning curve. And, again, no
+need to reach for stars immediately. Always remember never to prematurely optimize: if your software
+is already working well then there's no reason to change it. Optimizations due come with costs and
+the overhead required by caching might even do more harm than good.
+
+OK, so now that you know what this guide is about, let's dig into it.
 
 Table of Contents:
 
@@ -12,7 +27,7 @@ Table of Contents:
 Server-Side Caching
 -------------------
 
-Server-side caching is extremely important for real-world web sites. Even a one-second
+Server-side caching is extremely important for high-traffic web sites. Even a one-second
 cache on your pages can ensure that you'll be able to handle sudden spikes in usage without
 hammering your backend.
 
@@ -22,16 +37,16 @@ server:
     prudence.setCache(new prudence.MemoryCache());
 
 This in-memory cache will suffice for testing and can also be great for smaller web
-sites. However, large applications will likely need a distributed cache backend. Included
-in Prudence is a powerful distributed memory cache based on
-[Olric](https://olric.io/):
+sites. However, high-availability applications will likely need a distributed cache backend.
+Included in Prudence is a powerful distributed memory cache:
 
-    prudence.setCache(new prudence.DistributedCache({load: './cache.yaml'}));
+    prudence.setCache(new prudence.DistributedCache({local: new prudence.MemoryCache()}));
 
-It is also possible to set up Prudence with tiered caching, so that the faster in-memory
-cache will be preferred to the distributed one:
+It is also possible to set up Prudence with tiered caching, so that a cheaper in-memory
+cache will be preferred to a costly one. This is often preferrable when using a persistent
+cache that saves data to storage, which is orders of magnitude slower than memory:
 
-    prudence.setCache(new prudence.TieredCache({caches: [new prudence.MemoryCache(), new prudence.DistributedCache({load: './cache.yaml'})]}));
+    prudence.setCache(new prudence.TieredCache({caches: [new prudence.MemoryCache(), new prudence.MyPersistentCache()]}));
 
 ### Cache Duration
 
