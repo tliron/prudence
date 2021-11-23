@@ -18,6 +18,24 @@ a zillion times more fun than competing products from leading brand names.
 [![Download](assets/media/download.png "Download")](https://github.com/tliron/prudence/releases)
 
 
+Highlights
+----------
+
+* A triple-phase representation process allows for composable, fine-grained, associative control over
+  server-side and client-side caching. Reap the full benefits of idempotency in RESTful network
+  architectures.
+* Prudence's core is written in compiled Go for reliability and performance but allows for interpreted
+  JavaScript or TypeScript for your application. This is the right balance between power and productivity.
+* Or use [JavaScript Templates (JST)](jst/README.md) to generate HTML by combining design with short
+  code scriptlets. And there's sugar.
+* Pluggable server-side cache backends, such the included Kuberentes-aware distributed memory cache.
+  Or choose backends for [Memcached](https://memcached.org/), [Redis](https://redis.io/), etc.
+* Schedule jobs using a crontab-like pattern.
+* [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you
+  to create custom builds of Prudence bundled with the plugins and APIs you need. Even when extended in
+  this way Prudence still remains a single, compact executable file.
+
+
 Documentation
 -------------
 
@@ -31,22 +49,3 @@ Documentation
 * [xprudence](xprudence/README.md)
 * [Go API](https://pkg.go.dev/github.com/tliron/prudence)
 * [FAQ](FAQ.md)
-
-
-Highlights
-----------
-
-* A triple-phase representation process allows for composable, fine-grained, associative control over
-  server-side and client-side caching. Reap the full benefits of idempotency in RESTful network
-  architectures.
-* Prudence's core is written in compiled Go for reliability and performance but allows for interpreted
-  JavaScript or TypeScript for your application. This is the right balance between power and productivity.
-* Or use [JavaScript Templates (JST)](jst/README.md) to generate HTML by combining design with short
-  code scriptlets. And there's sugar.
-* Pluggable server-side cache backends. Included is a powerful distributed memory cache that is
-  Kuberentes-aware. Or choose backends for [Memcached](https://memcached.org/),
-  [Redis](https://redis.io/), etc. Go nuts.
-* Schedule jobs using a crontab-like pattern.
-* [Extensible](platform/README.md) via the [xprudence tool](xprudence/README.md), which allows you
-  to create custom builds of Prudence bundled with the plugins and APIs you need. Even when extended in
-  this way Prudence still remains a single, compact executable file.

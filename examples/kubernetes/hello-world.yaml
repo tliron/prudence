@@ -125,7 +125,7 @@ metadata:
 rules:
 - apiGroups: ['']
   resources: [ pods ]
-  verbs: [ get , list ]
+  verbs: [ get, list ]
 
 ---
 

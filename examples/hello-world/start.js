@@ -9,10 +9,21 @@ for (let name in prudence.arguments) {
 // (Though note that the in-memory cache is of course insufficient for large
 // and/or distributed applications)
 
-if (prudence.arguments.cache === 'tiered')
-    prudence.setCache(new prudence.TieredCache({caches: [new prudence.MemoryCache(), new prudence.DistributedCache({load: './cache.yaml'})]}));
-else if (prudence.arguments.cache === 'distributed')
-    prudence.setCache(new prudence.DistributedCache({load: './cache.yaml'}));
+if (prudence.arguments.cache === 'distributed')
+    prudence.setCache(new prudence.DistributedCache({
+        local: new prudence.MemoryCache(),
+        kubernetes: {
+            namespace: 'workspace',
+            selector: 'app.kubernetes.io/instance=prudence-hello-world'
+        }
+    }));
+else if (prudence.arguments.cache === 'tiered')
+    prudence.setCache(new prudence.TieredCache({
+        caches: [
+            new prudence.MemoryCache(), // first tier
+            new prudence.MapCache()     // second tier
+        ]
+    }));
 else
     prudence.setCache(new prudence.MemoryCache());
 

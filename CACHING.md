@@ -5,7 +5,7 @@ WARNING ZONE! RED ALERT!
 
 Make sure you're up-to-speed with [the basics](TUTORIAL.md) first.
 
-We're about to add quite a bit of complexity here, and that's the reason we separated this into
+We're about to add quite a bit of complexity here, and that's the reason we've separated this into
 a separate tutorial. To be clear: everything you learned in the tutorial is good and proper for
 making web sites and RESTful services. You can use "present", "erase", "modify", and "call", and
 cover all the expected functionality.
@@ -13,8 +13,8 @@ cover all the expected functionality.
 This guide is not about functionality. It's about optimizing for the massive scale. So, be warned:
 if you're unfamiliar with this problem domain, there's a bit of a learning curve. And, again, no
 need to reach for stars immediately. Always remember never to prematurely optimize: if your software
-is already working well then there's no reason to change it. Optimizations due come with costs and
-the overhead required by caching might even do more harm than good.
+is already working well then there's no reason to change it. Optimizations always come with costs and
+the overhead required by caching might even do more harm than good, especially if applied blindly.
 
 OK, so now that you know what this guide is about, let's dig into it.
 
@@ -38,15 +38,27 @@ server:
 
 This in-memory cache will suffice for testing and can also be great for smaller web
 sites. However, high-availability applications will likely need a distributed cache backend.
-Included in Prudence is a powerful distributed memory cache:
+Included in Prudence is a simple but powerful distributed memory cache. Here is an example of
+setting it up with automatic Kubernetes in-cluster discovery:
 
-    prudence.setCache(new prudence.DistributedCache({local: new prudence.MemoryCache()}));
+    prudence.setCache(new prudence.DistributedCache({
+        local: new prudence.MemoryCache(),
+        kubernetes: {
+            namespace: 'workspace',
+            selector: 'app.kubernetes.io/instance=prudence-hello-world'
+        }
+    }));
 
-It is also possible to set up Prudence with tiered caching, so that a cheaper in-memory
-cache will be preferred to a costly one. This is often preferrable when using a persistent
-cache that saves data to storage, which is orders of magnitude slower than memory:
+It is also possible to set up Prudence with tiered caching, so that a cheaper cache will be
+preferred to a costly one. This is a best practice when using a persistent cache that saves data
+to storage, which is orders of magnitude slower than memory:
 
-    prudence.setCache(new prudence.TieredCache({caches: [new prudence.MemoryCache(), new prudence.MyPersistentCache()]}));
+    prudence.setCache(new prudence.TieredCache({
+        caches: [
+            new prudence.MemoryCache(),      // first tier
+            new prudence.MyPersistentCache() // second tier
+        ]
+    }));
 
 ### Cache Duration
 

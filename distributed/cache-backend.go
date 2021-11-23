@@ -1,20 +1,21 @@
 package distributed
 
+// See: https://github.com/asim/memberlist/blob/master/memberlist.go
+
 // https://github.com/iwanbk/bcache
-// https://github.com/hashicorp/memberlist
 // https://github.com/mailgun/groupcache
 // https://github.com/iwanbk/rimcu
 
-// See: https://github.com/asim/memberlist/blob/master/memberlist.go
-
 import (
 	contextpkg "context"
+	"fmt"
 	"os"
 	"time"
 
 	"github.com/hashicorp/memberlist"
 	"github.com/tliron/kutil/ard"
 	"github.com/tliron/kutil/js"
+	"github.com/tliron/kutil/kubernetes"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -27,9 +28,11 @@ func init() {
 //
 
 type DistributedCacheBackend struct {
-	local   platform.CacheBackend
-	cluster *memberlist.Memberlist
-	queue   *memberlist.TransmitLimitedQueue
+	local               platform.CacheBackend
+	cluster             *memberlist.Memberlist
+	queue               *memberlist.TransmitLimitedQueue
+	kubernetesConfig    *KubernetesConfig
+	kubernetesDiscovery *kubernetes.MemberlistPodDiscovery
 }
 
 func NewDistributedCacheBackend() *DistributedCacheBackend {
@@ -40,10 +43,17 @@ func NewDistributedCacheBackend() *DistributedCacheBackend {
 func CreateDistributedCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
 	self := NewDistributedCacheBackend()
 
-	if b, err := platform.Create(ard.StringMap{"type": "MemoryCache"}, context); err == nil {
-		self.local = b.(platform.CacheBackend)
-	} else {
-		return nil, err
+	config_ := ard.NewNode(config)
+	local := config_.Get("local").Data
+	var ok bool
+	if self.local, ok = local.(platform.CacheBackend); !ok {
+		return nil, fmt.Errorf("not a CacheBackend: %T", local)
+	}
+
+	if kubernetes_ := config_.Get("kubernetes"); kubernetes_.Data != nil {
+		self.kubernetesConfig = new(KubernetesConfig)
+		self.kubernetesConfig.Namespace, _ = kubernetes_.Get("namespace").String(false)
+		self.kubernetesConfig.Selector, _ = kubernetes_.Get("selector").String(false)
 	}
 
 	self.queue = &memberlist.TransmitLimitedQueue{
@@ -51,13 +61,13 @@ func CreateDistributedCacheBackend(config ard.StringMap, context *js.Context) (i
 		RetransmitMult: 3,
 	}
 
-	config_ := memberlist.DefaultLocalConfig()
-	config_.Name, _ = os.Hostname()
-	config_.Delegate = self
-	config_.Events = EventsDebug{}
+	config__ := memberlist.DefaultLocalConfig()
+	config__.Name, _ = os.Hostname()
+	config__.Delegate = self
+	config__.Events = EventsDebug{}
 
 	var err error
-	if self.cluster, err = memberlist.Create(config_); err == nil {
+	if self.cluster, err = memberlist.Create(config__); err == nil {
 		return self, nil
 	} else {
 		return nil, err
@@ -89,16 +99,25 @@ func (self *DistributedCacheBackend) DeleteGroup(name platform.CacheKey) {
 
 // platform.Startable interface
 func (self *DistributedCacheBackend) Start() error {
-	node := self.cluster.LocalNode()
-	nodes := DiscoverKubernetesNodes()
-	log.Infof("starting distributed cache on %s:%d: %v", node.Addr, node.Port, nodes)
-	_, err := self.cluster.Join(nodes)
-	return err
+	if self.kubernetesConfig != nil {
+		node := self.cluster.LocalNode()
+		log.Infof("starting Kubernetes discovery from %s:%d", node.Addr, node.Port)
+
+		var err error
+		self.kubernetesDiscovery, err = kubernetes.StartMemberlistPodDiscovery(self.cluster, self.kubernetesConfig.Namespace, self.kubernetesConfig.Selector, 10, log)
+		return err
+	}
+
+	return nil
 }
 
 // platform.Startable interface
 func (self *DistributedCacheBackend) Stop(stopContext contextpkg.Context) error {
 	log.Info("stopping distributed cache")
+	if self.kubernetesDiscovery != nil {
+		log.Info("stopping Kubernetes discovery")
+		self.kubernetesDiscovery.Stop()
+	}
 	err := self.cluster.Leave(time.Second * 5)
 	self.cluster.Shutdown()
 	return err
@@ -142,4 +161,13 @@ func (self *DistributedCacheBackend) MergeRemoteState(buf []byte, join bool) {
 
 func (self *DistributedCacheBackend) numNodes() int {
 	return self.cluster.NumMembers()
+}
+
+//
+// KubernetesConfig
+//
+
+type KubernetesConfig struct {
+	Namespace string
+	Selector  string
 }
