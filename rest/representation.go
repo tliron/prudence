@@ -306,8 +306,9 @@ func (self *Representation) call(context *Context) {
 //
 
 type RepresentationEntry struct {
-	ContentType    ContentType
 	Representation *Representation
+	ContentType    ContentType
+	Language       Language
 }
 
 type Representations struct {
@@ -321,16 +322,26 @@ func CreateRepresentations(config ard.Value, context *js.Context) (*Representati
 		representation_ := ard.NewNode(representation)
 		if representation__, err := CreateRepresentation(representation_, context); err == nil {
 			contentTypes := platform.AsStringList(representation_.Get("contentTypes").Data)
-			if len(contentTypes) > 0 {
-				for _, contentType := range contentTypes {
-					self.Add(NewContentType(contentType), representation__)
-				}
-			} else {
-				self.Add(ContentType{}, representation__)
+			if len(contentTypes) == 0 {
+				contentTypes = []string{""}
 			}
-			// TODO:
-			//charSets := asStringList(representation_.Get("charSets").Data)
-			//languages := asStringList(representation_.Get("languages").Data)
+
+			languages := platform.AsStringList(representation_.Get("languages").Data)
+			if len(languages) == 0 {
+				languages = []string{""}
+			}
+
+			// The order signifies the *server* matching preferences
+			for _, contentType := range contentTypes {
+				contentType_ := NewContentType(contentType)
+				for _, language := range languages {
+					self.Entries = append(self.Entries, &RepresentationEntry{
+						Representation: representation__,
+						ContentType:    contentType_,
+						Language:       NewLanguage(language),
+					})
+				}
+			}
 		} else {
 			return nil, err
 		}
@@ -339,34 +350,56 @@ func CreateRepresentations(config ard.Value, context *js.Context) (*Representati
 	return &self, nil
 }
 
-func (self *Representations) Add(contentType ContentType, representation *Representation) {
-	self.Entries = append(self.Entries, &RepresentationEntry{
-		ContentType:    contentType,
-		Representation: representation,
-	})
-}
+func (self *Representations) NegotiateBest(context *Context) (*Representation, string, string, bool) {
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation
 
-func (self *Representations) NegotiateBest(context *Context) (*Representation, string, bool) {
 	contentTypePreferences := ParseContentTypePreferences(context.Request.Header.Get(HeaderAccept))
-	for _, contentTypePreference := range contentTypePreferences {
-		for _, entry := range self.Entries {
-			if contentTypePreference.Matches(entry.ContentType, false) {
-				return entry.Representation, entry.ContentType.Name, true
+	languagePreferences := ParseLanguagePreferences(context.Request.Header.Get(HeaderAcceptLanguage))
+
+	if len(languagePreferences) > 0 {
+		// Try exact match of contentType and language
+		for _, contentTypePreference := range contentTypePreferences {
+			for _, languagePreference := range languagePreferences {
+				for _, entry := range self.Entries {
+					if contentTypePreference.Matches(entry.ContentType) && languagePreference.Matches(entry.Language, false) {
+						return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+					}
+				}
+			}
+		}
+
+		// Try exact match of contentType and soft match of language
+		for _, contentTypePreference := range contentTypePreferences {
+			for _, languagePreference := range languagePreferences {
+				for _, entry := range self.Entries {
+					if contentTypePreference.Matches(entry.ContentType) && languagePreference.Matches(entry.Language, true) {
+						return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+					}
+				}
 			}
 		}
 	}
 
-	// Default representation
-	for _, entry := range self.Entries {
-		if entry.ContentType.Name == "" {
-			return entry.Representation, "", true
+	// Try exact match of contentType
+	for _, contentTypePreference := range contentTypePreferences {
+		for _, entry := range self.Entries {
+			if contentTypePreference.Matches(entry.ContentType) {
+				return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+			}
 		}
 	}
 
-	// Any representation
+	// Try default representation (no contentType)
 	for _, entry := range self.Entries {
-		return entry.Representation, entry.ContentType.Name, true
+		if entry.ContentType.Name == "" {
+			return entry.Representation, "", "", true
+		}
 	}
 
-	return nil, "", false
+	// Just pick the first one
+	for _, entry := range self.Entries {
+		return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+	}
+
+	return nil, "", "", false
 }

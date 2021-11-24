@@ -16,6 +16,8 @@ function c () {
     fi
 }
 
+c files/hello.txt
+
 c person/Tal/chores \
     --request PUT \
     --data '["cleaning", "shopping", "cooking"]'

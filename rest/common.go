@@ -11,6 +11,7 @@ var log = logging.GetLogger("prudence.rest")
 const (
 	HeaderAccept          = "Accept"
 	HeaderAcceptEncoding  = "Accept-Encoding"
+	HeaderAcceptLanguage  = "Accept-Language"
 	HeaderCacheControl    = "Cache-Control"
 	HeaderContentEncoding = "Content-Encoding"
 	HeaderContentType     = "Content-Type"

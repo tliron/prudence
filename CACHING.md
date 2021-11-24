@@ -1,5 +1,5 @@
-Prudence: Advanced Caching Guide
-================================
+Prudence: Caching Guide (Advanced Tutorial)
+===========================================
 
 WARNING ZONE! RED ALERT!
 

@@ -479,10 +479,10 @@ Let's start simple and add another representation to our `resource.js`:
         facets: {
             paths: '{name}',
             representations: [{
+                functions: bind('./json')
+            }, {
                 contentTypes: 'text/html',
                 functions: bind('./html.jst')
-            }, {
-                functions: bind('./json')
             }]
         }
     });

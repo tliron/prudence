@@ -57,9 +57,10 @@ func CreateFacet(config ard.StringMap, context *js.Context) (interface{}, error)
 // Handler interface
 // HandleFunc signature
 func (self *Facet) Handle(context *Context) bool {
-	if representation, contentType, ok := self.Representations.NegotiateBest(context); ok {
+	if representation, contentType, language, ok := self.Representations.NegotiateBest(context); ok {
 		context = context.Copy()
 		context.Response.ContentType = contentType
+		context.Response.Language = language
 		return representation.Handle(context)
 	} else {
 		return false

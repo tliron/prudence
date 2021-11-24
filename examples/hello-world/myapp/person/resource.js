@@ -17,6 +17,9 @@ exports.handler = new prudence.Resource({
         name: 'chores',
         paths: '{name}/chores',
         representations: [{
+            // Default representation (JSON)
+            functions: bind('./chores/json', 'Chores')
+        }, {
             // HTML representation using JST
             contentTypes: 'text/html', // can also be a list
             languages: [ 'en', 'he' ], // can be a list or a single language
@@ -26,9 +29,6 @@ exports.handler = new prudence.Resource({
                 const cachePrefix = backend.getCachePrefix(context.variables.name);
                 context.cacheGroups.push(cachePrefix);
             }
-        }, {
-            // Default representation (JSON)
-            functions: bind('./chores/json', 'Chores')
         }]
     }]
 });

@@ -63,19 +63,15 @@ func ParseContentTypePreference(text string) (ContentTypePreference, error) {
 	return self, nil
 }
 
-func (self *ContentTypePreference) Matches(contentType ContentType, matchWildcard bool) bool {
+func (self *ContentTypePreference) Matches(contentType ContentType) bool {
 	typeWildcard := self.Type == "*"
 	subTypeWildcard := self.SubType == "*"
 
-	if !matchWildcard && typeWildcard && subTypeWildcard {
+	if !typeWildcard && !strings.EqualFold(self.Type, contentType.Type) {
 		return false
 	}
 
-	if !typeWildcard && (self.Type != contentType.Type) {
-		return false
-	}
-
-	if !subTypeWildcard && (self.SubType != contentType.SubType) {
+	if !subTypeWildcard && !strings.EqualFold(self.SubType, contentType.SubType) {
 		return false
 	}
 
