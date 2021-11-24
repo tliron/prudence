@@ -1,7 +1,7 @@
 
 const backend = require('../backend');
 
-exports.chores = {
+exports.Chores = {
     construct: function(context) {
         context.log.info('construct');
         const cachePrefix = backend.getCachePrefix(context.variables.name);
@@ -36,11 +36,11 @@ exports.chores = {
         backend.setChores(context.variables.name, chores);
         prudence.invalidateCacheGroup(backend.getCachePrefix(context.variables.name));
         context.done = true;
-        exports.chores.present(context);
+        exports.Chores.present(context);
     },
 
     call: function(context) {
         context.log.info('call');
-        exports.chores.present(context);
+        exports.Chores.present(context);
     }
 };

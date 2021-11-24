@@ -44,58 +44,60 @@ func CreateRepresentation(node *ard.Node, context *js.Context) (*Representation,
 	//panic(fmt.Sprintf("%v", node.Data))
 	var self Representation
 
-	var get func(name string) (RepresentionFunc, error)
-
-	if functions := node.Get("functions"); functions.Data != nil {
+	var functions *ard.Node
+	functionsContext := context
+	if functions = node.Get("functions"); functions.Data != nil {
+		// Unbind "functions" property if necessary
 		if bind, ok := functions.Data.(js.Bind); ok {
 			var err error
-			if functions.Data, context, err = bind.Unbind(); err != nil {
+			if functions.Data, functionsContext, err = bind.Unbind(); err != nil {
 				return nil, err
 			}
 		}
+	}
 
-		get = func(name string) (RepresentionFunc, error) {
-			if f := functions.Get(name).Data; f != nil {
-				return NewRepresentationFunc(f, context)
-			} else {
-				return nil, nil
+	getFunction := func(name string) (RepresentionFunc, error) {
+		if functions.Data != nil {
+			// Try "functions" property
+			if function := functions.Get(name).Data; function != nil {
+				return NewRepresentationFunc(function, functionsContext)
 			}
 		}
-	} else {
-		// Individual function properties
-		get = func(name string) (RepresentionFunc, error) {
-			if function := node.Get(name).Data; function != nil {
-				if bind, ok := function.(js.Bind); ok {
-					var err error
-					if function, context, err = bind.Unbind(); err != nil {
-						return nil, err
-					}
+
+		// Try individual function properties
+		if function := node.Get(name).Data; function != nil {
+			// Unbind if necessary
+			functionContext := context
+			if bind, ok := function.(js.Bind); ok {
+				var err error
+				if function, functionContext, err = bind.Unbind(); err != nil {
+					return nil, err
 				}
-
-				return NewRepresentationFunc(function, context)
-			} else {
-				return nil, nil
 			}
+
+			return NewRepresentationFunc(function, functionContext)
 		}
+
+		return nil, nil
 	}
 
 	var err error
-	if self.Construct, err = get("construct"); err != nil {
+	if self.Construct, err = getFunction("construct"); err != nil {
 		return nil, err
 	}
-	if self.Describe, err = get("describe"); err != nil {
+	if self.Describe, err = getFunction("describe"); err != nil {
 		return nil, err
 	}
-	if self.Present, err = get("present"); err != nil {
+	if self.Present, err = getFunction("present"); err != nil {
 		return nil, err
 	}
-	if self.Erase, err = get("erase"); err != nil {
+	if self.Erase, err = getFunction("erase"); err != nil {
 		return nil, err
 	}
-	if self.Modify, err = get("modify"); err != nil {
+	if self.Modify, err = getFunction("modify"); err != nil {
 		return nil, err
 	}
-	if self.Call, err = get("call"); err != nil {
+	if self.Call, err = getFunction("call"); err != nil {
 		return nil, err
 	}
 

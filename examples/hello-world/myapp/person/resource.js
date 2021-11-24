@@ -20,10 +20,15 @@ exports.handler = new prudence.Resource({
             // HTML representation using JST
             contentTypes: 'text/html', // can also be a list
             languages: [ 'en', 'he' ], // can be a list or a single language
-            functions: bind('./chores/html.jst')
+            functions: bind('./chores/html.jst'),
+            construct: function(context) {
+                const backend = require('./backend');
+                const cachePrefix = backend.getCachePrefix(context.variables.name);
+                context.cacheGroups.push(cachePrefix);
+            }
         }, {
             // Default representation (JSON)
-            functions: bind('./chores/json', 'chores')
+            functions: bind('./chores/json', 'Chores')
         }]
     }]
 });

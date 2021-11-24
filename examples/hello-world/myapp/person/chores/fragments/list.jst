@@ -1,7 +1,5 @@
 <% 
 const backend = require('../../backend');
-const cachePrefix = backend.getCachePrefix(context.variables.name);
-context.cacheGroups.push(cachePrefix);
 const chores = backend.getPerson(context.variables.name).chores;
 for (let i = 0; i < chores.length; i++) {
 %>
