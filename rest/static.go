@@ -54,37 +54,11 @@ func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error
 func (self *Static) Handle(context *Context) bool {
 	path := filepath.Join(self.Root, context.Path)
 	http.ServeFile(NewResponseWriterWrapper(context), context.Request.Direct, path)
+	//http.ServeFile(context.Response.Direct, context.Request.Direct, path)
 	if context.Response.Status != http.StatusNotFound {
 		context.Response.Bypass = true
 		return true
 	} else {
 		return false
-	}
-}
-
-// https://stackoverflow.com/a/47286697
-
-type ResponseWriterWrapper struct {
-	http.ResponseWriter
-	context *Context
-}
-
-func NewResponseWriterWrapper(context *Context) *ResponseWriterWrapper {
-	return &ResponseWriterWrapper{
-		ResponseWriter: context.Response.Direct,
-		context:        context,
-	}
-}
-
-func (self *ResponseWriterWrapper) WriteHeader(status int) {
-	self.context.Response.Status = status
-	self.ResponseWriter.WriteHeader(status)
-}
-
-func (self *ResponseWriterWrapper) Write(p []byte) (int, error) {
-	if self.context.Response.Status != http.StatusNotFound {
-		return self.ResponseWriter.Write(p)
-	} else {
-		return len(p), nil
 	}
 }

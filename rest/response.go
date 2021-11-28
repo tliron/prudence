@@ -133,3 +133,43 @@ func (self *Response) setLastModified() {
 		self.Header.Set(HeaderLastModified, self.Timestamp.Format(http.TimeFormat))
 	}
 }
+
+//
+// ResponseWriter
+//
+
+// Circumvents the built-in 404 response
+// See: https://stackoverflow.com/a/47286697
+
+type ResponseWriterWrapper struct {
+	http.ResponseWriter
+	context *Context
+}
+
+func NewResponseWriterWrapper(context *Context) *ResponseWriterWrapper {
+	return &ResponseWriterWrapper{
+		ResponseWriter: context.Response.Direct,
+		context:        context,
+	}
+}
+
+// http.ResponseWriter interface
+func (self *ResponseWriterWrapper) WriteHeader(status int) {
+	// Store response in context
+	self.context.Response.Status = status
+
+	// Don't write the 404 header
+	if status != http.StatusNotFound {
+		self.ResponseWriter.WriteHeader(status)
+	}
+}
+
+// http.ResponseWriter interface
+func (self *ResponseWriterWrapper) Write(p []byte) (int, error) {
+	if self.context.Response.Status != http.StatusNotFound {
+		return self.ResponseWriter.Write(p)
+	} else {
+		// Don't write the 404 response but pretend that we did
+		return len(p), nil
+	}
+}
