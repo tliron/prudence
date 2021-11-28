@@ -54,7 +54,7 @@ using filesystem services. To turn this feature off run Prudence with the `--wat
 Note that restarting the server(s) does *not* delete any cached representations, even 
 if you're using the in-memory cache backend.
 
-### TLS
+### Secure Server
 
 By default the server is unencrypted HTTP/1.1. To secure the connection ("https:" with
 support for HTTP/2) you need to set the certificate and key PEMs, either literally or by
@@ -68,7 +68,7 @@ loading them from a file:
         }
     }));
 
-For testing you can set `secure: {}` to automatically create an self-signed certificate.
+For testing you can set `secure: {}` to automatically create a self-signed certificate.
 To see it in the terminal:
 
     curl --insecure https://localhost:8080 -v
@@ -86,7 +86,7 @@ the `--ncsa` filename:
 
     prudence.start(new prudence.Server({
         address: ':8080',
-        ncsa: 'main'
+        ncsaLogFilePrefix: 'main-'
     }));
 
 We have a server running. Now, let's add an application!
@@ -214,6 +214,13 @@ The `rewrite.js` file:
         }
     };
 
+We can also go ahead and change our `start.js` to also use "bind":
+
+    prudence.start(new prudence.Server({
+        address: ':8080',
+        handler: bind('./myapp/router', 'handler')
+    }));
+
 Why is this better? And what is "bind"?
 
 ### "bind"
@@ -228,7 +235,8 @@ because Prudence will have to switch to JavaScript's single-threaded execution e
 will have have to wait in line to be handled.
 
 Note that you do not have to use "bind" for Prudence's built-in types, such as "Resource" and
-"Router". It is only necessary for JavaScript code.
+"Router". It is only necessary for JavaScript code. Still, it's good practice to use "bind" for all
+handlers.
 
 One consequence of "bind" is that it creates a new execution environment for the bound code. Bound
 code will thus not share the same JavaScript globals as other code. To get around this divide you
@@ -271,6 +279,14 @@ with all facets making use of the same basic state.
 
 You'll notice that we're using "bind" again, this time without the second argument, which will
 bind *all* the exported functions.
+
+In this example we're keeping the directory structure simple, but a general good practice for
+large projects is to build a directory structure like so:
+
+Host (servers) -> Apps (routers) -> Resources -> Facets -> Representations
+
+Of course, it's up to you. You can even get away with creating an entire Prudence application in
+a single JavaScript file!
 
 ### "present"
 
@@ -520,8 +536,10 @@ For more JST sugar see the [JST documentation](jst/README.md). It is even possib
 [extend](platform/README.md#jst-sugar) JST with your own custom sugar.
 
 Behind the scenes the the entire JST file is translated into JavaScript code and wrapped
-in an exported "present" function, allowing it to be used with "require" in the same way we
-hooked `json.js`.
+in an exported "present" function, allowing it to be used with "bind" in the same way we
+hooked `json.js`. Note that can also refer to that "present" function directly:
+
+    bind('./html.jst', 'present')
 
 If you now check the [`http://localhost:8080/person/linus`](http://localhost:8080/person/linus)
 URL in your web browser, it will indeed default to this HTML representation, because that's
@@ -533,7 +551,7 @@ JST also makes it easy to create reusable page templates by capturing content an
 representations. For example, here's a `html.jst`:
 
     <%! 'body' %>
-        This is the body
+        This is the body captured into context variable 'body'
     <%!!%>
     <%& 'template.jst' %>
 

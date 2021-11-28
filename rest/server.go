@@ -66,7 +66,7 @@ func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error
 	}
 	self.Certificate, _ = secure.Get("certificate").String(true)
 	self.Key, _ = secure.Get("key").String(true)
-	self.NCSAPrefix, _ = config_.Get("ncsa").String(true)
+	self.NCSAPrefix, _ = config_.Get("ncsaLogFilePrefix").String(true)
 	self.Debug, _ = config_.Get("debug").Boolean(false)
 	if handler := config_.Get("handler").Data; handler != nil {
 		var err error

@@ -1,12 +1,12 @@
 
 const backend = require('../backend');
+const common = require('../common');
 
 exports.Chores = {
     construct: function(context) {
         context.log.info('construct');
-        const cachePrefix = backend.getCachePrefix(context.variables.name);
-        context.cacheGroups.push(cachePrefix);
-        context.cacheKey = cachePrefix + '.chores';
+        common.addCacheGroup(context);
+        context.cacheKey = common.getCachePrefix(context) + '.chores';
         context.response.contentType = 'application/json';
     },
 
@@ -24,7 +24,7 @@ exports.Chores = {
         context.log.info('erase');
         prudence.go(function() {
             backend.setChores(context.variables.name, []);
-            prudence.invalidateCacheGroup(backend.getCachePrefix(context.variables.name));
+            prudence.invalidateCacheGroup(common.getCachePrefix(context));
         });
         context.done = true;
         context.async = true;
@@ -34,7 +34,7 @@ exports.Chores = {
         context.log.info('modify');
         const chores = prudence.decode(context.request.body, 'json');
         backend.setChores(context.variables.name, chores);
-        prudence.invalidateCacheGroup(backend.getCachePrefix(context.variables.name));
+        prudence.invalidateCacheGroup(common.getCachePrefix(context));
         context.done = true;
         exports.Chores.present(context);
     },

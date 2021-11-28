@@ -14,7 +14,7 @@ exports.handler = new prudence.Router({
     }, {
         // Person resource
         paths: 'person/*', // can also be a list
-        handler: require('./person/resource').handler
+        handler: bind('./person/resource', 'handler')
     }, {
         // Static files
         handler: new prudence.Static({

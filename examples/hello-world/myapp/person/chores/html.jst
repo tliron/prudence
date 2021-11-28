@@ -10,14 +10,14 @@
     </h1>
 
 <%# embed another cacheable representation (and set a custom cache key for it) %>
-<%& 'fragments/list.jst', 'person.' + context.variables.name + '.chores.list' %>
+<% const common = require('../common'); %>
+<%& 'fragments/list.jst', common.getCachePrefix(context) + '.chores.list' %>
 
 <%$$%>
 
 (these are escaped: \<% and \%>)
 
 <%!!%>
-
 <%# embed the page template (which will render our captured 'body' above) %>
 <%& 'templates/page.jst' %>
 

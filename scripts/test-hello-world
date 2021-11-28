@@ -16,20 +16,28 @@ function c () {
     fi
 }
 
+m 'static file'
 c files/hello.txt
 
+m 'cookie'
+c magic --cookie-jar -
+
+m 'PUT'
 c person/Tal/chores \
     --request PUT \
     --data '["cleaning", "shopping", "cooking"]'
 
+m 'brotli'
 c person/Tal/chores?scope=all \
     --header 'Accept: text/html' \
     --header 'Accept-Encoding: br' | brotli --decompress
 
+m 'gzip'
 c person/Tal/chores?scope=all \
     --header 'Accept: text/html' \
     --header 'Accept-Encoding: gzip' | gunzip
 
+m 'flate'
 c person/Tal/chores?scope=all \
     --header 'Accept: text/html' \
     --header 'Accept-Encoding: deflate' | openssl zlib -d

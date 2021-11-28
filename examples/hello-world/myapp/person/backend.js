@@ -14,11 +14,6 @@ exports.getSignature = function(name) {
     return prudence.hash(name);
 };
 
-exports.getCachePrefix = function(name) {
-    prudence.log.info('getCachePrefix');
-    return 'person.' + name;
-};
-
 // Gets the data
 // Let's pretend that it is from a database
 // (And thus it's the most expensive part of any request)

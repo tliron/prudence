@@ -1,5 +1,6 @@
 
 const backend = require('../backend');
+const common = require('../common');
 
 // The "construct" hook (optional) optimizes for server-side caching
 // It should be a very fast function
@@ -8,9 +9,8 @@ const backend = require('../backend');
 // "contentType" defaults to that of the accepted representation
 exports.construct = function(context) {
     context.log.info('construct');
-    const cachePrefix = backend.getCachePrefix(context.variables.name);
-    context.cacheGroups.push(cachePrefix);
-    context.cacheKey = cachePrefix + '.main';
+    common.addCacheGroup(context);
+    context.cacheKey = common.getCachePrefix(context) + '.main';
     context.response.contentType = 'application/json';
 };
 

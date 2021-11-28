@@ -11,15 +11,24 @@ import (
 )
 
 //
-// RepresentionFunc
+// RepresentationFunc
 //
 
-type RepresentionFunc func(context *Context) error
+type RepresentationFunc func(context *Context) error
 
-func NewRepresentationFunc(function interface{}, jsContext *js.Context) (RepresentionFunc, error) {
+func NewRepresentationFunc(function interface{}, jsContext *js.Context) (RepresentationFunc, error) {
+	// Unbind if necessary
+	functionContext := jsContext
+	if bind, ok := function.(js.Bind); ok {
+		var err error
+		if function, functionContext, err = bind.Unbind(); err != nil {
+			return nil, err
+		}
+	}
+
 	if function_, ok := function.(js.JavaScriptFunc); ok {
 		return func(context *Context) error {
-			jsContext.Environment.Call(function_, context)
+			functionContext.Environment.Call(function_, context)
 			return nil
 		}, nil
 	} else {
@@ -32,12 +41,12 @@ func NewRepresentationFunc(function interface{}, jsContext *js.Context) (Represe
 //
 
 type Representation struct {
-	Construct RepresentionFunc
-	Describe  RepresentionFunc
-	Present   RepresentionFunc
-	Erase     RepresentionFunc
-	Modify    RepresentionFunc
-	Call      RepresentionFunc
+	Construct RepresentationFunc
+	Describe  RepresentationFunc
+	Present   RepresentationFunc
+	Erase     RepresentationFunc
+	Modify    RepresentationFunc
+	Call      RepresentationFunc
 }
 
 func CreateRepresentation(node *ard.Node, context *js.Context) (*Representation, error) {
@@ -56,7 +65,7 @@ func CreateRepresentation(node *ard.Node, context *js.Context) (*Representation,
 		}
 	}
 
-	getFunction := func(name string) (RepresentionFunc, error) {
+	getFunction := func(name string) (RepresentationFunc, error) {
 		if functions.Data != nil {
 			// Try "functions" property
 			if function := functions.Get(name).Data; function != nil {
@@ -66,16 +75,7 @@ func CreateRepresentation(node *ard.Node, context *js.Context) (*Representation,
 
 		// Try individual function properties
 		if function := node.Get(name).Data; function != nil {
-			// Unbind if necessary
-			functionContext := context
-			if bind, ok := function.(js.Bind); ok {
-				var err error
-				if function, functionContext, err = bind.Unbind(); err != nil {
-					return nil, err
-				}
-			}
-
-			return NewRepresentationFunc(function, functionContext)
+			return NewRepresentationFunc(function, context)
 		}
 
 		return nil, nil

@@ -24,11 +24,7 @@ exports.handler = new prudence.Resource({
             contentTypes: 'text/html', // can also be a list
             languages: [ 'en', 'he' ], // can be a list or a single language
             functions: bind('./chores/html.jst'),
-            construct: function(context) {
-                const backend = require('./backend');
-                const cachePrefix = backend.getCachePrefix(context.variables.name);
-                context.cacheGroups.push(cachePrefix);
-            }
+            construct: bind('./common', 'addCacheGroup')
         }]
     }]
 });

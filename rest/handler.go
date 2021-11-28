@@ -39,6 +39,7 @@ func GetHandleFunc(value interface{}, jsContext *js.Context) (HandleFunc, error)
 	if handler, ok := value.(Handler); ok {
 		return handler.Handle, nil
 	} else if function, ok := value.(js.JavaScriptFunc); ok {
+		// Wrap JavaScript function
 		return func(context *Context) bool {
 			handled := jsContext.Environment.Call(function, context)
 			if handled_, ok := handled.(bool); ok {
@@ -48,7 +49,7 @@ func GetHandleFunc(value interface{}, jsContext *js.Context) (HandleFunc, error)
 			}
 		}, nil
 	} else {
-		return nil, fmt.Errorf("not a handler: %T", value)
+		return nil, fmt.Errorf("not a handler or a function: %T", value)
 	}
 }
 
