@@ -54,6 +54,16 @@ func (self CacheGroups) Add(key platform.CacheKey, cached *platform.CachedRepres
 	}
 }
 
+func (self CacheGroups) Delete(name platform.CacheKey, del func(key platform.CacheKey)) {
+	if group, ok := self[name]; ok {
+		for _, key := range group.Keys {
+			del(key)
+		}
+	}
+
+	delete(self, name)
+}
+
 func (self CacheGroups) Prune(getExpiration GetExpirationFunc) {
 	for name, group := range self {
 		group.Prune(getExpiration)

@@ -30,6 +30,7 @@ func NewTieredCacheBackend() *TieredCacheBackend {
 // platform.CreateFunc signature
 func CreateTieredCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
 	self := NewTieredCacheBackend()
+
 	config_ := ard.NewNode(config)
 	if list, ok := config_.Get("caches").List(false); ok {
 		for _, cache := range list {
@@ -40,6 +41,7 @@ func CreateTieredCacheBackend(config ard.StringMap, context *js.Context) (interf
 			}
 		}
 	}
+
 	return self, nil
 }
 

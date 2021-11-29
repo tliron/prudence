@@ -7,6 +7,11 @@ HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 
 HTTPS=$(kubectl get service prudence-hello-world --output=jsonpath={.spec.ports[0].nodePort})
 
+curl "https://$NODE:$HTTPS/person/Tal/chores" \
+    --silent --insecure \
+    --request PUT \
+    --data '["cleaning", "shopping", "cooking"]'
+
 curl "https://$NODE:$HTTPS/person/Tal/chores?scope=all" \
     --silent --insecure \
     --header 'Accept: text/html' \

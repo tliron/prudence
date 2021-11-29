@@ -40,11 +40,23 @@ func NewMemoryCacheBackend() *MemoryCacheBackend {
 func CreateMemoryCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
 	self := NewMemoryCacheBackend()
 
-	// TODO: configurable
-	var maxSize int64 = 1073741824 // 1 GiB
-	var averageSize int64 = 1000
+	var maxSize int64
+	var averageSize int64
+	var pruneFrequency float64
 
-	config_ := ristretto.Config{
+	config_ := ard.NewNode(config)
+	var ok bool
+	if maxSize, ok = config_.Get("maxSize").Integer(false); !ok {
+		maxSize = 1073741824 // 1 GiB
+	}
+	if averageSize, ok = config_.Get("averageSize").Integer(false); !ok {
+		averageSize = 1000
+	}
+	if pruneFrequency, ok = config_.Get("pruneFrequency").Float(false); !ok {
+		pruneFrequency = 10.0 // seconds
+	}
+
+	config__ := ristretto.Config{
 		MaxCost: maxSize,
 		// Recommendations:
 		BufferItems: 64,
@@ -52,9 +64,9 @@ func CreateMemoryCacheBackend(config ard.StringMap, context *js.Context) (interf
 	}
 
 	var err error
-	if self.cache, err = ristretto.NewCache(&config_); err == nil {
+	if self.cache, err = ristretto.NewCache(&config__); err == nil {
 		util.OnExit(self.cache.Close)
-		self.StartPruning(10.0) // TODO: configurable
+		self.StartPruning(pruneFrequency)
 		util.OnExit(self.StopPruning)
 		return self, nil
 	} else {
@@ -75,11 +87,13 @@ func (self *MemoryCacheBackend) LoadRepresentation(key platform.CacheKey) (*plat
 func (self *MemoryCacheBackend) StoreRepresentation(key platform.CacheKey, cached *platform.CachedRepresentation) {
 	self.cache.SetWithTTL(string(key), cached, int64(cached.GetSize()), cached.Expiration.Sub(time.Now()))
 
-	go func() {
-		self.lock.Lock()
-		defer self.lock.Unlock()
-		self.groups.Add(key, cached, self.getExpiration)
-	}()
+	if len(cached.Groups) > 0 {
+		go func() {
+			self.lock.Lock()
+			defer self.lock.Unlock()
+			self.groups.Add(key, cached, self.getExpiration)
+		}()
+	}
 }
 
 // platform.CacheBackend interface
@@ -89,6 +103,13 @@ func (self *MemoryCacheBackend) DeleteRepresentation(key platform.CacheKey) {
 
 // platform.CacheBackend interface
 func (self *MemoryCacheBackend) DeleteGroup(name platform.CacheKey) {
+	go func() {
+		self.lock.Lock()
+		defer self.lock.Unlock()
+		self.groups.Delete(name, func(key platform.CacheKey) {
+			self.cache.Del(string(key))
+		})
+	}()
 }
 
 func (self *MemoryCacheBackend) Prune() {
@@ -98,8 +119,8 @@ func (self *MemoryCacheBackend) Prune() {
 	self.groups.Prune(self.getExpiration)
 }
 
-func (self *MemoryCacheBackend) StartPruning(seconds float64) {
-	ticker := time.NewTicker(time.Duration(seconds * 1000000000.0)) // seconds to nanoseconds
+func (self *MemoryCacheBackend) StartPruning(frequency float64) {
+	ticker := time.NewTicker(time.Duration(frequency * 1000000000.0)) // seconds to nanoseconds
 	go func() {
 		for {
 			select {

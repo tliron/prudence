@@ -36,7 +36,16 @@ func NewMapCacheBackend() *MapCacheBackend {
 // platform.CreateFunc signature
 func CreateMapCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
 	self := NewMapCacheBackend()
-	self.StartPruning(10.0) // TODO: configurable
+
+	var pruneFrequency float64
+
+	config_ := ard.NewNode(config)
+	var ok bool
+	if pruneFrequency, ok = config_.Get("pruneFrequency").Float(false); !ok {
+		pruneFrequency = 10.0 // seconds
+	}
+
+	self.StartPruning(pruneFrequency)
 	util.OnExit(self.StopPruning)
 	return self, nil
 }
@@ -90,12 +99,9 @@ func (self *MapCacheBackend) DeleteGroup(name platform.CacheKey) {
 	go func() {
 		self.lock.Lock()
 		defer self.lock.Unlock()
-
-		if group, ok := self.groups[name]; ok {
-			for _, key := range group.Keys {
-				delete(self.representations, key)
-			}
-		}
+		self.groups.Delete(name, func(key platform.CacheKey) {
+			delete(self.representations, key)
+		})
 	}()
 }
 
@@ -113,8 +119,8 @@ func (self *MapCacheBackend) Prune() {
 	self.groups.Prune(self.getExpiration)
 }
 
-func (self *MapCacheBackend) StartPruning(seconds float64) {
-	ticker := time.NewTicker(time.Duration(seconds * 1000000000.0)) // seconds to nanoseconds
+func (self *MapCacheBackend) StartPruning(frequency float64) {
+	ticker := time.NewTicker(time.Duration(frequency * 1000000000.0)) // seconds to nanoseconds
 	go func() {
 		for {
 			select {
