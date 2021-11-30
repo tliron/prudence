@@ -2,8 +2,25 @@ package rest
 
 import (
 	"bytes"
+	"errors"
 	"io"
 )
+
+func (self *Context) StartCapture(name string) {
+	self.writer = NewCaptureWriter(self.writer, name, func(name string, value string) {
+		self.Variables[name] = value
+	})
+}
+
+func (self *Context) EndCapture() error {
+	if captureWriter, ok := self.writer.(*CaptureWriter); ok {
+		err := captureWriter.Close()
+		self.writer = captureWriter.GetWrappedWriter()
+		return err
+	} else {
+		return errors.New("did not call startCapture()")
+	}
+}
 
 type CaptureFunc func(name string, value string)
 

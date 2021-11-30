@@ -20,7 +20,9 @@ m 'static file'
 c files/hello.txt
 
 m 'cookie'
-c magic --cookie-jar -
+c magic \
+    --cookie mycookie=myvalue \
+    --cookie-jar -
 
 m 'PUT'
 c person/Tal/chores \

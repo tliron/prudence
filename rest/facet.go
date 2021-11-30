@@ -41,7 +41,7 @@ func CreateFacet(config ard.StringMap, context *js.Context) (interface{}, error)
 		return nil, err
 	}
 	if self.Handler != nil {
-		return nil, errors.New("cannot set \"handler\" on facet")
+		return nil, errors.New("Facet does not support setting the \"handler\"")
 	}
 	self.Handler = self.Handle
 

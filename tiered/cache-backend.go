@@ -37,7 +37,7 @@ func CreateTieredCacheBackend(config ard.StringMap, context *js.Context) (interf
 			if cacheBackend, ok := cache.(platform.CacheBackend); ok {
 				self.cacheBackends = append(self.cacheBackends, cacheBackend)
 			} else {
-				return nil, fmt.Errorf("not a cache backend: %T", cache)
+				return nil, fmt.Errorf("TieredCache \"caches\" contains an object that is not a cache backend: %T", cache)
 			}
 		}
 	}

@@ -53,7 +53,7 @@ func CreateRoute(config ard.StringMap, context *js.Context) (interface{}, error)
 // HandleFunc signature
 func (self *Route) Handle(context *Context) bool {
 	if matches := self.Match(context.Path); matches != nil {
-		if context_ := context.AddName(self.Name); context == context_ {
+		if context_ := context.AppendName(self.Name); context == context_ {
 			context = context.Copy()
 		} else {
 			context = context_

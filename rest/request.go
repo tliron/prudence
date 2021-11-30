@@ -53,3 +53,12 @@ func NewRequest(request *http.Request) *Request {
 
 	return &self
 }
+
+func (self *Request) GetCookie(name string) *http.Cookie {
+	for _, cookie := range self.Cookies {
+		if cookie.Name == name {
+			return cookie
+		}
+	}
+	return nil
+}

@@ -27,14 +27,14 @@ func init() {
 //
 
 type Server struct {
-	Name        string
-	Address     string
-	Secure      bool
-	Certificate string
-	Key         string
-	NCSAPrefix  string
-	Debug       bool
-	Handler     HandleFunc
+	Name              string
+	Address           string
+	Secure            bool
+	Certificate       string
+	Key               string
+	NCSALogFilePrefix string
+	Debug             bool
+	Handler           HandleFunc
 
 	server     *http.Server
 	serverLock sync.Mutex
@@ -55,19 +55,24 @@ func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error
 	var self Server
 
 	config_ := ard.NewNode(config)
-	self.Name, _ = config_.Get("name").String(false)
-	if self.Name == "" {
+	var ok bool
+	if self.Name, ok = config_.Get("name").String(false); !ok {
 		self.Name = "Prudence"
 	}
-	self.Address, _ = config_.Get("address").String(false)
+	if self.Address, ok = config_.Get("address").String(false); !ok {
+		self.Address = ":8080"
+	}
+
 	secure := config_.Get("secure")
 	if secure.Data != nil {
 		self.Secure = true
 	}
-	self.Certificate, _ = secure.Get("certificate").String(true)
+	self.Certificate, _ = secure.Get("certificate").String(false)
 	self.Key, _ = secure.Get("key").String(true)
-	self.NCSAPrefix, _ = config_.Get("ncsaLogFilePrefix").String(true)
+
+	self.NCSALogFilePrefix, _ = config_.Get("ncsaLogFilePrefix").String(false)
 	self.Debug, _ = config_.Get("debug").Boolean(false)
+
 	if handler := config_.Get("handler").Data; handler != nil {
 		var err error
 		if self.Handler, err = GetHandleFunc(handler, context); err != nil {
@@ -192,7 +197,7 @@ func (self *Server) getNcsaLogger() (*requestlog.NCSALogger, error) {
 		case "stdout", "stderr":
 			path = platform.NCSAFilename
 		default:
-			path = self.NCSAPrefix + platform.NCSAFilename
+			path = self.NCSALogFilePrefix + platform.NCSAFilename
 		}
 	}
 

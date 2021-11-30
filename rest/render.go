@@ -2,12 +2,32 @@ package rest
 
 import (
 	"bytes"
+	"errors"
 	"io"
 
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
 )
+
+func (self *Context) StartRender(renderer string, jsContext *js.Context) error {
+	if renderWriter, err := NewRenderWriter(self.writer, renderer, jsContext); err == nil {
+		self.writer = renderWriter
+		return nil
+	} else {
+		return err
+	}
+}
+
+func (self *Context) EndRender() error {
+	if renderWriter, ok := self.writer.(*RenderWriter); ok {
+		err := renderWriter.Close()
+		self.writer = renderWriter.GetWrappedWriter()
+		return err
+	} else {
+		return errors.New("did not call startRender()")
+	}
+}
 
 //
 // RenderWriter

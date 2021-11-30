@@ -54,7 +54,7 @@ func NewContext(responseWriter http.ResponseWriter, request *http.Request) *Cont
 	return &self
 }
 
-func (self *Context) AddName(name string) *Context {
+func (self *Context) AppendName(name string) *Context {
 	if name == "" {
 		return self
 	} else {
@@ -95,63 +95,6 @@ func (self *Context) Redirect(url string, status int) error {
 	self.Response.Status = status
 	self.Response.Header.Set(HeaderLocation, url)
 	return nil
-}
-
-func (self *Context) StartCapture(name string) {
-	self.writer = NewCaptureWriter(self.writer, name, func(name string, value string) {
-		self.Variables[name] = value
-	})
-}
-
-func (self *Context) EndCapture() error {
-	if captureWriter, ok := self.writer.(*CaptureWriter); ok {
-		err := captureWriter.Close()
-		self.writer = captureWriter.GetWrappedWriter()
-		return err
-	} else {
-		return errors.New("did not call startCapture()")
-	}
-}
-
-func (self *Context) StartRender(renderer string, jsContext *js.Context) error {
-	if renderWriter, err := NewRenderWriter(self.writer, renderer, jsContext); err == nil {
-		self.writer = renderWriter
-		return nil
-	} else {
-		return err
-	}
-}
-
-func (self *Context) EndRender() error {
-	if renderWriter, ok := self.writer.(*RenderWriter); ok {
-		err := renderWriter.Close()
-		self.writer = renderWriter.GetWrappedWriter()
-		return err
-	} else {
-		return errors.New("did not call startRender()")
-	}
-}
-
-// Calculating a signature from the body is not that great. It saves bandwidth but not computing
-// resources, as we still need to generate the body in order to calculate the signature. Ideally,
-// the signature should be based on the data sources used to generate the page.
-//
-// https://www.mnot.net/blog/2007/08/07/etags
-// http://www.tbray.org/ongoing/When/200x/2007/07/31/Design-for-the-Web
-func (self *Context) StartSignature() {
-	if _, ok := self.writer.(*HashWriter); !ok {
-		self.writer = NewHashWriter(self.writer)
-	}
-}
-
-func (self *Context) EndSignature() error {
-	if hashWriter, ok := self.writer.(*HashWriter); ok {
-		self.Response.Signature = hashWriter.Hash()
-		self.writer = hashWriter.writer
-		return nil
-	} else {
-		return errors.New("did not call startSignature()")
-	}
 }
 
 func (self *Context) InternalServerError(err error) {

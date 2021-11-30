@@ -173,7 +173,7 @@ func (self *Representation) tryCache(context *Context, withBody bool) bool {
 		if key, cached, ok := context.LoadCachedRepresentation(); ok {
 			if withBody && (len(cached.Body) == 0) {
 				// The cache entry was likely created by a previous HEAD request
-				context.Log.Debugf("ignoring cache becase it has no body: %s", context.Path)
+				context.Log.Debugf("ignoring cached representation because it has no body: %s", context.Path)
 			} else {
 				if changed := context.PresentCachedRepresentation(cached, withBody); changed {
 					cached.Update(key)

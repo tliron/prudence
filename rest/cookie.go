@@ -22,13 +22,13 @@ func CreateCookie(config ard.StringMap, context *js.Context) (interface{}, error
 	config_ := ard.NewNode(config)
 	var ok bool
 	if self.Name, ok = config_.Get("name").String(false); !ok {
-		return nil, errors.New("must set cookie \"name\"")
+		return nil, errors.New("Cookie must have a \"name\"")
 	}
 	if self.Value, ok = config_.Get("value").String(false); !ok {
-		return nil, errors.New("must set cookie \"value\"")
+		return nil, errors.New("Cookie must have a \"value\"")
 	}
-	self.Path, _ = config_.Get("path").String(true)
-	self.Domain, _ = config_.Get("domain").String(true)
+	self.Path, _ = config_.Get("path").String(false)
+	self.Domain, _ = config_.Get("domain").String(false)
 	if expires := config_.Get("expires").Data; expires != nil {
 		if self.Expires, ok = expires.(time.Time); !ok {
 			return nil, fmt.Errorf("invalid cookie \"expires\": %T", expires)
@@ -37,8 +37,8 @@ func CreateCookie(config ard.StringMap, context *js.Context) (interface{}, error
 	if maxAge, ok := config_.Get("maxAge").Integer(false); ok {
 		self.MaxAge = int(maxAge)
 	}
-	self.Secure, _ = config_.Get("secure").Boolean(true)
-	self.HttpOnly, _ = config_.Get("httpOnly").Boolean(true)
+	self.Secure, _ = config_.Get("secure").Boolean(false)
+	self.HttpOnly, _ = config_.Get("httpOnly").Boolean(false)
 	if sameSite, ok := config_.Get("sameSite").String(false); ok {
 		switch sameSite {
 		case "default":
@@ -50,7 +50,7 @@ func CreateCookie(config ard.StringMap, context *js.Context) (interface{}, error
 		case "none":
 			self.SameSite = http.SameSiteNoneMode
 		default:
-			return nil, fmt.Errorf("invalid cookie \"sameSite\": %s", sameSite)
+			return nil, fmt.Errorf("Cookie has invalid \"sameSite\": %s", sameSite)
 		}
 	}
 

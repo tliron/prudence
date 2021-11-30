@@ -47,7 +47,7 @@ func CreateDistributedCacheBackend(config ard.StringMap, context *js.Context) (i
 	local := config_.Get("local").Data
 	var ok bool
 	if self.local, ok = local.(platform.CacheBackend); !ok {
-		return nil, fmt.Errorf("not a CacheBackend: %T", local)
+		return nil, fmt.Errorf("DistributedCache \"local\" is not a CacheBackend: %T", local)
 	}
 
 	if kubernetes_ := config_.Get("kubernetes"); kubernetes_.Data != nil {

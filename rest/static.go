@@ -39,7 +39,7 @@ func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error
 		if rootFileUrl, ok := rootUrl.(*urlpkg.FileURL); ok {
 			root = rootFileUrl.Path
 		} else {
-			return nil, fmt.Errorf("not a file: %v", rootUrl)
+			return nil, fmt.Errorf("Static \"root\" is not a file: %v", rootUrl)
 		}
 	} else {
 		return nil, err
