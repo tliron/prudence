@@ -322,32 +322,36 @@ func CreateRepresentations(config ard.Value, context *js.Context) (*Representati
 		representation_ := ard.NewNode(representation)
 		if representation__, err := CreateRepresentation(representation_, context); err == nil {
 			contentTypes := platform.AsStringList(representation_.Get("contentTypes").Data)
-			if len(contentTypes) == 0 {
-				contentTypes = []string{""}
-			}
-
 			languages := platform.AsStringList(representation_.Get("languages").Data)
-			if len(languages) == 0 {
-				languages = []string{""}
-			}
-
-			// The order signifies the *server* matching preferences
-			for _, contentType := range contentTypes {
-				contentType_ := NewContentType(contentType)
-				for _, language := range languages {
-					self.Entries = append(self.Entries, &RepresentationEntry{
-						Representation: representation__,
-						ContentType:    contentType_,
-						Language:       NewLanguage(language),
-					})
-				}
-			}
+			self.Add(contentTypes, languages, representation__)
 		} else {
 			return nil, err
 		}
 	}
 
 	return &self, nil
+}
+
+func (self *Representations) Add(contentTypes []string, languages []string, representation *Representation) {
+	if len(contentTypes) == 0 {
+		contentTypes = []string{""}
+	}
+
+	if len(languages) == 0 {
+		languages = []string{""}
+	}
+
+	// The order signifies the *server* matching preferences
+	for _, contentType := range contentTypes {
+		contentType_ := NewContentType(contentType)
+		for _, language := range languages {
+			self.Entries = append(self.Entries, &RepresentationEntry{
+				Representation: representation,
+				ContentType:    contentType_,
+				Language:       NewLanguage(language),
+			})
+		}
+	}
 }
 
 func (self *Representations) NegotiateBest(context *Context) (*Representation, string, string, bool) {

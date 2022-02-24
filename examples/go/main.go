@@ -12,6 +12,8 @@ import (
 )
 
 func main() {
+	util.ExitOnSIGTERM()
+
 	logging.Configure(2, nil)
 	var err error
 
@@ -26,14 +28,14 @@ func main() {
 	main := rest.NewFacet("main")
 	main.PathTemplates, err = rest.NewPathTemplates("{name}")
 	util.FailOnError(err)
-	main.Representations.Add(rest.NewContentType("application/json"), jsonRepresentation)
-	main.Representations.Add(rest.ContentType{}, defaultRepresentation)
+	main.Representations.Add([]string{"application/json"}, nil, jsonRepresentation)
+	main.Representations.Add(nil, nil, defaultRepresentation)
 
 	age := rest.NewFacet("age")
 	age.PathTemplates, err = rest.NewPathTemplates("{name}/age")
 	util.FailOnError(err)
-	age.Representations.Add(rest.NewContentType("application/json"), jsonRepresentation)
-	age.Representations.Add(rest.ContentType{}, defaultRepresentation)
+	age.Representations.Add([]string{"application/json"}, nil, jsonRepresentation)
+	age.Representations.Add(nil, nil, defaultRepresentation)
 
 	person := rest.NewResource("person")
 	person.AddFacet(main)
@@ -52,11 +54,13 @@ func main() {
 	server := rest.NewServer("")
 	server.Address = ":8080"
 	server.Handler = router.Handle
-
 	err = server.Start()
 	util.FailOnError(err)
+
+	util.Exit(0)
 }
 
+// rest.RepresentationFunc signature
 func presentJson(context *rest.Context) error {
 	person := map[string]interface{}{"name": context.Variables["name"]}
 	bytes, _ := json.Marshal(person)
@@ -65,6 +69,7 @@ func presentJson(context *rest.Context) error {
 	return nil
 }
 
+// rest.RepresentationFunc signature
 func presentDefault(context *rest.Context) error {
 	context.WriteString(context.Response.ContentType)
 	fmt.Fprintf(context, "\n%s\n", context.Variables)

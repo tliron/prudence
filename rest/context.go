@@ -64,7 +64,7 @@ func (self *Context) AppendName(name string) *Context {
 		} else {
 			context.Name += "." + name
 		}
-		context.Log = logging.NewSubLogger(log, context.Name)
+		context.Log = logging.NewScopeLogger(log, context.Name)
 		return context
 	}
 }
