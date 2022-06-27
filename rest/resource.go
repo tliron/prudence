@@ -34,7 +34,7 @@ func CreateResource(config ard.StringMap, context *js.Context) (interface{}, err
 	self.Router = router.(*Router)
 
 	config_ := ard.NewNode(config)
-	facets := platform.AsConfigList(config_.Get("facets").Data)
+	facets := platform.AsConfigList(config_.Get("facets").Value)
 	for _, facet := range facets {
 		if facet_, ok := facet.(ard.StringMap); ok {
 			if facet__, err := CreateFacet(facet_, context); err == nil {

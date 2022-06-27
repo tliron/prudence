@@ -50,31 +50,31 @@ type Representation struct {
 }
 
 func CreateRepresentation(node *ard.Node, context *js.Context) (*Representation, error) {
-	//panic(fmt.Sprintf("%v", node.Data))
+	//panic(fmt.Sprintf("%v", node.Value))
 	var self Representation
 
 	var functions *ard.Node
 	functionsContext := context
-	if functions = node.Get("functions"); functions.Data != nil {
+	if functions = node.Get("functions"); functions.Value != nil {
 		// Unbind "functions" property if necessary
-		if bind, ok := functions.Data.(js.Bind); ok {
+		if bind, ok := functions.Value.(js.Bind); ok {
 			var err error
-			if functions.Data, functionsContext, err = bind.Unbind(); err != nil {
+			if functions.Value, functionsContext, err = bind.Unbind(); err != nil {
 				return nil, err
 			}
 		}
 	}
 
 	getFunction := func(name string) (RepresentationFunc, error) {
-		if functions.Data != nil {
+		if functions.Value != nil {
 			// Try "functions" property
-			if function := functions.Get(name).Data; function != nil {
+			if function := functions.Get(name).Value; function != nil {
 				return NewRepresentationFunc(function, functionsContext)
 			}
 		}
 
 		// Try individual function properties
-		if function := node.Get(name).Data; function != nil {
+		if function := node.Get(name).Value; function != nil {
 			return NewRepresentationFunc(function, context)
 		}
 
@@ -204,7 +204,9 @@ func (self *Representation) describe(context *Context) bool {
 func (self *Representation) present(context *Context, withBody bool) {
 	if withBody {
 		// Encoding
-		SetBestEncodeWriter(context)
+		if !SetBestEncodeWriter(context) {
+			return
+		}
 
 		// Present
 		if self.Present != nil {
@@ -321,8 +323,8 @@ func CreateRepresentations(config ard.Value, context *js.Context) (*Representati
 	for _, representation := range platform.AsConfigList(config) {
 		representation_ := ard.NewNode(representation)
 		if representation__, err := CreateRepresentation(representation_, context); err == nil {
-			contentTypes := platform.AsStringList(representation_.Get("contentTypes").Data)
-			languages := platform.AsStringList(representation_.Get("languages").Data)
+			contentTypes := platform.AsStringList(representation_.Get("contentTypes").Value)
+			languages := platform.AsStringList(representation_.Get("languages").Value)
 			self.Add(contentTypes, languages, representation__)
 		} else {
 			return nil, err
@@ -363,10 +365,14 @@ func (self *Representations) NegotiateBest(context *Context) (*Representation, s
 	if len(languagePreferences) > 0 {
 		// Try exact match of contentType and language
 		for _, contentTypePreference := range contentTypePreferences {
-			for _, languagePreference := range languagePreferences {
-				for _, entry := range self.Entries {
-					if contentTypePreference.Matches(entry.ContentType) && languagePreference.Matches(entry.Language, false) {
-						return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+			if contentTypePreference.Weight != 0.0 {
+				for _, languagePreference := range languagePreferences {
+					if languagePreference.Weight != 0.0 {
+						for _, entry := range self.Entries {
+							if contentTypePreference.Matches(entry.ContentType) && languagePreference.Matches(entry.Language, false) {
+								return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+							}
+						}
 					}
 				}
 			}
@@ -374,10 +380,14 @@ func (self *Representations) NegotiateBest(context *Context) (*Representation, s
 
 		// Try exact match of contentType and soft match of language
 		for _, contentTypePreference := range contentTypePreferences {
-			for _, languagePreference := range languagePreferences {
-				for _, entry := range self.Entries {
-					if contentTypePreference.Matches(entry.ContentType) && languagePreference.Matches(entry.Language, true) {
-						return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+			if contentTypePreference.Weight != 0.0 {
+				for _, languagePreference := range languagePreferences {
+					if languagePreference.Weight != 0.0 {
+						for _, entry := range self.Entries {
+							if contentTypePreference.Matches(entry.ContentType) && languagePreference.Matches(entry.Language, true) {
+								return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+							}
+						}
 					}
 				}
 			}
@@ -386,12 +396,17 @@ func (self *Representations) NegotiateBest(context *Context) (*Representation, s
 
 	// Try exact match of contentType
 	for _, contentTypePreference := range contentTypePreferences {
-		for _, entry := range self.Entries {
-			if contentTypePreference.Matches(entry.ContentType) {
-				return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+		if contentTypePreference.Weight != 0.0 {
+			for _, entry := range self.Entries {
+				if contentTypePreference.Matches(entry.ContentType) {
+					return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
+				}
 			}
 		}
 	}
+
+	// TODO: for weight 0 should we expressly forbid matching entries?
+	// Probably not!
 
 	// Try default representation (no contentType)
 	for _, entry := range self.Entries {

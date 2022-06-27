@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -75,14 +76,35 @@ func ParseEncodingPreferences(text string) EncodingPreferences {
 	return self
 }
 
-func (self EncodingPreferences) NegotiateBest(context *Context) platform.EncodingType {
+func (self EncodingPreferences) ForbidIdentity() bool {
 	for _, encodingPreference := range self {
-		if encodingPreference.Type != platform.EncodingTypeUnsupported {
-			return encodingPreference.Type
+		if (encodingPreference.Type == platform.EncodingTypeIdentity) || (encodingPreference.Name == "*") {
+			if encodingPreference.Weight == 0.0 {
+				return true
+			}
 		}
 	}
 
-	return platform.EncodingTypeIdentity
+	return false
+}
+
+func (self EncodingPreferences) NegotiateBest(context *Context) platform.EncodingType {
+	for _, encodingPreference := range self {
+		if encodingPreference.Weight != 0.0 {
+			switch encodingPreference.Type {
+			// Note: "compress" has been deprecated
+			case platform.EncodingTypeUnsupported, platform.EncodingTypeCompress:
+			default:
+				return encodingPreference.Type
+			}
+		}
+	}
+
+	if !self.ForbidIdentity() {
+		return platform.EncodingTypeIdentity
+	} else {
+		return platform.EncodingTypeUnsupported
+	}
 }
 
 // sort.Interface interface
@@ -118,19 +140,31 @@ func NewEncodeWriter(writer io.Writer, type_ platform.EncodingType) *EncodeWrite
 	}
 }
 
-func SetBestEncodeWriter(context *Context) {
+func SetBestEncodeWriter(context *Context) bool {
 	encodingPreferences := ParseEncodingPreferences(context.Request.Header.Get(HeaderAcceptEncoding))
 	type_ := encodingPreferences.NegotiateBest(context)
 	switch type_ {
+	case platform.EncodingTypeIdentity:
+		return true
+
 	case platform.EncodingTypeBrotli:
 		context.Response.Header.Set(HeaderContentEncoding, "br")
 		context.writer = NewEncodeWriter(context.writer, type_)
+		return true
+
+	case platform.EncodingTypeDeflate:
+		context.Response.Header.Set(HeaderContentEncoding, "deflate")
+		context.writer = NewEncodeWriter(context.writer, type_)
+		return true
+
 	case platform.EncodingTypeGZip:
 		context.Response.Header.Set(HeaderContentEncoding, "gzip")
 		context.writer = NewEncodeWriter(context.writer, type_)
-	case platform.EncodingTypeFlate:
-		context.Response.Header.Set(HeaderContentEncoding, "deflate")
-		context.writer = NewEncodeWriter(context.writer, type_)
+		return true
+
+	default:
+		context.Response.Status = http.StatusNotAcceptable
+		return false
 	}
 }
 
@@ -145,11 +179,11 @@ func (self *EncodeWriter) Close() error {
 	case platform.EncodingTypeBrotli:
 		return platform.EncodeBrotli(self.buffer.Bytes(), self.writer)
 
+	case platform.EncodingTypeDeflate:
+		return platform.EncodeDeflate(self.buffer.Bytes(), self.writer)
+
 	case platform.EncodingTypeGZip:
 		return platform.EncodeGZip(self.buffer.Bytes(), self.writer)
-
-	case platform.EncodingTypeFlate:
-		return platform.EncodeFlate(self.buffer.Bytes(), self.writer)
 
 	default:
 		return nil
@@ -169,10 +203,12 @@ func GetEncodingType(name string) platform.EncodingType {
 		return platform.EncodingTypeIdentity
 	case "br":
 		return platform.EncodingTypeBrotli
+	case "compress":
+		return platform.EncodingTypeCompress
+	case "deflate":
+		return platform.EncodingTypeDeflate
 	case "gzip":
 		return platform.EncodingTypeGZip
-	case "deflate":
-		return platform.EncodingTypeFlate
 	default:
 		return platform.EncodingTypeUnsupported
 	}

@@ -44,16 +44,16 @@ func CreateDistributedCacheBackend(config ard.StringMap, context *js.Context) (i
 	self := NewDistributedCacheBackend()
 
 	config_ := ard.NewNode(config)
-	local := config_.Get("local").Data
+	local := config_.Get("local").Value
 	var ok bool
 	if self.local, ok = local.(platform.CacheBackend); !ok {
 		return nil, fmt.Errorf("DistributedCache \"local\" is not a CacheBackend: %T", local)
 	}
 
-	if kubernetes_ := config_.Get("kubernetes"); kubernetes_.Data != nil {
+	if kubernetes_ := config_.Get("kubernetes"); kubernetes_.Value != nil {
 		self.kubernetesConfig = new(KubernetesConfig)
-		self.kubernetesConfig.Namespace, _ = kubernetes_.Get("namespace").String(false)
-		self.kubernetesConfig.Selector, _ = kubernetes_.Get("selector").String(false)
+		self.kubernetesConfig.Namespace, _ = kubernetes_.Get("namespace").String()
+		self.kubernetesConfig.Selector, _ = kubernetes_.Get("selector").String()
 	}
 
 	self.queue = &memberlist.TransmitLimitedQueue{

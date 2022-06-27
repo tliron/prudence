@@ -46,13 +46,13 @@ func CreateMemoryCacheBackend(config ard.StringMap, context *js.Context) (interf
 
 	config_ := ard.NewNode(config)
 	var ok bool
-	if maxSize, ok = config_.Get("maxSize").Integer(false); !ok {
+	if maxSize, ok = config_.Get("maxSize").Integer(); !ok {
 		maxSize = 1073741824 // 1 GiB
 	}
-	if averageSize, ok = config_.Get("averageSize").Integer(false); !ok {
+	if averageSize, ok = config_.Get("averageSize").Integer(); !ok {
 		averageSize = 1000
 	}
-	if pruneFrequency, ok = config_.Get("pruneFrequency").Float(false); !ok {
+	if pruneFrequency, ok = config_.Get("pruneFrequency").Float(); !ok {
 		pruneFrequency = 10.0 // seconds
 	}
 

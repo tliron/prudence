@@ -31,7 +31,7 @@ func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepr
 		case HeaderCacheControl, HeaderServer, HeaderPrudenceCached:
 			// Skip
 		default:
-			headers[name] = ard.Copy(values).([]string)
+			headers[name] = ard.SimpleCopy(values).([]string)
 		}
 	}
 

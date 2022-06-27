@@ -34,7 +34,7 @@ func OnTypes(f func(type_ string, create CreateFunc) bool) {
 
 func Create(config ard.StringMap, context *js.Context) (interface{}, error) {
 	config_ := ard.NewNode(config)
-	if type_, ok := config_.Get("type").String(false); ok {
+	if type_, ok := config_.Get("type").String(); ok {
 		if create, err := GetType(type_); err == nil {
 			return create(config, context)
 		} else {

@@ -47,7 +47,7 @@ func CreateFacet(config ard.StringMap, context *js.Context) (interface{}, error)
 
 	config_ := ard.NewNode(config)
 	var err error
-	if self.Representations, err = CreateRepresentations(config_.Get("representations").Data, context); err != nil {
+	if self.Representations, err = CreateRepresentations(config_.Get("representations").Value, context); err != nil {
 		return nil, err
 	}
 

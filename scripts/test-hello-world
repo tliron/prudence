@@ -29,19 +29,19 @@ c person/Tal/chores \
     --request PUT \
     --data '["cleaning", "shopping", "cooking"]'
 
-m 'brotli'
+m 'br'
 c person/Tal/chores?scope=all \
     --header 'Accept: text/html' \
     --header 'Accept-Encoding: br' | brotli --decompress
+
+m 'deflate'
+c person/Tal/chores?scope=all \
+    --header 'Accept: text/html' \
+    --header 'Accept-Encoding: deflate' | openssl zlib -d
 
 m 'gzip'
 c person/Tal/chores?scope=all \
     --header 'Accept: text/html' \
     --header 'Accept-Encoding: gzip' | gunzip
-
-m 'flate'
-c person/Tal/chores?scope=all \
-    --header 'Accept: text/html' \
-    --header 'Accept-Encoding: deflate' | openssl zlib -d
 
 # https://stackoverflow.com/questions/3178566/how-to-deflate-with-a-command-line-tool-to-extract-a-git-object

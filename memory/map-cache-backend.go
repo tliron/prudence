@@ -41,7 +41,7 @@ func CreateMapCacheBackend(config ard.StringMap, context *js.Context) (interface
 
 	config_ := ard.NewNode(config)
 	var ok bool
-	if pruneFrequency, ok = config_.Get("pruneFrequency").Float(false); !ok {
+	if pruneFrequency, ok = config_.Get("pruneFrequency").Float(); !ok {
 		pruneFrequency = 10.0 // seconds
 	}
 

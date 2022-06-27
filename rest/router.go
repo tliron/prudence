@@ -33,8 +33,8 @@ func CreateRouter(config ard.StringMap, context *js.Context) (interface{}, error
 	var self Router
 
 	config_ := ard.NewNode(config)
-	self.Name, _ = config_.Get("name").String(true)
-	routes := platform.AsConfigList(config_.Get("routes").Data)
+	self.Name, _ = config_.Get("name").NilMeansZero().String()
+	routes := platform.AsConfigList(config_.Get("routes").Value)
 	for _, route := range routes {
 		if route_, ok := route.(ard.StringMap); ok {
 			if route__, err := CreateRoute(route_, context); err == nil {

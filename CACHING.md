@@ -5,8 +5,8 @@ WARNING ZONE! RED ALERT!
 
 Make sure you're up-to-speed with [the basics](TUTORIAL.md) first.
 
-We're about to add quite a bit of complexity here, and that's the reason we've separated this into
-a separate tutorial. To be clear: everything you learned in the tutorial is good and proper for
+We're about to add quite a bit of complexity here, and that's the reason we've put this in a
+separate tutorial. To be clear: everything you learned in the tutorial is good and proper for
 making web sites and RESTful services. You can use "present", "erase", "modify", and "call", and
 cover all the expected functionality.
 
@@ -130,7 +130,7 @@ Also note that "construct" is called before the "erase", "modify", and "call" ho
 
 ### Cache Keys
 
-We've' also modified the cache key in our "construct". By default the cache key is the
+We've also modified the cache key in our "construct". By default the cache key is the
 complete URL, which is a sensible default, but might not be the most efficient.
 
 Consider a situation in which this page has multiple, equivalent URLs. For example,
@@ -173,8 +173,8 @@ more powerful:
     <%& 'list.jst' %>
 
 It is used to insert not a raw file but another representation. This means calling the
-"present" hook, and indeed also calling "construct" and "describe" if it has them. This
-is useful not just for making your code more modular, but also for creating a more
+"present" hook, and indeed also calling "construct" and "describe" (see below) if it has them.
+This is useful not just for making your code more modular, but also for creating a more
 fine-grained caching scheme, because that other representation may also be cached, indeed
 with its own cache key and cache duration. Thus, if many different pages use that same
 building block they might not have to regenerate it each time.
@@ -239,8 +239,8 @@ and re-process the representation.
 
 ### "describe"
 
-There is another optional hook just for optimizing his functionality: "describe". Let's
-add a "describe" function to our `json.js`:
+This is another optional hook just for optimizing this functionality. Let's add a
+"describe" function to our `json.js`:
 
     exports.describe = function(context) {
         context.signature = prudence.hash(context.cacheKey);
@@ -250,7 +250,7 @@ The main responsibiliy of the "describe" hook is to set either "signature" and/o
 "timestamp". The signature is sent to the client as an
 [ETag](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag) during normal
 requests, and compared against the signature the client already has during conditional
-requests. The reason Prudence has separate hooks for "describe" from "present" is exactly
+requests. The reason Prudence has separate hooks for "describe" and "present" is exactly
 because we might not need to call "present" at all in case the signatures match. Thus,
 for this to be a meaningful optimization "describe" must be *much less expensive* than
 "present". This can be challenging and even impossible to achieve in some cases. It all
@@ -261,15 +261,18 @@ includes all the `?` query parameters. This means that any change to a query par
 will *not* use a chached representation for different query parameters. Thus adding a
 query parameter, which is not processed by the server, is sometimes used as a way to
 "punch" through the cache. It works, but be aware that it will leave the other, unused
-representations still cached on the client, which could be a waste of space.
+representations still cached on the client, which could be a waste of space. (Many sites
+use this "cache punching" technique without considering this implication.)
 
 Also note that there is no time limit on client-side caching. If the signature never
 changes, then conditional requests (from those clients who have the representation
 cached) will always return a 304: Not Modified.
 
 In this trivial example we are reusing our (server-side) cache key that we created in
-in the "construct" function. We can do this only because we know for sure that the
-resulting representation depends entirely and only on that "name" variable.
+in the "construct" hook as our signature. We can do this only because we know for sure
+that the resulting representation depends entirely and only on that "name" variable.
+Again, retrieving or calculating the signature for real-world data would likely be
+more costly.
 
 ### HEAD
 
@@ -278,13 +281,13 @@ seem like a small (and obvious) optimization, but it can go a long way towards i
 scalability in environments that rely on HEAD.
 
 Also note that HEAD, like GET, still goes through server-side caching. With HEAD, though,
-only the headers are written to the response and the cached body is ignored.
+Prudence only writes the headers to the response and the cached body is ignored.
 
 
 A Complete Request
 ------------------
 
-Now that we covered all three hooks, let's follow a request through them:
+Now that we've covered all three hooks, let's follow a request through them:
 
 1. Let's assume that the client already has a cached representation together with
    the signature we provided from a previous request.

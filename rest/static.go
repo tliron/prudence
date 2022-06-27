@@ -34,7 +34,7 @@ func NewStatic(root string, indexes []string) *Static {
 func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error) {
 	config_ := ard.NewNode(config)
 
-	root, _ := config_.Get("root").String(false)
+	root, _ := config_.Get("root").String()
 	if rootUrl, err := context.Resolve(root, true); err == nil {
 		if rootFileUrl, ok := rootUrl.(*urlpkg.FileURL); ok {
 			root = rootFileUrl.Path
@@ -44,7 +44,7 @@ func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error
 	} else {
 		return nil, err
 	}
-	indexes := platform.AsStringList(config_.Get("indexes").Data)
+	indexes := platform.AsStringList(config_.Get("indexes").Value)
 
 	return NewStatic(root, indexes), nil
 }

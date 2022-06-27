@@ -23,7 +23,7 @@ const DEFAULT_TIMEOUT_SECONDS = 10.0
 
 type PrudenceAPI struct {
 	js.UtilAPI
-	js.FormatAPI
+	js.TranscribeAPI
 	js.FileAPI
 
 	Arguments       map[string]string

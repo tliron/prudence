@@ -108,7 +108,7 @@ var runCommand = &cobra.Command{
 		environment.OnChanged("", nil)
 
 		// Block forever
-		<-make(chan bool, 0)
+		select {}
 	},
 }
 

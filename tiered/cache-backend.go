@@ -32,7 +32,7 @@ func CreateTieredCacheBackend(config ard.StringMap, context *js.Context) (interf
 	self := NewTieredCacheBackend()
 
 	config_ := ard.NewNode(config)
-	if list, ok := config_.Get("caches").List(false); ok {
+	if list, ok := config_.Get("caches").List(); ok {
 		for _, cache := range list {
 			if cacheBackend, ok := cache.(platform.CacheBackend); ok {
 				self.cacheBackends = append(self.cacheBackends, cacheBackend)

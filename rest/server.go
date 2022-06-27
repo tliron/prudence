@@ -56,24 +56,24 @@ func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error
 
 	config_ := ard.NewNode(config)
 	var ok bool
-	if self.Name, ok = config_.Get("name").String(false); !ok {
+	if self.Name, ok = config_.Get("name").String(); !ok {
 		self.Name = "Prudence"
 	}
-	if self.Address, ok = config_.Get("address").String(false); !ok {
+	if self.Address, ok = config_.Get("address").String(); !ok {
 		self.Address = ":8080"
 	}
 
 	secure := config_.Get("secure")
-	if secure.Data != nil {
+	if secure.Value != nil {
 		self.Secure = true
 	}
-	self.Certificate, _ = secure.Get("certificate").String(false)
-	self.Key, _ = secure.Get("key").String(true)
+	self.Certificate, _ = secure.Get("certificate").String()
+	self.Key, _ = secure.Get("key").NilMeansZero().String()
 
-	self.NCSALogFilePrefix, _ = config_.Get("ncsaLogFilePrefix").String(false)
-	self.Debug, _ = config_.Get("debug").Boolean(false)
+	self.NCSALogFilePrefix, _ = config_.Get("ncsaLogFilePrefix").String()
+	self.Debug, _ = config_.Get("debug").Boolean()
 
-	if handler := config_.Get("handler").Data; handler != nil {
+	if handler := config_.Get("handler").Value; handler != nil {
 		var err error
 		if self.Handler, err = GetHandleFunc(handler, context); err != nil {
 			return nil, err

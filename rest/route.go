@@ -34,13 +34,13 @@ func CreateRoute(config ard.StringMap, context *js.Context) (interface{}, error)
 	var self Route
 
 	config_ := ard.NewNode(config)
-	self.Name, _ = config_.Get("name").String(true)
-	paths := platform.AsStringList(config_.Get("paths").Data)
+	self.Name, _ = config_.Get("name").NilMeansZero().String()
+	paths := platform.AsStringList(config_.Get("paths").Value)
 	var err error
 	if self.PathTemplates, err = NewPathTemplates(paths...); err != nil {
 		return nil, err
 	}
-	if handler := config_.Get("handler").Data; handler != nil {
+	if handler := config_.Get("handler").Value; handler != nil {
 		if self.Handler, err = GetHandleFunc(handler, context); err != nil {
 			return nil, err
 		}

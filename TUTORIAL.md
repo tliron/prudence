@@ -537,13 +537,13 @@ For more JST sugar see the [JST documentation](jst/README.md). It is even possib
 
 Behind the scenes the the entire JST file is translated into JavaScript code and wrapped
 in an exported "present" function, allowing it to be used with "bind" in the same way we
-hooked `json.js`. Note that can also refer to that "present" function directly:
+hooked `json.js`. Note that you can also refer to that "present" function directly:
 
     bind('./html.jst', 'present')
 
 If you now check the [`http://localhost:8080/person/linus`](http://localhost:8080/person/linus)
 URL in your web browser, it will indeed default to this HTML representation, because that's
-what web browsers perfer. With curl you need to explicitly ask for HTML:
+what web browsers prefer. With curl you need to explicitly ask for HTML:
 
     curl localhost:8080/person/linus -v --header 'Accept: text/html'
 

@@ -9,9 +9,9 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/tliron/kutil/ard"
-	"github.com/tliron/kutil/format"
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/logging"
+	"github.com/tliron/kutil/transcribe"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
 )
@@ -77,7 +77,7 @@ func (self *Context) Copy() *Context {
 		Name:      self.Name,
 		Debug:     self.Debug,
 		Path:      self.Path,
-		Variables: ard.Copy(self.Variables).(ard.StringMap),
+		Variables: ard.SimpleCopy(self.Variables).(ard.StringMap),
 		writer:    self.writer,
 	}
 }
@@ -112,7 +112,7 @@ func (self *Context) WriteString(s string) (int, error) {
 }
 
 func (self *Context) WriteJson(value ard.Value, indent string) (int, error) {
-	if s, err := format.Encode(value, "json", indent, false); err == nil {
+	if s, err := transcribe.Encode(value, "json", indent, false); err == nil {
 		return self.WriteString(s)
 	} else {
 		return 0, err
@@ -120,7 +120,7 @@ func (self *Context) WriteJson(value ard.Value, indent string) (int, error) {
 }
 
 func (self *Context) WriteYaml(value ard.Value, indent string) (int, error) {
-	if s, err := format.Encode(value, "yaml", indent, false); err == nil {
+	if s, err := transcribe.Encode(value, "yaml", indent, false); err == nil {
 		return self.WriteString(s)
 	} else {
 		return 0, err
