@@ -19,7 +19,8 @@ func init() {
 //
 
 type LocalScheduler struct {
-	scheduler *quartz.StdScheduler
+	scheduler quartz.Scheduler
+	context   contextpkg.Context
 	queue     []func() error
 	queueLock sync.Mutex
 }
@@ -27,6 +28,7 @@ type LocalScheduler struct {
 func NewLocalScheduler() *LocalScheduler {
 	return &LocalScheduler{
 		scheduler: quartz.NewStdScheduler(),
+		context:   contextpkg.TODO(),
 	}
 }
 
@@ -52,7 +54,7 @@ func (self *LocalScheduler) Schedule(cronPattern string, job func()) error {
 
 // platform.Startable interface
 func (self *LocalScheduler) Start() error {
-	self.scheduler.Start()
+	self.scheduler.Start(self.context)
 	log.Info("started Quartz scheduler")
 
 	self.queueLock.Lock()
@@ -78,7 +80,7 @@ func (self *LocalScheduler) schedule(cronPattern string, job func()) error {
 	log.Infof("scheduling task at: %s", cronPattern)
 
 	if trigger, err := quartz.NewCronTrigger(cronPattern); err == nil {
-		return self.scheduler.ScheduleJob(NewFuncJob(job), trigger)
+		return self.scheduler.ScheduleJob(self.context, NewFuncJob(job), trigger)
 	} else {
 		return err
 	}

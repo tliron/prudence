@@ -1,6 +1,7 @@
 package local
 
 import (
+	contextpkg "context"
 	"sync/atomic"
 )
 
@@ -23,7 +24,7 @@ func NewFuncJob(f func()) *FuncJob {
 }
 
 // quartz.Job interface
-func (self *FuncJob) Execute() {
+func (self *FuncJob) Execute(context contextpkg.Context) {
 	self.f()
 }
 
