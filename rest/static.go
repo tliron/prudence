@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/tliron/kutil/ard"
+	"github.com/tliron/exturl"
+	"github.com/tliron/go-ard"
 	"github.com/tliron/kutil/js"
-	urlpkg "github.com/tliron/kutil/url"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -36,7 +36,7 @@ func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error
 
 	root, _ := config_.Get("root").String()
 	if rootUrl, err := context.Resolve(root, true); err == nil {
-		if rootFileUrl, ok := rootUrl.(*urlpkg.FileURL); ok {
+		if rootFileUrl, ok := rootUrl.(*exturl.FileURL); ok {
 			root = rootFileUrl.Path
 		} else {
 			return nil, fmt.Errorf("Static \"root\" is not a file: %v", rootUrl)

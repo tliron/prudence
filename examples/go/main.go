@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/tliron/kutil/logging"
+	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/rest"
 
-	_ "github.com/tliron/kutil/logging/simple"
+	_ "github.com/tliron/commonlog/simple"
 )
 
 func main() {
 	util.ExitOnSIGTERM()
 
-	logging.Configure(2, nil)
+	commonlog.Configure(2, nil)
 	var err error
 
 	jsonRepresentation := &rest.Representation{

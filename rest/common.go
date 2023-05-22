@@ -3,10 +3,10 @@ package rest
 import (
 	"io"
 
-	"github.com/tliron/kutil/logging"
+	"github.com/tliron/commonlog"
 )
 
-var log = logging.GetLogger("prudence.rest")
+var log = commonlog.GetLogger("prudence.rest")
 
 const (
 	HeaderAccept          = "Accept"

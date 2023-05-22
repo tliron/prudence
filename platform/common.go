@@ -1,9 +1,9 @@
 package platform
 
 import (
-	"github.com/tliron/kutil/logging"
+	"github.com/tliron/commonlog"
 )
 
 var NCSAFilename string
 
-var log = logging.GetLogger("prudence.platform")
+var log = commonlog.GetLogger("prudence.platform")

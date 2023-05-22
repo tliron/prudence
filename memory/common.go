@@ -1,7 +1,7 @@
 package memory
 
 import (
-	"github.com/tliron/kutil/logging"
+	"github.com/tliron/commonlog"
 )
 
-var log = logging.GetLogger("prudence.memory")
+var log = commonlog.GetLogger("prudence.memory")

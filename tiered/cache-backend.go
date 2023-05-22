@@ -3,13 +3,13 @@ package tiered
 import (
 	"fmt"
 
-	"github.com/tliron/kutil/ard"
+	"github.com/tliron/commonlog"
+	"github.com/tliron/go-ard"
 	"github.com/tliron/kutil/js"
-	"github.com/tliron/kutil/logging"
 	"github.com/tliron/prudence/platform"
 )
 
-var log = logging.GetLogger("prudence.tiered")
+var log = commonlog.GetLogger("prudence.tiered")
 
 func init() {
 	platform.RegisterType("TieredCache", CreateTieredCacheBackend)

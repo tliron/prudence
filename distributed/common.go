@@ -1,7 +1,7 @@
 package distributed
 
 import (
-	"github.com/tliron/kutil/logging"
+	"github.com/tliron/commonlog"
 )
 
-var log = logging.GetLogger("prudence.distributed")
+var log = commonlog.GetLogger("prudence.distributed")

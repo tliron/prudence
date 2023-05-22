@@ -8,9 +8,9 @@ import (
 	"net/http"
 
 	"github.com/dop251/goja"
-	"github.com/tliron/kutil/ard"
+	"github.com/tliron/commonlog"
+	"github.com/tliron/go-ard"
 	"github.com/tliron/kutil/js"
-	"github.com/tliron/kutil/logging"
 	"github.com/tliron/kutil/transcribe"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
@@ -24,7 +24,7 @@ type Context struct {
 	Request  *Request
 	Response *Response
 
-	Log   logging.Logger
+	Log   commonlog.Logger
 	Name  string
 	Debug bool
 
@@ -64,7 +64,7 @@ func (self *Context) AppendName(name string) *Context {
 		} else {
 			context.Name += "." + name
 		}
-		context.Log = logging.NewScopeLogger(log, context.Name)
+		context.Log = commonlog.NewScopeLogger(log, context.Name)
 		return context
 	}
 }

@@ -1,7 +1,7 @@
 package local
 
 import (
-	"github.com/tliron/kutil/logging"
+	"github.com/tliron/commonlog"
 )
 
-var log = logging.GetLogger("prudence.local")
+var log = commonlog.GetLogger("prudence.local")

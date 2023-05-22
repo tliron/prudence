@@ -1,7 +1,7 @@
 package jst
 
 import (
-	"github.com/tliron/kutil/logging"
+	"github.com/tliron/commonlog"
 )
 
-var log = logging.GetLogger("prudence.jst")
+var log = commonlog.GetLogger("prudence.jst")

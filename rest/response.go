@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tliron/kutil/ard"
+	"github.com/tliron/go-ard"
 )
 
 //

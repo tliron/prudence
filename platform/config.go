@@ -1,7 +1,7 @@
 package platform
 
 import (
-	"github.com/tliron/kutil/ard"
+	"github.com/tliron/go-ard"
 )
 
 func AsConfigList(value ard.Value) ard.List {

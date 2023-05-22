@@ -1,7 +1,7 @@
 package render
 
 import (
-	"github.com/tliron/kutil/logging"
+	"github.com/tliron/commonlog"
 )
 
-var log = logging.GetLogger("prudence.render")
+var log = commonlog.GetLogger("prudence.render")

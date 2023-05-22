@@ -1,9 +1,9 @@
 package commands
 
 import (
-	"github.com/tliron/kutil/logging"
+	"github.com/tliron/commonlog"
 )
 
 const toolName = "xprudence"
 
-var log = logging.GetLogger(toolName)
+var log = commonlog.GetLogger(toolName)

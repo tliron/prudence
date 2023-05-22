@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"github.com/tliron/kutil/ard"
+	"github.com/tliron/go-ard"
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )

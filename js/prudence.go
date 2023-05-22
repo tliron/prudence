@@ -6,10 +6,10 @@ import (
 	"html"
 	"time"
 
-	"github.com/tliron/kutil/ard"
+	"github.com/tliron/commonlog"
+	"github.com/tliron/exturl"
+	"github.com/tliron/go-ard"
 	"github.com/tliron/kutil/js"
-	"github.com/tliron/kutil/logging"
-	urlpkg "github.com/tliron/kutil/url"
 	"github.com/tliron/kutil/util"
 	platform "github.com/tliron/prudence/platform"
 	rest "github.com/tliron/prudence/rest"
@@ -27,12 +27,12 @@ type PrudenceAPI struct {
 	js.FileAPI
 
 	Arguments       map[string]string
-	Log             logging.Logger
+	Log             commonlog.Logger
 	JsContext       *js.Context
 	DefaultNotFound rest.Handler
 }
 
-func NewPrudenceAPI(urlContext *urlpkg.Context, jsContext *js.Context, arguments map[string]string) *PrudenceAPI {
+func NewPrudenceAPI(urlContext *exturl.Context, jsContext *js.Context, arguments map[string]string) *PrudenceAPI {
 	return &PrudenceAPI{
 		FileAPI:         js.NewFileAPI(urlContext),
 		Arguments:       arguments,
@@ -52,13 +52,13 @@ func (self *PrudenceAPI) LoadString(id string) (string, error) {
 
 func (self *PrudenceAPI) LoadBytes(id string) ([]byte, error) {
 	if url_, err := self.JsContext.Resolve(id, true); err == nil {
-		if fileUrl, ok := url_.(*urlpkg.FileURL); ok {
+		if fileUrl, ok := url_.(*exturl.FileURL); ok {
 			if err := self.JsContext.Environment.Watch(fileUrl.Path); err != nil {
 				return nil, err
 			}
 		}
 
-		return urlpkg.ReadBytes(url_)
+		return exturl.ReadBytes(url_)
 	} else {
 		return nil, err
 	}

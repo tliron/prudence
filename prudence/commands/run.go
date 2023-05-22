@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/tliron/exturl"
 	kutiljs "github.com/tliron/kutil/js"
-	urlpkg "github.com/tliron/kutil/url"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/kutil/version"
 	"github.com/tliron/prudence/js"
@@ -39,17 +39,17 @@ var runCommand = &cobra.Command{
 
 		util.OnExit(platform.Stop)
 
-		urlContext := urlpkg.NewContext()
+		urlContext := exturl.NewContext()
 		util.OnExitError(urlContext.Release)
 
-		var path_ []urlpkg.URL
+		var path_ []exturl.URL
 
 		parsePaths := func(paths []string) {
 			for _, path := range paths {
 				if !strings.HasSuffix(path, "/") {
 					path += "/"
 				}
-				pathUrl, err := urlpkg.NewValidURL(path, nil, urlContext)
+				pathUrl, err := exturl.NewValidURL(path, nil, urlContext)
 				log.Infof("library path: %s", pathUrl.String())
 				util.FailOnError(err)
 				path_ = append(path_, pathUrl)

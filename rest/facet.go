@@ -3,7 +3,7 @@ package rest
 import (
 	"errors"
 
-	"github.com/tliron/kutil/ard"
+	"github.com/tliron/go-ard"
 	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
