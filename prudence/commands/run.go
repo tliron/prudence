@@ -1,6 +1,7 @@
 package commands
 
 import (
+	contextpkg "context"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -49,7 +50,7 @@ var runCommand = &cobra.Command{
 				if !strings.HasSuffix(path, "/") {
 					path += "/"
 				}
-				pathUrl, err := exturl.NewValidURL(path, nil, urlContext)
+				pathUrl, err := urlContext.NewValidURL(contextpkg.TODO(), path, nil)
 				log.Infof("library path: %s", pathUrl.String())
 				util.FailOnError(err)
 				path_ = append(path_, pathUrl)

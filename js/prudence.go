@@ -1,6 +1,7 @@
 package js
 
 import (
+	contextpkg "context"
 	"errors"
 	"fmt"
 	"html"
@@ -42,15 +43,15 @@ func NewPrudenceAPI(urlContext *exturl.Context, jsContext *js.Context, arguments
 	}
 }
 
-func (self *PrudenceAPI) LoadString(id string) (string, error) {
-	if bytes, err := self.LoadBytes(id); err == nil {
+func (self *PrudenceAPI) LoadString(context contextpkg.Context, id string) (string, error) {
+	if bytes, err := self.LoadBytes(context, id); err == nil {
 		return util.BytesToString(bytes), nil
 	} else {
 		return "", err
 	}
 }
 
-func (self *PrudenceAPI) LoadBytes(id string) ([]byte, error) {
+func (self *PrudenceAPI) LoadBytes(context contextpkg.Context, id string) ([]byte, error) {
 	if url_, err := self.JsContext.Resolve(id, true); err == nil {
 		if fileUrl, ok := url_.(*exturl.FileURL); ok {
 			if err := self.JsContext.Environment.Watch(fileUrl.Path); err != nil {
@@ -58,7 +59,7 @@ func (self *PrudenceAPI) LoadBytes(id string) ([]byte, error) {
 			}
 		}
 
-		return exturl.ReadBytes(url_)
+		return exturl.ReadBytes(context, url_)
 	} else {
 		return nil, err
 	}
