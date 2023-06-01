@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -16,7 +16,7 @@ func init() {
 }
 
 // CreateFunc signature
-func CreateCookie(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateCookie(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	var self http.Cookie
 
 	config_ := ard.NewNode(config)

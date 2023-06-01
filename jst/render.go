@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tliron/kutil/js"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -13,7 +13,7 @@ func init() {
 }
 
 // platform.RenderFunc signature
-func RenderJST(content string, jsContext *js.Context) (string, error) {
+func RenderJST(content string, jsContext *commonjs.Context) (string, error) {
 	if tags, final, err := getTags(content); err == nil {
 		var jstContext platform.JSTContext
 

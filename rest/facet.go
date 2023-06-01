@@ -3,8 +3,8 @@ package rest
 import (
 	"errors"
 
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -32,7 +32,7 @@ func NewFacet(name string) *Facet {
 }
 
 // platform.CreateFunc signature
-func CreateFacet(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateFacet(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	var self Facet
 
 	if route, err := CreateRoute(config, context); err == nil {

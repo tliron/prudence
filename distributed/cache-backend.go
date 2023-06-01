@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/memberlist"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/kubernetes"
 	"github.com/tliron/prudence/platform"
 )
@@ -40,7 +40,7 @@ func NewDistributedCacheBackend() *DistributedCacheBackend {
 }
 
 // platform.CreateFunc signature
-func CreateDistributedCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateDistributedCacheBackend(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	self := NewDistributedCacheBackend()
 
 	config_ := ard.NewNode(config)

@@ -1,8 +1,8 @@
 package rest
 
 import (
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -27,7 +27,7 @@ func NewResource(name string) *Resource {
 }
 
 // CreateFunc signature
-func CreateResource(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateResource(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	var self Resource
 
 	router, _ := CreateRouter(config, context)

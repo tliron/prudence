@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 )
 
-type CreateFunc func(config ard.StringMap, context *js.Context) (interface{}, error)
+type CreateFunc func(config ard.StringMap, context *commonjs.Context) (interface{}, error)
 
 var creators = make(map[string]CreateFunc)
 
@@ -32,7 +32,7 @@ func OnTypes(f func(type_ string, create CreateFunc) bool) {
 	}
 }
 
-func Create(config ard.StringMap, context *js.Context) (interface{}, error) {
+func Create(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	config_ := ard.NewNode(config)
 	if type_, ok := config_.Get("type").String(); ok {
 		if create, err := GetType(type_); err == nil {

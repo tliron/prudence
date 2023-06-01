@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/exturl"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -31,7 +31,7 @@ func NewStatic(root string, indexes []string) *Static {
 }
 
 // platform.CreateFunc signature
-func CreateStatic(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateStatic(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	config_ := ard.NewNode(config)
 
 	root, _ := config_.Get("root").String()

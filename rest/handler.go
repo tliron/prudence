@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/tliron/kutil/js"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/kutil/util"
 )
 
@@ -28,8 +28,8 @@ type Handler interface {
 	Handle(context *Context) bool
 }
 
-func GetHandleFunc(value interface{}, jsContext *js.Context) (HandleFunc, error) {
-	if bind, ok := value.(js.Bind); ok {
+func GetHandleFunc(value interface{}, jsContext *commonjs.Context) (HandleFunc, error) {
+	if bind, ok := value.(commonjs.Bind); ok {
 		var err error
 		if value, jsContext, err = bind.Unbind(); err != nil {
 			return nil, err
@@ -38,7 +38,7 @@ func GetHandleFunc(value interface{}, jsContext *js.Context) (HandleFunc, error)
 
 	if handler, ok := value.(Handler); ok {
 		return handler.Handle, nil
-	} else if function, ok := value.(js.JavaScriptFunc); ok {
+	} else if function, ok := value.(commonjs.JavaScriptFunc); ok {
 		// Wrap JavaScript function
 		return func(context *Context) bool {
 			handled := jsContext.Environment.Call(function, context)

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
 )
@@ -37,7 +37,7 @@ func NewMemoryCacheBackend() *MemoryCacheBackend {
 }
 
 // platform.CreateFunc signature
-func CreateMemoryCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateMemoryCacheBackend(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	self := NewMemoryCacheBackend()
 
 	var maxSize int64

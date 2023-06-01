@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/reugn/go-quartz/quartz"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -33,7 +33,7 @@ func NewLocalScheduler() *LocalScheduler {
 }
 
 // platform.CreateFunc signature
-func CreateLocalScheduler(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateLocalScheduler(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	return NewLocalScheduler(), nil
 }
 

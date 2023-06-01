@@ -104,7 +104,7 @@ Custom Types
 Prudence has built-in types like "Server", "Router", "Static", "MemoryCache", etc., and you can add your
 own. To do this, you need to register a "create" function:
 
-    import "github.com/tliron/kutil/js"
+    import "github.com/tliron/commonjs-goja"
 
     func init() {
         platform.RegisterType("MyType", CreateMyType)
@@ -113,7 +113,7 @@ own. To do this, you need to register a "create" function:
     type MyType struct{}
 
     // platform.CreateFunc signature
-    func CreateMyType(config map[string]interface{}, context *js.Context) (interface{}, error) {
+    func CreateMyType(config map[string]interface{}, context *commonjs.Context) (interface{}, error) {
         return MyType{}
     }
 
@@ -274,14 +274,14 @@ The Prudence renderer API is quite straightforward: it accepts text as input and
 as output. What the [renderer](../render/README.md) actually does, of course, can be quite
 sophisticated. It could be an entire language implementation. Here's a trivial example:
 
-    import "github.com/tliron/kutil/js"
+    import "github.com/tliron/commonjs-goja"
 
     func init() {
         platform.RegisterRenderer("doublespace", RenderDoubleSpace)
     }
 
     // platform.RenderFunc signature
-    func RenderDoubleSpace(content string, context *js.Context) (string, error) {
+    func RenderDoubleSpace(content string, context *commonjs.Context) (string, error) {
         return strings.ReplaceAll(context, " ", "  "), nil
     }
 

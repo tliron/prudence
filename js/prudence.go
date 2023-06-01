@@ -7,13 +7,13 @@ import (
 	"html"
 	"time"
 
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/exturl"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/util"
-	platform "github.com/tliron/prudence/platform"
-	rest "github.com/tliron/prudence/rest"
+	"github.com/tliron/prudence/platform"
+	"github.com/tliron/prudence/rest"
 )
 
 const DEFAULT_TIMEOUT_SECONDS = 10.0
@@ -23,19 +23,19 @@ const DEFAULT_TIMEOUT_SECONDS = 10.0
 //
 
 type PrudenceAPI struct {
-	js.UtilAPI
-	js.TranscribeAPI
-	js.FileAPI
+	commonjs.UtilAPI
+	commonjs.TranscribeAPI
+	commonjs.FileAPI
 
 	Arguments       map[string]string
 	Log             commonlog.Logger
-	JsContext       *js.Context
+	JsContext       *commonjs.Context
 	DefaultNotFound rest.Handler
 }
 
-func NewPrudenceAPI(urlContext *exturl.Context, jsContext *js.Context, arguments map[string]string) *PrudenceAPI {
+func NewPrudenceAPI(urlContext *exturl.Context, jsContext *commonjs.Context, arguments map[string]string) *PrudenceAPI {
 	return &PrudenceAPI{
-		FileAPI:         js.NewFileAPI(urlContext),
+		FileAPI:         commonjs.NewFileAPI(urlContext),
 		Arguments:       arguments,
 		Log:             log,
 		JsContext:       jsContext,

@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
 )
@@ -34,7 +34,7 @@ func NewMapCacheBackend() *MapCacheBackend {
 }
 
 // platform.CreateFunc signature
-func CreateMapCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateMapCacheBackend(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	self := NewMapCacheBackend()
 
 	var pruneFrequency float64

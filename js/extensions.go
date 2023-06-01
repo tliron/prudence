@@ -4,35 +4,35 @@ import (
 	"fmt"
 
 	"github.com/dop251/goja"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
-func newExtensions(arguments map[string]string) []js.Extension {
-	var extensions []js.Extension
+func newExtensions(arguments map[string]string) []commonjs.Extension {
+	var extensions []commonjs.Extension
 
-	extensions = append(extensions, js.Extension{
+	extensions = append(extensions, commonjs.Extension{
 		Name:   "bind",
-		Create: js.CreateLateBindExtension,
+		Create: commonjs.CreateLateBindExtension,
 	})
 
-	extensions = append(extensions, js.Extension{
+	extensions = append(extensions, commonjs.Extension{
 		Name:   "prudence",
 		Create: newPrudenceExtensionCreator(arguments),
 	})
 
-	extensions = append(extensions, js.Extension{
+	extensions = append(extensions, commonjs.Extension{
 		Name: "console",
-		Create: func(context *js.Context) goja.Value {
+		Create: func(context *commonjs.Context) goja.Value {
 			return context.Environment.Runtime.ToValue(ConsoleAPI{})
 		},
 	})
 
 	platform.OnAPIs(func(name string, api interface{}) bool {
-		extensions = append(extensions, js.Extension{
+		extensions = append(extensions, commonjs.Extension{
 			Name: name,
-			Create: func(context *js.Context) goja.Value {
+			Create: func(context *commonjs.Context) goja.Value {
 				return context.Environment.Runtime.ToValue(api)
 			},
 		})
@@ -42,8 +42,8 @@ func newExtensions(arguments map[string]string) []js.Extension {
 	return extensions
 }
 
-func newPrudenceExtensionCreator(arguments map[string]string) js.CreateExtensionFunc {
-	return func(context *js.Context) goja.Value {
+func newPrudenceExtensionCreator(arguments map[string]string) commonjs.CreateExtensionFunc {
+	return func(context *commonjs.Context) goja.Value {
 		prudence := context.Environment.Runtime.NewObject()
 
 		// Copy API
@@ -65,7 +65,7 @@ func newPrudenceExtensionCreator(arguments map[string]string) js.CreateExtension
 	}
 }
 
-func newTypeConstructor(create platform.CreateFunc, context *js.Context) func(constructor goja.ConstructorCall) *goja.Object {
+func newTypeConstructor(create platform.CreateFunc, context *commonjs.Context) func(constructor goja.ConstructorCall) *goja.Object {
 	runtime := context.Environment.Runtime
 	// goja constructor signature
 	return func(constructor goja.ConstructorCall) *goja.Object {

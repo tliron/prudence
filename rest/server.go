@@ -11,8 +11,8 @@ import (
 
 	"net/http"
 
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
 	"gocloud.dev/server/requestlog"
@@ -51,7 +51,7 @@ func NewServer(name string) *Server {
 }
 
 // platform.CreateFunc signature
-func CreateServer(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateServer(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	var self Server
 
 	config_ := ard.NewNode(config)

@@ -3,9 +3,9 @@ package tiered
 import (
 	"fmt"
 
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -28,7 +28,7 @@ func NewTieredCacheBackend() *TieredCacheBackend {
 }
 
 // platform.CreateFunc signature
-func CreateTieredCacheBackend(config ard.StringMap, context *js.Context) (interface{}, error) {
+func CreateTieredCacheBackend(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	self := NewTieredCacheBackend()
 
 	config_ := ard.NewNode(config)

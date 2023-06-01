@@ -8,9 +8,9 @@ import (
 	"net/http"
 
 	"github.com/dop251/goja"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/commonlog"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/transcribe"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
@@ -128,13 +128,13 @@ func (self *Context) WriteYaml(value ard.Value, indent string) (int, error) {
 }
 
 func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) goja.Value {
-	var present js.JavaScriptFunc
+	var present commonjs.JavaScriptFunc
 	if len(function.Arguments) > 0 {
 		var ok bool
 		present_ := function.Arguments[0].Export()
-		if bind, ok := present_.(js.Bind); ok {
+		if bind, ok := present_.(commonjs.Bind); ok {
 			var err error
-			var jsContext *js.Context
+			var jsContext *commonjs.Context
 			if present_, jsContext, err = bind.Unbind(); err == nil {
 				runtime = jsContext.Environment.Runtime
 			} else {
@@ -142,7 +142,7 @@ func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) go
 			}
 		}
 
-		if present, ok = present_.(js.JavaScriptFunc); !ok {
+		if present, ok = present_.(commonjs.JavaScriptFunc); !ok {
 			panic(runtime.NewGoError(fmt.Errorf("\"present\" not a function: %T", present_)))
 		}
 	} else {
@@ -171,7 +171,7 @@ func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) go
 	writer := self.writer
 	self.writer = buffer
 
-	js.Call(runtime, present, self)
+	commonjs.Call(runtime, present, self)
 
 	self.flushWriters()
 

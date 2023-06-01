@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/exturl"
-	kutiljs "github.com/tliron/kutil/js"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/kutil/version"
 	"github.com/tliron/prudence/js"
@@ -69,7 +69,7 @@ var runCommand = &cobra.Command{
 			transpileTypeScript()
 		}
 
-		environment.OnChanged = func(id string, module *kutiljs.Module) {
+		environment.OnChanged = func(id string, module *commonjs.Module) {
 			if module != nil {
 				log.Infof("module changed: %s", module.Id)
 			} else if id != "" {

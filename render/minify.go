@@ -10,7 +10,7 @@ import (
 	"github.com/tdewolff/minify/v2/json"
 	"github.com/tdewolff/minify/v2/svg"
 	"github.com/tdewolff/minify/v2/xml"
-	kutiljs "github.com/tliron/kutil/js"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -37,31 +37,31 @@ func init() {
 }
 
 // platform.RenderFunc signature
-func RenderMinifyCSS(content string, context *kutiljs.Context) (string, error) {
+func RenderMinifyCSS(content string, context *commonjs.Context) (string, error) {
 	return minify_.String("text/css", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifyHTML(content string, context *kutiljs.Context) (string, error) {
+func RenderMinifyHTML(content string, context *commonjs.Context) (string, error) {
 	return minify_.String("text/html", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifySVG(content string, context *kutiljs.Context) (string, error) {
+func RenderMinifySVG(content string, context *commonjs.Context) (string, error) {
 	return minify_.String("image/svg+xml", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifyJavaScript(content string, context *kutiljs.Context) (string, error) {
+func RenderMinifyJavaScript(content string, context *commonjs.Context) (string, error) {
 	return minify_.String("text/javascript", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifyJSON(content string, context *kutiljs.Context) (string, error) {
+func RenderMinifyJSON(content string, context *commonjs.Context) (string, error) {
 	return minify_.String("application/json", content)
 }
 
 // platform.RenderFunc signature
-func RenderMinifyXML(content string, context *kutiljs.Context) (string, error) {
+func RenderMinifyXML(content string, context *commonjs.Context) (string, error) {
 	return minify_.String("application/xml", content)
 }

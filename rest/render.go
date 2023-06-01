@@ -5,12 +5,12 @@ import (
 	"errors"
 	"io"
 
-	"github.com/tliron/kutil/js"
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/kutil/util"
 	"github.com/tliron/prudence/platform"
 )
 
-func (self *Context) StartRender(renderer string, jsContext *js.Context) error {
+func (self *Context) StartRender(renderer string, jsContext *commonjs.Context) error {
 	if renderWriter, err := NewRenderWriter(self.writer, renderer, jsContext); err == nil {
 		self.writer = renderWriter
 		return nil
@@ -36,11 +36,11 @@ func (self *Context) EndRender() error {
 type RenderWriter struct {
 	writer  io.Writer
 	render  platform.RenderFunc
-	context *js.Context
+	context *commonjs.Context
 	buffer  *bytes.Buffer
 }
 
-func NewRenderWriter(writer io.Writer, renderer string, context *js.Context) (*RenderWriter, error) {
+func NewRenderWriter(writer io.Writer, renderer string, context *commonjs.Context) (*RenderWriter, error) {
 	if render_, err := platform.GetRenderer(renderer); err == nil {
 		// Note: renderer can be nil
 		return &RenderWriter{

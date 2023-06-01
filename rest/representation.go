@@ -5,8 +5,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/js"
 	"github.com/tliron/prudence/platform"
 )
 
@@ -16,17 +16,17 @@ import (
 
 type RepresentationFunc func(context *Context) error
 
-func NewRepresentationFunc(function interface{}, jsContext *js.Context) (RepresentationFunc, error) {
+func NewRepresentationFunc(function interface{}, jsContext *commonjs.Context) (RepresentationFunc, error) {
 	// Unbind if necessary
 	functionContext := jsContext
-	if bind, ok := function.(js.Bind); ok {
+	if bind, ok := function.(commonjs.Bind); ok {
 		var err error
 		if function, functionContext, err = bind.Unbind(); err != nil {
 			return nil, err
 		}
 	}
 
-	if function_, ok := function.(js.JavaScriptFunc); ok {
+	if function_, ok := function.(commonjs.JavaScriptFunc); ok {
 		return func(context *Context) error {
 			functionContext.Environment.Call(function_, context)
 			return nil
@@ -49,7 +49,7 @@ type Representation struct {
 	Call      RepresentationFunc
 }
 
-func CreateRepresentation(node *ard.Node, context *js.Context) (*Representation, error) {
+func CreateRepresentation(node *ard.Node, context *commonjs.Context) (*Representation, error) {
 	//panic(fmt.Sprintf("%v", node.Value))
 	var self Representation
 
@@ -57,7 +57,7 @@ func CreateRepresentation(node *ard.Node, context *js.Context) (*Representation,
 	functionsContext := context
 	if functions = node.Get("functions"); functions.Value != nil {
 		// Unbind "functions" property if necessary
-		if bind, ok := functions.Value.(js.Bind); ok {
+		if bind, ok := functions.Value.(commonjs.Bind); ok {
 			var err error
 			if functions.Value, functionsContext, err = bind.Unbind(); err != nil {
 				return nil, err
@@ -317,7 +317,7 @@ type Representations struct {
 	Entries []*RepresentationEntry
 }
 
-func CreateRepresentations(config ard.Value, context *js.Context) (*Representations, error) {
+func CreateRepresentations(config ard.Value, context *commonjs.Context) (*Representations, error) {
 	var self Representations
 
 	for _, representation := range platform.AsConfigList(config) {
