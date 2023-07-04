@@ -22,19 +22,8 @@ var rootCommand = &cobra.Command{
 	Use:   toolName,
 	Short: "Customizer for the Prudence web framework",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		cleanup, err := terminal.ProcessColorizeFlag(colorize)
-		util.FailOnError(err)
-		if cleanup != nil {
-			util.OnExitError(cleanup)
-		}
-		if logTo == "" {
-			if terminal.Quiet {
-				verbose = -4
-			}
-			commonlog.Configure(verbose, nil)
-		} else {
-			commonlog.Configure(verbose, &logTo)
-		}
+		util.InitializeColorization(colorize)
+		commonlog.Initialize(verbose, logTo)
 	},
 }
 
