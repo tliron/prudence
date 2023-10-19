@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+. "$HERE/../../scripts/_env"
+
+xprudence build -v \
+	--executable=prudence-badger \
+    --directory="$HERE/badger" \
+    --local="$ROOT" \
+	-r github.com/tliron/commonjs-goja="$ROOT/../../TOSCA/commonjs-goja" \
+	-r github.com/tliron/go-scriptlet="$ROOT/../go-scriptlet"
+
+prudence-badger run "$HERE/start.js" "$@"

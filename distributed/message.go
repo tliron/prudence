@@ -55,17 +55,17 @@ func ParseMessage(bytes []byte) *Message {
 	}
 }
 
-// memberlist.Broadcast interface
+// ([memberlist.Broadcast] interface)
 func (self *Message) Invalidates(broadcast memberlist.Broadcast) bool {
 	return false
 }
 
-// memberlist.Broadcast interface
+// ([memberlist.Broadcast] interface)
 func (self *Message) Message() []byte {
 	bytes, _ := cbor.Marshal(self)
 	return bytes
 }
 
-// memberlist.Broadcast interface
+// ([memberlist.Broadcast] interface)
 func (self *Message) Finished() {
 }

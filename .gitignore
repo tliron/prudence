@@ -1,2 +1,5 @@
 dist/
 work/
+
+go.work
+go.work.sum

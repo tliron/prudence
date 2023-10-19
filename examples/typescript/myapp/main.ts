@@ -1,7 +1,7 @@
 
-export function present(context: Context) {
+export function present() {
     context.response.contentType = 'text/html';
-    context.writeString(`<html>
+    this.write(`<html>
 <body>
     Hello from TypeScript!
 </body>

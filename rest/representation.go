@@ -5,35 +5,35 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/dop251/goja"
 	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/prudence/platform"
 )
 
 //
-// RepresentationFunc
+// RepresentationHook
 //
 
-type RepresentationFunc func(context *Context) error
+type RepresentationHook func(restContext *Context) error
 
-func NewRepresentationFunc(function interface{}, jsContext *commonjs.Context) (RepresentationFunc, error) {
-	// Unbind if necessary
-	functionContext := jsContext
-	if bind, ok := function.(commonjs.Bind); ok {
-		var err error
-		if function, functionContext, err = bind.Unbind(); err != nil {
-			return nil, err
-		}
+func GetRepresentationHook(value any, jsContext *commonjs.Context) (RepresentationHook, error) {
+	var err error
+	if value, jsContext, err = commonjs.Unbind(value, jsContext); err != nil {
+		return nil, err
 	}
 
-	if function_, ok := function.(commonjs.JavaScriptFunc); ok {
-		return func(context *Context) error {
-			functionContext.Environment.Call(function_, context)
-			return nil
+	switch hook := value.(type) {
+	case RepresentationHook:
+		return hook, nil
+
+	case goja.Value, commonjs.ExportedJavaScriptFunc:
+		return func(restContext *Context) error {
+			_, err := jsContext.Environment.Call(hook, restContext)
+			return err
 		}, nil
-	} else {
-		return nil, fmt.Errorf("not a JavaScript function: %T", function)
 	}
+
+	return nil, fmt.Errorf("not a representation hook: %T", value)
 }
 
 //
@@ -41,384 +41,327 @@ func NewRepresentationFunc(function interface{}, jsContext *commonjs.Context) (R
 //
 
 type Representation struct {
-	Construct RepresentationFunc
-	Describe  RepresentationFunc
-	Present   RepresentationFunc
-	Erase     RepresentationFunc
-	Modify    RepresentationFunc
-	Call      RepresentationFunc
+	Name                        string
+	CharSet                     string
+	RedirectTrailingSlash       bool
+	RedirectTrailingSlashStatus int
+	Variables                   map[string]any
+	Prepare                     RepresentationHook
+	Describe                    RepresentationHook
+	Present                     RepresentationHook
+	Erase                       RepresentationHook
+	Modify                      RepresentationHook
+	Call                        RepresentationHook
 }
 
-func CreateRepresentation(node *ard.Node, context *commonjs.Context) (*Representation, error) {
-	//panic(fmt.Sprintf("%v", node.Value))
-	var self Representation
+func NewRepresentation(name string) *Representation {
+	return &Representation{
+		Name:                        name,
+		CharSet:                     "utf-8",
+		RedirectTrailingSlashStatus: http.StatusMovedPermanently, // 301
+		Variables:                   make(map[string]any),
+	}
+}
 
-	var functions *ard.Node
-	functionsContext := context
-	if functions = node.Get("functions"); functions.Value != nil {
-		// Unbind "functions" property if necessary
-		if bind, ok := functions.Value.(commonjs.Bind); ok {
-			var err error
-			if functions.Value, functionsContext, err = bind.Unbind(); err != nil {
-				return nil, err
-			}
+// ([platform.CreateFunc] signature)
+func CreateRepresentation(jsContext *commonjs.Context, config ard.StringMap) (any, error) {
+	config_ := ard.With(config).ConvertSimilar().NilMeansZero()
+
+	name, _ := config_.Get("name").String()
+
+	self := NewRepresentation(name)
+
+	if charSet, ok := config_.Get("charSet").String(); ok {
+		self.CharSet = charSet
+	}
+
+	self.RedirectTrailingSlash, _ = config_.Get("redirectTrailingSlash").Boolean()
+
+	if redirectTrailingSlashStatus, ok := config_.Get("redirectTrailingSlashStatus").UnsignedInteger(); ok {
+		self.RedirectTrailingSlashStatus = int(redirectTrailingSlashStatus)
+	}
+
+	if variables, ok := config_.Get("variables").StringMap(); ok {
+		self.Variables = variables
+	}
+
+	var hooks *ard.Node
+	hooksJsContext := jsContext
+	if hooks = config_.Get("hooks"); hooks.Value != nil {
+		var err error
+		if hooks.Value, hooksJsContext, err = commonjs.Unbind(hooks.Value, hooksJsContext); err != nil {
+			return nil, err
 		}
 	}
 
-	getFunction := func(name string) (RepresentationFunc, error) {
-		if functions.Value != nil {
-			// Try "functions" property
-			if function := functions.Get(name).Value; function != nil {
-				return NewRepresentationFunc(function, functionsContext)
+	getHook := func(name string) (RepresentationHook, error) {
+		if hooks.Value != nil {
+			if hook := hooks.Get(name).Value; hook != nil {
+				return GetRepresentationHook(hook, hooksJsContext)
 			}
 		}
 
-		// Try individual function properties
-		if function := node.Get(name).Value; function != nil {
-			return NewRepresentationFunc(function, context)
+		if hook := config_.Get(name).Value; hook != nil {
+			return GetRepresentationHook(hook, jsContext)
 		}
 
 		return nil, nil
 	}
 
 	var err error
-	if self.Construct, err = getFunction("construct"); err != nil {
+	if self.Prepare, err = getHook("prepare"); err != nil {
 		return nil, err
 	}
-	if self.Describe, err = getFunction("describe"); err != nil {
+	if self.Describe, err = getHook("describe"); err != nil {
 		return nil, err
 	}
-	if self.Present, err = getFunction("present"); err != nil {
+	if self.Present, err = getHook("present"); err != nil {
 		return nil, err
 	}
-	if self.Erase, err = getFunction("erase"); err != nil {
+	if self.Erase, err = getHook("erase"); err != nil {
 		return nil, err
 	}
-	if self.Modify, err = getFunction("modify"); err != nil {
+	if self.Modify, err = getHook("modify"); err != nil {
 		return nil, err
 	}
-	if self.Call, err = getFunction("call"); err != nil {
+	if self.Call, err = getHook("call"); err != nil {
 		return nil, err
 	}
 
-	return &self, nil
+	return self, nil
 }
 
-// Handler interface
-// HandleFunc signature
-func (self *Representation) Handle(context *Context) bool {
-	context.Response.CharSet = "utf-8"
+// ([Handler] interface, [HandleFunc] signature)
+func (self *Representation) Handle(restContext *Context) (bool, error) {
+	restContext = restContext.AppendName(self.Name, false)
 
-	switch context.Request.Method {
+	ard.Merge(restContext.Variables, self.Variables, false)
+
+	if self.RedirectTrailingSlash {
+		if err := restContext.RedirectTrailingSlash(self.RedirectTrailingSlashStatus); err != nil {
+			return false, err
+		}
+	}
+
+	restContext.Response.CharSet = self.CharSet
+
+	switch restContext.Request.Method {
 	case "GET":
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET
-		if self.construct(context) {
-			if self.tryCache(context, true) {
-				if self.describe(context) {
-					self.present(context, true)
+		if err := self.prepare(restContext); err == nil {
+			if !self.presentFromCache(restContext, true) {
+				if ok, err := self.negotiate(restContext); err == nil {
+					if ok {
+						if err := self.respond(restContext, true); err != nil {
+							return false, err
+						}
+					}
+				} else {
+					return false, err
 				}
 			}
+		} else {
+			return false, err
 		}
 
 	case "HEAD":
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/HEAD
 
 		// Avoid wasting resources on writing
-		context.writer = io.Discard
+		restContext.Writer = io.Discard
 
-		if self.construct(context) {
-			if self.tryCache(context, false) {
-				if self.describe(context) {
-					self.present(context, false)
+		if err := self.prepare(restContext); err == nil {
+			if !self.presentFromCache(restContext, false) {
+				if ok, err := self.negotiate(restContext); err == nil {
+					if ok {
+						if err := self.respond(restContext, false); err != nil {
+							return false, err
+						}
+					}
+				} else {
+					return false, err
 				}
 			}
+		} else {
+			return false, err
 		}
 
 	case "DELETE":
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE
-		if self.construct(context) {
-			self.erase(context)
+		if err := self.prepare(restContext); err == nil {
+			if err := self.erase(restContext); err != nil {
+				return false, err
+			}
+		} else {
+			return false, err
 		}
 
 	case "PUT":
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT
-		if self.construct(context) {
-			self.modify(context)
+		if err := self.prepare(restContext); err == nil {
+			if err := self.modify(restContext); err != nil {
+				return false, err
+			}
+		} else {
+			return false, err
 		}
 
 	case "POST":
 		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST
-		if self.construct(context) {
-			self.call(context)
+		if err := self.prepare(restContext); err == nil {
+			if err := self.call(restContext); err != nil {
+				return false, err
+			}
+		} else {
+			return false, err
 		}
 	}
 
-	return context.Response.Status != http.StatusNotFound
+	return restContext.Response.Status != http.StatusNotFound, nil
 }
 
-func (self *Representation) construct(context *Context) bool {
-	context.CacheKey = context.Path
-	if self.Construct != nil {
-		if err := self.Construct(context); err != nil {
-			context.InternalServerError(err)
-			return false
-		}
+func (self *Representation) prepare(restContext *Context) error {
+	//restContext.CacheKey = restContext.Request.Direct.URL.String()
+
+	if self.Prepare != nil {
+		return self.Prepare(restContext)
+	} else {
+		return nil
 	}
-
-	return true
 }
 
-func (self *Representation) tryCache(context *Context, withBody bool) bool {
-	if context.CacheKey != "" {
-		if key, cached, ok := context.LoadCachedRepresentation(); ok {
+func (self *Representation) presentFromCache(restContext *Context, withBody bool) bool {
+	if restContext.CacheKey != "" {
+		if key, cached, ok := restContext.LoadCachedRepresentation(); ok {
 			if withBody && (len(cached.Body) == 0) {
 				// The cache entry was likely created by a previous HEAD request
-				context.Log.Debugf("ignoring cached representation because it has no body: %s", context.Path)
+				restContext.Log.Debugf("ignoring cached representation because it has no body: %s", restContext.Request.Path)
 			} else {
-				if changed := context.PresentCachedRepresentation(cached, withBody); changed {
-					cached.Update(key)
+				if changed := restContext.PresentCachedRepresentation(cached, withBody); changed {
+					restContext.UpdateCachedRepresentation(key, cached)
 				}
-				return false
+				return true
 			}
 		}
 	}
 
-	return true
+	return false
 }
 
-func (self *Representation) describe(context *Context) bool {
+func (self *Representation) negotiate(restContext *Context) (bool, error) {
 	if self.Describe != nil {
-		if err := self.Describe(context); err != nil {
-			context.InternalServerError(err)
-			return false
-		}
-
-		if context.isNotModified(false) {
-			return false
+		if err := self.Describe(restContext); err == nil {
+			return !restContext.isNotModified(false), nil
+		} else {
+			return false, err
 		}
 	}
 
-	return true
+	return true, nil
 }
 
-func (self *Representation) present(context *Context, withBody bool) {
+func (self *Representation) respond(restContext *Context, withBody bool) error {
 	if withBody {
 		// Encoding
-		if !SetBestEncodeWriter(context) {
-			return
+		if !SetBestEncodeWriter(restContext) {
+			return nil
 		}
 
 		// Present
 		if self.Present != nil {
-			if err := self.Present(context); err != nil {
-				context.InternalServerError(err)
-				return
+			if err := self.Present(restContext); err != nil {
+				return err
 			}
 		}
 
-		if context.isNotModified(false) {
-			return
+		if restContext.isNotModified(false) {
+			return nil
 		}
 	}
 
-	context.flushWriters()
+	if err := restContext.Flush(); err != nil {
+		return err
+	}
 
 	// Headers
-	context.Response.setContentType()
-	context.Response.setETag()
-	context.Response.setLastModified()
-	context.setCacheControl()
+	restContext.Response.setContentType()
+	restContext.Response.setETag()
+	restContext.Response.setLastModified()
+	restContext.setCacheControl()
 
-	if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
-		context.StoreCachedRepresentation(withBody)
+	if restContext.caching() {
+		restContext.StoreCachedRepresentation(withBody)
 	}
+
+	return nil
 }
 
-func (self *Representation) erase(context *Context) {
+func (self *Representation) erase(restContext *Context) error {
 	if self.Erase != nil {
-		if err := self.Erase(context); err != nil {
-			context.InternalServerError(err)
-			return
+		if err := self.Erase(restContext); err != nil {
+			return err
 		}
 
-		if context.Done {
-			if context.Async {
+		if restContext.Done {
+			if restContext.Async {
 				// Will be erased later
-				context.Response.Status = http.StatusAccepted // 202
-			} else if context.Response.Buffer.Len() > 0 {
+				restContext.Response.Status = http.StatusAccepted // 202
+			} else if restContext.Response.Buffer.Len() > 0 {
 				// Erased, has response
-				context.Response.Status = http.StatusOK // 200
+				restContext.Response.Status = http.StatusOK // 200
 			} else {
 				// Erased, no response
-				context.Response.Status = http.StatusNoContent // 204
+				restContext.Response.Status = http.StatusNoContent // 204
 			}
 
-			if context.CacheKey != "" {
-				context.DeleteCachedRepresentation()
+			if restContext.CacheKey != "" {
+				restContext.DeleteCachedRepresentation()
 			}
 		} else {
-			context.Response.Status = http.StatusNotFound // 404
+			restContext.Response.Status = http.StatusNotFound // 404
 		}
 	} else {
-		context.Response.Status = http.StatusMethodNotAllowed // 405
+		restContext.Response.Status = http.StatusMethodNotAllowed // 405
 	}
+
+	return nil
 }
 
-func (self *Representation) modify(context *Context) {
+func (self *Representation) modify(restContext *Context) error {
 	if self.Modify != nil {
-		if err := self.Modify(context); err != nil {
-			context.InternalServerError(err)
-			return
+		if err := self.Modify(restContext); err != nil {
+			return err
 		}
 
-		if context.Done {
-			if context.Created {
+		if restContext.Done {
+			if restContext.Created {
 				// Created
-				context.Response.Status = http.StatusCreated // 201
-			} else if context.Response.Buffer.Len() > 0 {
+				restContext.Response.Status = http.StatusCreated // 201
+			} else if restContext.Response.Buffer.Len() > 0 {
 				// Changed, has response
-				context.Response.Status = http.StatusOK // 200
+				restContext.Response.Status = http.StatusOK // 200
 			} else {
 				// Changed, no response
-				context.Response.Status = http.StatusNoContent // 204
+				restContext.Response.Status = http.StatusNoContent // 204
 			}
 
-			if (context.CacheDuration > 0.0) && (context.CacheKey != "") {
-				context.StoreCachedRepresentation(true)
+			if restContext.caching() {
+				restContext.StoreCachedRepresentation(true)
 			}
 		} else {
-			context.Response.Status = http.StatusNotFound // 404
+			restContext.Response.Status = http.StatusNotFound // 404
 		}
 	} else {
-		context.Response.Status = http.StatusMethodNotAllowed // 405
+		restContext.Response.Status = http.StatusMethodNotAllowed // 405
 	}
+
+	return nil
 }
 
-func (self *Representation) call(context *Context) {
+func (self *Representation) call(restContext *Context) error {
 	if self.Call != nil {
-		if err := self.Call(context); err != nil {
-			context.InternalServerError(err)
-			return
-		}
+		return self.Call(restContext)
+	} else {
+		return nil
 	}
-}
-
-//
-// Representations
-//
-
-type RepresentationEntry struct {
-	Representation *Representation
-	ContentType    ContentType
-	Language       Language
-}
-
-type Representations struct {
-	Entries []*RepresentationEntry
-}
-
-func CreateRepresentations(config ard.Value, context *commonjs.Context) (*Representations, error) {
-	var self Representations
-
-	for _, representation := range platform.AsConfigList(config) {
-		representation_ := ard.NewNode(representation)
-		if representation__, err := CreateRepresentation(representation_, context); err == nil {
-			contentTypes := platform.AsStringList(representation_.Get("contentTypes").Value)
-			languages := platform.AsStringList(representation_.Get("languages").Value)
-			self.Add(contentTypes, languages, representation__)
-		} else {
-			return nil, err
-		}
-	}
-
-	return &self, nil
-}
-
-func (self *Representations) Add(contentTypes []string, languages []string, representation *Representation) {
-	if len(contentTypes) == 0 {
-		contentTypes = []string{""}
-	}
-
-	if len(languages) == 0 {
-		languages = []string{""}
-	}
-
-	// The order signifies the *server* matching preferences
-	for _, contentType := range contentTypes {
-		contentType_ := NewContentType(contentType)
-		for _, language := range languages {
-			self.Entries = append(self.Entries, &RepresentationEntry{
-				Representation: representation,
-				ContentType:    contentType_,
-				Language:       NewLanguage(language),
-			})
-		}
-	}
-}
-
-func (self *Representations) NegotiateBest(context *Context) (*Representation, string, string, bool) {
-	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation
-
-	contentTypePreferences := ParseContentTypePreferences(context.Request.Header.Get(HeaderAccept))
-	languagePreferences := ParseLanguagePreferences(context.Request.Header.Get(HeaderAcceptLanguage))
-
-	if len(languagePreferences) > 0 {
-		// Try exact match of contentType and language
-		for _, contentTypePreference := range contentTypePreferences {
-			if contentTypePreference.Weight != 0.0 {
-				for _, languagePreference := range languagePreferences {
-					if languagePreference.Weight != 0.0 {
-						for _, entry := range self.Entries {
-							if contentTypePreference.Matches(entry.ContentType) && languagePreference.Matches(entry.Language, false) {
-								return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
-							}
-						}
-					}
-				}
-			}
-		}
-
-		// Try exact match of contentType and soft match of language
-		for _, contentTypePreference := range contentTypePreferences {
-			if contentTypePreference.Weight != 0.0 {
-				for _, languagePreference := range languagePreferences {
-					if languagePreference.Weight != 0.0 {
-						for _, entry := range self.Entries {
-							if contentTypePreference.Matches(entry.ContentType) && languagePreference.Matches(entry.Language, true) {
-								return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// Try exact match of contentType
-	for _, contentTypePreference := range contentTypePreferences {
-		if contentTypePreference.Weight != 0.0 {
-			for _, entry := range self.Entries {
-				if contentTypePreference.Matches(entry.ContentType) {
-					return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
-				}
-			}
-		}
-	}
-
-	// TODO: for weight 0 should we expressly forbid matching entries?
-	// Probably not!
-
-	// Try default representation (no contentType)
-	for _, entry := range self.Entries {
-		if entry.ContentType.Name == "" {
-			return entry.Representation, "", "", true
-		}
-	}
-
-	// Just pick the first one
-	for _, entry := range self.Entries {
-		return entry.Representation, entry.ContentType.Name, entry.Language.Name, true
-	}
-
-	return nil, "", "", false
 }

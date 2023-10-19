@@ -3,7 +3,7 @@ const backend = require('../backend');
 const common = require('../common');
 
 // The "construct" hook (optional) optimizes for server-side caching
-// It should be a very fast function
+// It should be a fast function
 // Here we can set "cacheKey", "cacheGroups", "contentType", "charSet", and "language"
 // "cacheKey" defaults to the request path
 // "contentType" defaults to that of the accepted representation

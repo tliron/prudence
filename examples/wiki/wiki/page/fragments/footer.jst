@@ -1,0 +1,10 @@
+<%
+const backend = require('../../backend/backend');
+const pages = new backend.Pages(this);
+%>
+<hr />
+<div>
+    <a href="<%= pages.url('index/') %>">Index</a>
+</div>
+</body>
+</html>

@@ -1,9 +1,7 @@
 package rest
 
 import (
-	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -19,17 +17,11 @@ type Language struct {
 
 func NewLanguage(name string) Language {
 	self := Language{Name: name}
-
-	s := strings.SplitN(name, "-", 2)
-	self.Tag = s[0]
-	if len(s) == 2 {
-		self.SubTag = s[1]
-	}
-
+	self.Tag, self.SubTag, _ = strings.Cut(name, "-")
 	return self
 }
 
-// fmt.Stringify interface
+// ([fmt.Stringify] interface)
 func (self Language) String() string {
 	return self.Name
 }
@@ -44,23 +36,14 @@ type LanguagePreference struct {
 }
 
 func ParseLanguagePreference(text string) (LanguagePreference, error) {
-	self := LanguagePreference{Weight: 1.0}
-
-	s := strings.SplitN(text, ";", 2)
-	self.Language = NewLanguage(s[0])
-
-	// Annotation
-	if len(s) == 2 {
-		annotationText := s[1]
-		if strings.HasPrefix(annotationText, "q=") {
-			var err error
-			if self.Weight, err = strconv.ParseFloat(annotationText[2:], 64); err != nil {
-				return self, err
-			}
-		}
+	if preference, err := ParsePreference(text); err == nil {
+		return LanguagePreference{
+			Language: NewLanguage(preference.Name),
+			Weight:   preference.Weight,
+		}, nil
+	} else {
+		return LanguagePreference{}, err
 	}
-
-	return self, nil
 }
 
 func (self *LanguagePreference) Matches(language Language, anySubTag bool) bool {
@@ -78,9 +61,9 @@ func (self *LanguagePreference) Matches(language Language, anySubTag bool) bool 
 	return true
 }
 
-// fmt.Stringify interface
+// ([fmt.Stringify] interface)
 func (self LanguagePreference) String() string {
-	return fmt.Sprintf("%s;q=%g", self.Tag, self.Weight)
+	return Preference{self.Name, self.Weight}.String()
 }
 
 //
@@ -110,17 +93,17 @@ func ParseLanguagePreferences(text string) LanguagePreferences {
 	return self
 }
 
-// sort.Interface interface
+// ([sort.Interface] interface)
 func (self LanguagePreferences) Len() int {
 	return len(self)
 }
 
-// sort.Interface interface
+// ([sort.Interface] interface)
 func (self LanguagePreferences) Less(i int, j int) bool {
 	return self[i].Weight < self[j].Weight
 }
 
-// sort.Interface interface
+// ([sort.Interface] interface)
 func (self LanguagePreferences) Swap(i int, j int) {
 	self[i], self[j] = self[j], self[i]
 }

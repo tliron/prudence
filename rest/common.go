@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"io"
+	"net/url"
 
 	"github.com/tliron/commonlog"
 )
@@ -24,20 +24,20 @@ const (
 	HeaderServer          = "Server"
 )
 
-//
-// WrappingWriter
-//
-
-type WrappingWriter interface {
-	io.WriteCloser
-
-	GetWrappedWriter() io.Writer
+var DataContentTypes = []string{
+	"application/yaml",
+	"application/json",
+	"application/xml",
+	"application/cbor",
+	"application/msgpack",
 }
 
-// Utils
+var EndRequest = struct{}{}
 
-func copyBytes(bytes []byte) []byte {
-	bytes_ := make([]byte, len(bytes))
-	copy(bytes_, bytes)
-	return bytes_
+func CloneURLValues(values url.Values) url.Values {
+	values_ := make(url.Values)
+	for name, values__ := range values {
+		values_[name] = append(values__[:0:0], values__...)
+	}
+	return values_
 }

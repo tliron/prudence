@@ -8,18 +8,14 @@ import (
 
 	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/prudence/platform"
 )
 
-func init() {
-	platform.RegisterType("Cookie", CreateCookie)
-}
+// ([platform.CreateFunc] signature)
+func CreateCookie(jsContext *commonjs.Context, config ard.StringMap) (any, error) {
+	config_ := ard.With(config).ConvertSimilar().NilMeansZero()
 
-// CreateFunc signature
-func CreateCookie(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
 	var self http.Cookie
 
-	config_ := ard.NewNode(config)
 	var ok bool
 	if self.Name, ok = config_.Get("name").String(); !ok {
 		return nil, errors.New("Cookie must have a \"name\"")
@@ -55,4 +51,29 @@ func CreateCookie(config ard.StringMap, context *commonjs.Context) (interface{},
 	}
 
 	return &self, nil
+}
+
+func CloneCookie(cookie *http.Cookie) *http.Cookie {
+	return &http.Cookie{
+		Name:       cookie.Name,
+		Value:      cookie.Value,
+		Path:       cookie.Path,
+		Domain:     cookie.Domain,
+		Expires:    cookie.Expires,
+		RawExpires: cookie.RawExpires,
+		MaxAge:     cookie.MaxAge,
+		Secure:     cookie.Secure,
+		HttpOnly:   cookie.HttpOnly,
+		SameSite:   cookie.SameSite,
+		Raw:        cookie.Raw,
+		Unparsed:   append(cookie.Unparsed[:0:0], cookie.Unparsed...),
+	}
+}
+
+func CloneCookies(cookies []*http.Cookie) []*http.Cookie {
+	cookies_ := make([]*http.Cookie, len(cookies))
+	for index, cookie := range cookies {
+		cookies_[index] = CloneCookie(cookie)
+	}
+	return cookies_
 }

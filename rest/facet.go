@@ -1,16 +1,9 @@
 package rest
 
 import (
-	"errors"
-
 	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
-	"github.com/tliron/prudence/platform"
 )
-
-func init() {
-	platform.RegisterType("Facet", CreateFacet)
-}
 
 //
 // Facet
@@ -31,38 +24,36 @@ func NewFacet(name string) *Facet {
 	return &self
 }
 
-// platform.CreateFunc signature
-func CreateFacet(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
+// ([platform.CreateFunc] signature)
+func CreateFacet(jsContext *commonjs.Context, config ard.StringMap) (any, error) {
+	config_ := ard.With(config).ConvertSimilar().NilMeansZero()
+
 	var self Facet
 
-	if route, err := CreateRoute(config, context); err == nil {
+	if route, err := CreateRoute(jsContext, config); err == nil {
 		self.Route = route.(*Route)
 	} else {
 		return nil, err
 	}
-	if self.Handler != nil {
-		return nil, errors.New("Facet does not support setting the \"handler\"")
-	}
+
 	self.Handler = self.Handle
 
-	config_ := ard.NewNode(config)
 	var err error
-	if self.Representations, err = CreateRepresentations(config_.Get("representations").Value, context); err != nil {
+	if self.Representations, err = CreateRepresentations(config_.Get("representations").Value, jsContext); err != nil {
 		return nil, err
 	}
 
 	return &self, nil
 }
 
-// Handler interface
-// HandleFunc signature
-func (self *Facet) Handle(context *Context) bool {
-	if representation, contentType, language, ok := self.Representations.NegotiateBest(context); ok {
-		context = context.Copy()
-		context.Response.ContentType = contentType
-		context.Response.Language = language
-		return representation.Handle(context)
+// ([Handler] interface, [HandleFunc] signature)
+func (self *Facet) Handle(restContext *Context) (bool, error) {
+	if representation, contentType, language, ok := self.Representations.NegotiateBest(restContext); ok {
+		restContext = restContext.Clone()
+		restContext.Response.ContentType = contentType
+		restContext.Response.Language = language
+		return representation.Handle(restContext)
 	} else {
-		return false
+		return false, nil
 	}
 }

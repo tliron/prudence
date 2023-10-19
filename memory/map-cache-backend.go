@@ -10,10 +10,6 @@ import (
 	"github.com/tliron/prudence/platform"
 )
 
-func init() {
-	platform.RegisterType("MapCache", CreateMapCacheBackend)
-}
-
 //
 // MapCacheBackend
 //
@@ -33,13 +29,13 @@ func NewMapCacheBackend() *MapCacheBackend {
 	}
 }
 
-// platform.CreateFunc signature
-func CreateMapCacheBackend(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
+// ([platform.CreateFunc] signature)
+func CreateMapCacheBackend(jsContext *commonjs.Context, config ard.StringMap) (any, error) {
 	self := NewMapCacheBackend()
 
 	var pruneFrequency float64
 
-	config_ := ard.NewNode(config)
+	config_ := ard.With(config).ConvertSimilar().NilMeansZero()
 	var ok bool
 	if pruneFrequency, ok = config_.Get("pruneFrequency").Float(); !ok {
 		pruneFrequency = 10.0 // seconds
@@ -50,13 +46,13 @@ func CreateMapCacheBackend(config ard.StringMap, context *commonjs.Context) (int
 	return self, nil
 }
 
-// platform.CacheBackend interface
+// ([platform.CacheBackend] interface)
 func (self *MapCacheBackend) LoadRepresentation(key platform.CacheKey) (*platform.CachedRepresentation, bool) {
 	self.lock.RLock()
 	if cached, ok := self.representations[key]; ok {
 		if cached.Expired() {
 			self.lock.RUnlock()
-			log.Debugf("cache expired: %s|%s", key, cached)
+			log.Debug("cache expired", "key", key, "encodings", cached.String())
 			self.lock.Lock()
 			if cached.Expired() {
 				delete(self.representations, key)
@@ -73,7 +69,7 @@ func (self *MapCacheBackend) LoadRepresentation(key platform.CacheKey) (*platfor
 	}
 }
 
-// platform.CacheBackend interface
+// ([platform.CacheBackend] interface)
 func (self *MapCacheBackend) StoreRepresentation(key platform.CacheKey, cached *platform.CachedRepresentation) {
 	go func() {
 		self.lock.Lock()
@@ -84,7 +80,7 @@ func (self *MapCacheBackend) StoreRepresentation(key platform.CacheKey, cached *
 	}()
 }
 
-// platform.CacheBackend interface
+// ([platform.CacheBackend] interface)
 func (self *MapCacheBackend) DeleteRepresentation(key platform.CacheKey) {
 	go func() {
 		self.lock.Lock()
@@ -94,7 +90,7 @@ func (self *MapCacheBackend) DeleteRepresentation(key platform.CacheKey) {
 	}()
 }
 
-// platform.CacheBackend interface
+// ([platform.CacheBackend] interface)
 func (self *MapCacheBackend) DeleteGroup(name platform.CacheKey) {
 	go func() {
 		self.lock.Lock()
@@ -111,7 +107,7 @@ func (self *MapCacheBackend) Prune() {
 
 	for key, cached := range self.representations {
 		if cached.Expired() {
-			log.Debugf("pruning representation: %s", key)
+			log.Debug("pruning representation", "key", key)
 			delete(self.representations, key)
 		}
 	}
@@ -119,8 +115,8 @@ func (self *MapCacheBackend) Prune() {
 	self.groups.Prune(self.getExpiration)
 }
 
-func (self *MapCacheBackend) StartPruning(frequency float64) {
-	ticker := time.NewTicker(time.Duration(frequency * 1000000000.0)) // seconds to nanoseconds
+func (self *MapCacheBackend) StartPruning(frequencySeconds float64) {
+	ticker := time.NewTicker(time.Duration(frequencySeconds * float64(time.Second)))
 	go func() {
 		for {
 			select {

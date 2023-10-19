@@ -1,8 +1,8 @@
 
 // "prudence.once" makes sure that the function is only ever called
-// a single time, which is very useful for global initialization
+// a single time, which is useful for global initialization
 prudence.once('backend', function() {
-    prudence.log.info('initializing backend');
+    jst.log.info('initializing backend');
     prudence.globals.db = {};
     prudence.globals.dbLock = prudence.mutex();
 });
@@ -10,7 +10,7 @@ prudence.once('backend', function() {
 // Gets the signature *instead of the data*
 // Let's pretend that it is less expensive than "getPerson"
 exports.getSignature = function(name) {
-    prudence.log.info('getSignature');
+    jst.log.info('getSignature');
     return prudence.hash(name);
 };
 
@@ -18,7 +18,7 @@ exports.getSignature = function(name) {
 // Let's pretend that it is from a database
 // (And thus it's the most expensive part of any request)
 exports.getPerson = function(name) {
-    prudence.log.info('getPerson');
+    jst.log.info('getPerson');
     prudence.globals.dbLock.lock();
     try {
         let data = prudence.globals.db[name];
@@ -36,7 +36,7 @@ exports.getPerson = function(name) {
 };
 
 exports.deletePerson = function(name) {
-    prudence.log.info('deletePerson');
+    jst.log.info('deletePerson');
     prudence.globals.dbLock.lock();
     try {
         delete prudence.globals.db[name];
@@ -46,7 +46,7 @@ exports.deletePerson = function(name) {
 };
 
 exports.setChores = function(name, chores) {
-    prudence.log.info('setChores');
+    jst.log.info('setChores');
     prudence.globals.dbLock.lock();
     try {
         prudence.globals.db[name] = {

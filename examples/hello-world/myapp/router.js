@@ -3,7 +3,7 @@ exports.handler = new prudence.Router({
     name: 'myapp',
     routes: [{  // can be a list or a single route
         handler: function(context) {
-            if (context.path === 'magic') {
+            if (context.request.path === 'magic') {
                 let value = 'novalue'
 
                 // Receive a cookie
@@ -14,7 +14,7 @@ exports.handler = new prudence.Router({
                 }
 
                 // Send a cookie
-                context.writeString('Magic!\n')
+                context.write('Magic!\n')
                 context.response.addCookie({name: 'mycookie', value: value + '-magic'});
                 return true; // handled
             } else {

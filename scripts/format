@@ -4,17 +4,6 @@ set -e
 HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
 . "$HERE/_env"
 
-gofmt -w -s -e \
-	"$ROOT/distributed" \
-	"$ROOT/js" \
-	"$ROOT/jst" \
-	"$ROOT/local" \
-	"$ROOT/memory" \
-	"$ROOT/platform" \
-	"$ROOT/prudence" \
-	"$ROOT/prudence/commands" \
-	"$ROOT/render" \
-	"$ROOT/rest" \
-	"$ROOT/tiered" \
-	"$ROOT/xprudence" \
-	"$ROOT/xprudence/commands"
+cd "$ROOT"
+
+go fmt ./...

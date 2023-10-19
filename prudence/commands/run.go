@@ -18,6 +18,7 @@ import (
 )
 
 var paths []string
+var useWorkingDir bool
 var typescript string
 var arguments map[string]string
 var watch bool
@@ -25,10 +26,11 @@ var watch bool
 func init() {
 	rootCommand.AddCommand(runCommand)
 	runCommand.Flags().StringArrayVarP(&paths, "path", "p", nil, "library path (appended after PRUDENCE_PATH environment variable)")
-	runCommand.Flags().StringVarP(&typescript, "typescript", "t", "", "TypeScript project path (must have a tsconfig.json file)")
+	runCommand.Flags().BoolVarP(&useWorkingDir, "use-working-dir", "d", true, "whether to include the current working dir in the library path")
+	runCommand.Flags().StringVarP(&typescript, "typescript", "t", "", "TypeScript project path (must have a \"tsconfig.json\" file)")
 	runCommand.Flags().StringToStringVarP(&arguments, "argument", "a", make(map[string]string), "arguments (format is name=value)")
 	runCommand.Flags().BoolVarP(&watch, "watch", "w", true, "whether to watch dependent files and restart if they are changed")
-	runCommand.Flags().StringVarP(&platform.NCSAFilename, "ncsa", "n", "", "NCSA log filename (or special values \"stdout\" and \"stderr\")")
+	runCommand.Flags().StringVarP(&platform.NCSAFilename, "ncsa", "n", "", "NCSA log filename")
 }
 
 var runCommand = &cobra.Command{
@@ -43,24 +45,33 @@ var runCommand = &cobra.Command{
 		urlContext := exturl.NewContext()
 		util.OnExitError(urlContext.Release)
 
-		var path_ []exturl.URL
+		var bases []exturl.URL
+		var basePaths []exturl.URL
 
-		parsePaths := func(paths []string) {
+		if useWorkingDir {
+			workingDirFileUrl, err := urlContext.NewWorkingDirFileURL()
+			util.FailOnError(err)
+			log.Infof("work dir: %s", workingDirFileUrl.String())
+			bases = []exturl.URL{workingDirFileUrl}
+			basePaths = []exturl.URL{workingDirFileUrl}
+		}
+
+		addBasePaths := func(paths []string) {
 			for _, path := range paths {
 				if !strings.HasSuffix(path, "/") {
 					path += "/"
 				}
-				pathUrl, err := urlContext.NewValidURL(contextpkg.TODO(), path, nil)
-				log.Infof("library path: %s", pathUrl.String())
+				pathUrl, err := urlContext.NewValidAnyOrFileURL(contextpkg.TODO(), path, bases)
 				util.FailOnError(err)
-				path_ = append(path_, pathUrl)
+				log.Infof("library path: %s", pathUrl.String())
+				basePaths = append(basePaths, pathUrl)
 			}
 		}
 
-		parsePaths(filepath.SplitList(os.Getenv("PRUDENCE_PATH")))
-		parsePaths(paths)
+		addBasePaths(filepath.SplitList(os.Getenv("PRUDENCE_PATH")))
+		addBasePaths(paths)
 
-		environment := js.NewEnvironment(urlContext, path_, arguments)
+		environment := js.NewEnvironment(arguments, urlContext, basePaths...)
 		util.OnExitError(environment.Release)
 
 		log.Noticef("Prudence version: %s", version.GitVersion)
@@ -69,7 +80,7 @@ var runCommand = &cobra.Command{
 			transpileTypeScript()
 		}
 
-		environment.OnChanged = func(id string, module *commonjs.Module) {
+		environment.OnFileModified = func(id string, module *commonjs.Module) {
 			if module != nil {
 				log.Infof("module changed: %s", module.Id)
 			} else if id != "" {
@@ -79,8 +90,8 @@ var runCommand = &cobra.Command{
 			environment.Lock.Lock()
 
 			if watch {
-				if err := environment.RestartWatcher(); err != nil {
-					log.Warningf("watch feature not supported on this platform")
+				if err := environment.StartWatcher(); err != nil {
+					log.Error(err.Error())
 				}
 
 				if typescript != "" {
@@ -99,14 +110,14 @@ var runCommand = &cobra.Command{
 			}
 
 			environment.ClearCache()
-			_, err := environment.RequireID(startId)
+			_, err := environment.Require(startId, false, nil)
 
 			environment.Lock.Unlock()
 
 			util.FailOnError(err)
 		}
 
-		environment.OnChanged("", nil)
+		environment.OnFileModified("", nil)
 
 		// Block forever
 		select {}

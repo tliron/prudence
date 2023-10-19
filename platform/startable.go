@@ -84,7 +84,7 @@ func (self *StartableGroup) Start() {
 			defer self.started.Done()
 
 			if err := startable.Start(); err != nil {
-				log.Errorf("%s", err.Error())
+				log.Error(err.Error())
 			}
 		}(startable)
 	}
@@ -103,7 +103,7 @@ func (self *StartableGroup) Stop() {
 
 	for i := len(self.Startables) - 1; i >= 0; i-- {
 		if err := self.Startables[i].Stop(stopContext); err != nil {
-			log.Errorf("%s", err.Error())
+			log.Error(err.Error())
 		}
 	}
 

@@ -8,39 +8,96 @@ import (
 	"github.com/tliron/go-ard"
 )
 
-type CreateFunc func(config ard.StringMap, context *commonjs.Context) (interface{}, error)
+type CreateFunc func(jsContext *commonjs.Context, config ard.StringMap) (any, error)
 
-var creators = make(map[string]CreateFunc)
+var Types = make(map[string]*Type)
 
-func RegisterType(type_ string, create CreateFunc) {
-	creators[type_] = create
+//
+// Type
+//
+
+type Type struct {
+	Name string
+
+	create    CreateFunc
+	validKeys []string
 }
 
-func GetType(type_ string) (CreateFunc, error) {
-	if create, ok := creators[type_]; ok {
-		return create, nil
+func (self *Type) Create(jsContext *commonjs.Context, config ard.StringMap) (any, error) {
+	if err := ValidateConfigKeys(self.Name, config, self.validKeys...); err != nil {
+		return nil, err
+	}
+
+	return self.create(jsContext, config)
+}
+
+func RegisterType(name string, create CreateFunc, validKeys ...string) {
+	Types[name] = &Type{
+		Name:      name,
+		create:    create,
+		validKeys: validKeys,
+	}
+}
+
+func GetType(name string) (*Type, error) {
+	if type__, ok := Types[name]; ok {
+		return type__, nil
 	} else {
-		return nil, fmt.Errorf("unsupported \"type\": %s", type_)
+		return nil, fmt.Errorf("unsupported type: %s", name)
 	}
 }
 
-func OnTypes(f func(type_ string, create CreateFunc) bool) {
-	for type_, create := range creators {
-		if !f(type_, create) {
-			return
+func Create(jsContext *commonjs.Context, typeName string, config ard.StringMap) (any, error) {
+	if type_, err := GetType(typeName); err == nil {
+		return type_.Create(jsContext, config)
+	} else {
+		return nil, err
+	}
+}
+
+func CreateFromConfig(jsContext *commonjs.Context, config ard.StringMap, defaultTypeName string) (any, error) {
+	config_ := ard.With(config).ConvertSimilar().NilMeansZero()
+
+	var typeName string
+	var ok bool
+	if typeName, ok = config_.Get("type").String(); ok {
+		// Create a copy without "type" key
+		config__ := make(ard.StringMap)
+		for k, v := range config {
+			if k != "type" {
+				config__[k] = v
+			}
 		}
+		config = config__
+	} else if defaultTypeName != "" {
+		typeName = defaultTypeName
+	} else {
+		return nil, errors.New("constructor config does not specify \"type\"")
+	}
+
+	if type_, err := GetType(typeName); err == nil {
+		return type_.Create(jsContext, config)
+	} else {
+		return nil, err
 	}
 }
 
-func Create(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
-	config_ := ard.NewNode(config)
-	if type_, ok := config_.Get("type").String(); ok {
-		if create, err := GetType(type_); err == nil {
-			return create(config, context)
-		} else {
-			return nil, err
+func CreateFromConfigList(jsContext *commonjs.Context, value ard.Value, typeName string, f func(instance any, config ard.StringMap)) error {
+	if type_, err := GetType(typeName); err == nil {
+		for _, config := range AsConfigList(value) {
+			if config_, ok := ard.With(config).ConvertSimilar().NilMeansZero().StringMap(); ok {
+				if instance, err := type_.Create(jsContext, config_); err == nil {
+					f(instance, config_)
+				} else {
+					return err
+				}
+			} else {
+				return fmt.Errorf("malformed constructor config: %T", config)
+			}
 		}
 	} else {
-		return nil, errors.New("\"type\" not specified")
+		return err
 	}
+
+	return nil
 }

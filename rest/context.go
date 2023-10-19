@@ -1,19 +1,18 @@
 package rest
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
+	urlpkg "net/url"
+	"strconv"
+	"strings"
+	"sync/atomic"
+	"time"
 
-	"github.com/dop251/goja"
-	"github.com/tliron/commonjs-goja"
+	"github.com/tliron/commonjs-goja/api"
 	"github.com/tliron/commonlog"
-	"github.com/tliron/go-ard"
-	"github.com/tliron/kutil/transcribe"
-	"github.com/tliron/kutil/util"
-	"github.com/tliron/prudence/platform"
+	"github.com/tliron/go-scriptlet/jst"
 )
 
 //
@@ -21,15 +20,15 @@ import (
 //
 
 type Context struct {
+	*jst.Context
+
+	Id       uint64
 	Request  *Request
 	Response *Response
 
-	Log   commonlog.Logger
 	Name  string
+	Log   commonlog.Logger
 	Debug bool
-
-	Path      string
-	Variables ard.StringMap
 
 	Done    bool
 	Created bool
@@ -38,53 +37,70 @@ type Context struct {
 	CacheDuration float64 // seconds
 	CacheKey      string
 	CacheGroups   []string
-
-	writer io.Writer
 }
 
-func NewContext(responseWriter http.ResponseWriter, request *http.Request) *Context {
-	self := Context{
-		Request:   NewRequest(request),
-		Response:  NewResponse(responseWriter),
-		Log:       log,
-		Path:      request.URL.Path[1:], // without initial "/"
-		Variables: make(ard.StringMap),
-	}
-	self.writer = self.Response.Buffer
-	return &self
-}
+var requestId atomic.Uint64
 
-func (self *Context) AppendName(name string) *Context {
-	if name == "" {
-		return self
-	} else {
-		context := self.Copy()
-		if context.Name == "" {
-			context.Name = name
-		} else {
-			context.Name += "." + name
-		}
-		context.Log = commonlog.NewScopeLogger(log, context.Name)
-		return context
-	}
-}
-
-func (self *Context) Copy() *Context {
+func NewContext(responseWriter http.ResponseWriter, request *http.Request, log commonlog.Logger) *Context {
+	id := requestId.Add(1)
+	request_ := NewRequest(request)
+	response := NewResponse(responseWriter)
 	return &Context{
-		Request:   self.Request,
-		Response:  self.Response,
-		Log:       self.Log,
-		Name:      self.Name,
-		Debug:     self.Debug,
-		Path:      self.Path,
-		Variables: ard.SimpleCopy(self.Variables).(ard.StringMap),
-		writer:    self.writer,
+		Context:  jst.NewContext(response.Buffer, nil),
+		Id:       id,
+		Request:  request_,
+		Response: response,
+		Log: commonlog.NewKeyValueLogger(log,
+			"_scope", "request",
+			"request", id,
+			"host", request_.Host,
+			"port", request_.Port,
+			"path", request_.Path,
+		),
 	}
 }
 
-func (self *Context) Redirect(url string, status int) error {
-	// See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections
+func (self *Context) Clone() *Context {
+	return &Context{
+		Context:  self.Context.Clone(),
+		Id:       self.Id,
+		Request:  self.Request, //.Clone(),
+		Response: self.Response,
+		Name:     self.Name,
+		Log:      self.Log,
+		Debug:    self.Debug,
+	}
+}
 
+func (self *Context) AppendName(name string, alwaysClone bool) *Context {
+	if name == "" {
+		if alwaysClone {
+			return self.Clone()
+		} else {
+			return self
+		}
+	} else {
+		restContext := self.Clone()
+		if restContext.Name == "" {
+			restContext.Name = name
+		} else {
+			restContext.Name += "." + name
+		}
+		restContext.Log = commonlog.NewKeyValueLogger(self.Log, "resource", restContext.Name)
+		return restContext
+	}
+}
+
+// Ends request handling (via a panic) and flushes the current response.
+func (self *Context) End() {
+	panic(EndRequest)
+}
+
+// Ends request handling (via a panic) and sends a redirect header to the
+// client. If status is 0 will default to 302 (Found).
+//
+// See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections
+func (self *Context) Redirect(url string, status int) error {
 	if status == 0 {
 		status = http.StatusFound // 302
 	} else if (status < 300) || (status >= 400) {
@@ -94,111 +110,101 @@ func (self *Context) Redirect(url string, status int) error {
 	self.Response.Reset()
 	self.Response.Status = status
 	self.Response.Header.Set(HeaderLocation, url)
-	return nil
+	self.Log.Infof("redirect %d: %s", status, url)
+	panic(EndRequest)
 }
 
+// If the request URL path does not end in a slash will call
+// [Context.Redirect] with an appended slash. The URL query
+// will be preserved.
+//
+// Does nothing if the URL path already ends in a slash.
+func (self *Context) RedirectTrailingSlash(status int) error {
+	if strings.HasSuffix(self.Request.Direct.URL.Path, "/") {
+		// Nothing to do
+		return nil
+	}
+
+	url := urlpkg.URL{
+		Path:     self.Request.Direct.URL.Path + "/",
+		RawQuery: self.Request.Direct.URL.RawQuery,
+	}
+
+	return self.Redirect(url.String(), status)
+}
+
+// Ends request handling (via a panic) and sends a 500 status to the
+// client. If err is provided will log the error.
+//
+// Note that no content is set to the client with this call. If you
+// wish to send content, do so before calling this function.
 func (self *Context) InternalServerError(err error) {
-	self.Log.Errorf("%s", err)
+	if err == nil {
+		self.Log.Error("InternalServerError")
+	} else {
+		self.Log.Errorf("InternalServerError: %s", err.Error())
+	}
 	self.Response.Status = http.StatusInternalServerError
+	panic(EndRequest)
 }
 
-// io.Writer
-func (self *Context) Write(b []byte) (int, error) {
-	return self.writer.Write(b)
+// Encodes and writes the value. If format is empty, will try to set the format
+// according to the value of [Response.ContentType]. Supported formats are "yaml",
+// "json", "xjson", "xml", "cbor", "messagepack", and "go". The "cbor" and
+// "messsagepack" formats will be encoded in base64 and will ignore the indent argument.
+func (self *Context) Transcribe(value any, format string, indent string) error {
+	if format == "" {
+		switch self.Response.ContentType {
+		case "application/yaml":
+			format = "yaml"
+		case "application/json":
+			format = "json"
+		case "application/xml":
+			format = "xml"
+		case "application/cbor":
+			format = "cbor"
+		case "application/msgpack":
+			format = "messagepack"
+		default:
+			return fmt.Errorf("cannot determine format from content type: %s", self.Response.ContentType)
+		}
+	}
+
+	var transcriber api.Transcribe
+	return transcriber.Write(self.Writer, value, format, indent)
 }
 
-func (self *Context) WriteString(s string) (int, error) {
-	return self.writer.Write(util.StringToBytes(s))
+// After calling this function, subsequent calls to [Context.Write] will be accumulated
+// into a signature calculation. Call [Context.EndSignature] when done.
+//
+// Calculating a signature from the body is not that great. It saves bandwidth but not computing
+// resources, as we still need to generate the body in order to calculate the signature. Ideally,
+// the signature should be based on the data sources used to generate the page.
+//
+// https://www.mnot.net/blog/2007/08/07/etags
+// http://www.tbray.org/ongoing/When/200x/2007/07/31/Design-for-the-Web
+func (self *Context) StartSignature() {
+	if _, ok := self.Writer.(*HashWriter); !ok {
+		self.Writer = NewHashWriter(self.Writer)
+	}
 }
 
-func (self *Context) WriteJson(value ard.Value, indent string) (int, error) {
-	if s, err := transcribe.Encode(value, "json", indent, false); err == nil {
-		return self.WriteString(s)
+// Must be called subsequently to [Context.StartSignature]. The calculated signature
+// will be put into the context's [Response.Signature].
+func (self *Context) EndSignature() error {
+	if hashWriter, ok := self.Writer.(*HashWriter); ok {
+		self.Response.Signature = hashWriter.Hash()
+		self.Writer = hashWriter.writer
+		return nil
 	} else {
-		return 0, err
+		return errors.New("did not call startSignature()")
 	}
 }
 
-func (self *Context) WriteYaml(value ard.Value, indent string) (int, error) {
-	if s, err := transcribe.Encode(value, "yaml", indent, false); err == nil {
-		return self.WriteString(s)
-	} else {
-		return 0, err
-	}
-}
+// Utils
 
-func (self *Context) Embed(function goja.FunctionCall, runtime *goja.Runtime) goja.Value {
-	var present commonjs.JavaScriptFunc
-	if len(function.Arguments) > 0 {
-		var ok bool
-		present_ := function.Arguments[0].Export()
-		if bind, ok := present_.(commonjs.Bind); ok {
-			var err error
-			var jsContext *commonjs.Context
-			if present_, jsContext, err = bind.Unbind(); err == nil {
-				runtime = jsContext.Environment.Runtime
-			} else {
-				panic(runtime.NewGoError(err))
-			}
-		}
-
-		if present, ok = present_.(commonjs.JavaScriptFunc); !ok {
-			panic(runtime.NewGoError(fmt.Errorf("\"present\" not a function: %T", present_)))
-		}
-	} else {
-		panic(runtime.NewGoError(errors.New("missing \"present\" argument")))
-	}
-
-	// Try cache
-	if self.CacheKey != "" {
-		if key, cached, ok := self.LoadCachedRepresentation(); ok {
-			if len(cached.Body) == 0 {
-				self.Log.Debugf("ignoring cache with no body: %s", self.Path)
-			} else {
-				changed, _, err := self.WriteCachedRepresentation(cached)
-				if err != nil {
-					self.Log.Errorf("%s", err.Error())
-				}
-				if changed {
-					cached.Update(key)
-				}
-				return nil
-			}
-		}
-	}
-
-	buffer := bytes.NewBuffer(nil)
-	writer := self.writer
-	self.writer = buffer
-
-	commonjs.Call(runtime, present, self)
-
-	self.flushWriters()
-
-	body := buffer.Bytes()
-
-	// To cache
-	if (self.CacheDuration > 0.0) && (self.CacheKey != "") {
-		self.StoreCachedRepresentationFromBody(platform.EncodingTypeIdentity, body)
-	}
-
-	self.writer = writer
-	self.Write(body)
-
-	return nil
-}
-
-func (self *Context) flushWriters() {
-	for true {
-		if wrappedWriter, ok := self.writer.(WrappingWriter); ok {
-			if err := wrappedWriter.Close(); err != nil {
-				self.InternalServerError(err)
-			}
-			self.writer = wrappedWriter.GetWrappedWriter()
-		} else {
-			break
-		}
-	}
+func (self *Context) caching() bool {
+	return (self.CacheDuration > 0.0) && (self.CacheKey != "")
 }
 
 func (self *Context) isNotModified(fromHeader bool) bool {
@@ -218,15 +224,13 @@ func (self *Context) isNotModified(fromHeader bool) bool {
 	// If-Modified-Since
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
 	if serverTimestamp := self.Response.lastModified(fromHeader); !serverTimestamp.IsZero() {
-		if ifModifiedSince := self.Request.Header.Get(HeaderIfModifiedSince); ifModifiedSince != "" {
-			if clientTimestamp, err := http.ParseTime(ifModifiedSince); err == nil {
-				// modified = server > client
-				// not modified = client <= server
-				if !serverTimestamp.After(clientTimestamp) {
-					self.Response.Status = http.StatusNotModified
-					self.Log.Debug("not modified: Last-Modified")
-					return true
-				}
+		if clientTimestamp, ok := GetTimeHeader(HeaderIfModifiedSince, self.Request.Header); ok {
+			// modified = server > client
+			// not modified = client <= server
+			if !serverTimestamp.Truncate(time.Second).After(clientTimestamp) {
+				self.Response.Status = http.StatusNotModified
+				self.Log.Debug("not modified: Last-Modified")
+				return true
 			}
 		}
 	}
@@ -242,7 +246,7 @@ func (self *Context) setCacheControl() {
 		self.Response.Header.Set(HeaderCacheControl, "no-store,max-age=0")
 	} else if self.CacheDuration > 0.0 {
 		// Match client-side caching with server-side caching
-		maxAge := int(self.CacheDuration)
-		self.Response.Header.Set(HeaderCacheControl, fmt.Sprintf("max-age=%d", maxAge))
+		maxAge := int64(self.CacheDuration)
+		self.Response.Header.Set(HeaderCacheControl, "max-age="+strconv.FormatInt(maxAge, 10))
 	}
 }

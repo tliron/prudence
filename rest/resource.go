@@ -6,10 +6,6 @@ import (
 	"github.com/tliron/prudence/platform"
 )
 
-func init() {
-	platform.RegisterType("Resource", CreateResource)
-}
-
 //
 // Resource
 //
@@ -26,23 +22,22 @@ func NewResource(name string) *Resource {
 	}
 }
 
-// CreateFunc signature
-func CreateResource(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
+// ([platform.CreateFunc] signature)
+func CreateResource(jsContext *commonjs.Context, config ard.StringMap) (any, error) {
+	config_ := ard.With(config).ConvertSimilar().NilMeansZero()
+
 	var self Resource
 
-	router, _ := CreateRouter(config, context)
-	self.Router = router.(*Router)
+	if router, err := CreateRouter(jsContext, config); err == nil {
+		self.Router = router.(*Router)
+	} else {
+		return nil, err
+	}
 
-	config_ := ard.NewNode(config)
-	facets := platform.AsConfigList(config_.Get("facets").Value)
-	for _, facet := range facets {
-		if facet_, ok := facet.(ard.StringMap); ok {
-			if facet__, err := CreateFacet(facet_, context); err == nil {
-				self.AddFacet(facet__.(*Facet))
-			} else {
-				return nil, err
-			}
-		}
+	if err := platform.CreateFromConfigList(jsContext, config_.Get("facets").Value, "Facet", func(instance any, config__ ard.StringMap) {
+		self.AddFacet(instance.(*Facet))
+	}); err != nil {
+		return nil, err
 	}
 
 	return &self, nil

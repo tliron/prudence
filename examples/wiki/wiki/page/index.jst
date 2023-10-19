@@ -1,0 +1,23 @@
+<%
+const backend = require('../backend/backend');
+const pages = new backend.Pages(this);
+const e = util.escapeHtml;
+
+this.variables.page = {title: 'Index'};
+%>
+<%! 'main' %>
+<h1>Index</h1>
+<%
+const index = pages.index;
+
+for (let path in index) {
+    const title = index[path];
+%>
+<div>
+    <a href="<%= pages.viewUrl(path) %>"><%= e(title) %></a>
+</div>
+<%
+}
+%>
+<%!!%>
+<%& './fragments/page.jst' %>

@@ -6,10 +6,6 @@ import (
 	"github.com/tliron/prudence/platform"
 )
 
-func init() {
-	platform.RegisterType("Router", CreateRouter)
-}
-
 //
 // Router
 //
@@ -17,37 +13,40 @@ func init() {
 //
 
 type Router struct {
-	Name     string
-	Handlers []HandleFunc
-	Routes   []*Route
+	Name      string
+	Variables map[string]any
+	Handlers  []HandleFunc
+	Routes    []*Route
 }
 
 func NewRouter(name string) *Router {
 	return &Router{
-		Name: name,
+		Name:      name,
+		Variables: make(map[string]any),
 	}
 }
 
-// CreateFunc signature
-func CreateRouter(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
-	var self Router
+// ([platform.CreateFunc] signature)
+func CreateRouter(jsContext *commonjs.Context, config ard.StringMap) (any, error) {
+	config_ := ard.With(config).ConvertSimilar().NilMeansZero()
 
-	config_ := ard.NewNode(config)
-	self.Name, _ = config_.Get("name").NilMeansZero().String()
-	routes := platform.AsConfigList(config_.Get("routes").Value)
-	for _, route := range routes {
-		if route_, ok := route.(ard.StringMap); ok {
-			if route__, err := CreateRoute(route_, context); err == nil {
-				route___ := route__.(*Route)
-				self.Routes = append(self.Routes, route___)
-				self.AddHandler(route___.Handle)
-			} else {
-				return nil, err
-			}
-		}
+	name, _ := config_.Get("name").String()
+
+	self := NewRouter(name)
+
+	if variables, ok := config_.Get("variables").StringMap(); ok {
+		self.Variables = variables
 	}
 
-	return &self, nil
+	if err := platform.CreateFromConfigList(jsContext, config_.Get("routes").Value, "Route", func(instance any, config__ ard.StringMap) {
+		route := instance.(*Route)
+		self.Routes = append(self.Routes, route)
+		self.AddHandler(route.Handle)
+	}); err != nil {
+		return nil, err
+	}
+
+	return self, nil
 }
 
 func (self *Router) AddHandler(handler HandleFunc) {
@@ -59,16 +58,21 @@ func (self *Router) AddRoute(route *Route) {
 	self.AddHandler(route.Handle)
 }
 
-// Handler interface
-// HandleFunc signature
-func (self *Router) Handle(context *Context) bool {
-	context = context.AppendName(self.Name)
+// ([Handler] interface, [HandleFunc] signature)
+func (self *Router) Handle(restContext *Context) (bool, error) {
+	restContext = restContext.AppendName(self.Name, false)
+
+	ard.Merge(restContext.Variables, self.Variables, false)
 
 	for _, handler := range self.Handlers {
-		if handled := handler(context); handled {
-			return true
+		if handled, err := handler(restContext); err == nil {
+			if handled {
+				return true, nil
+			}
+		} else {
+			return false, err
 		}
 	}
 
-	return false
+	return false, nil
 }

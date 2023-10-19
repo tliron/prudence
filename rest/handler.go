@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/dop251/goja"
 	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/kutil/util"
 )
@@ -13,11 +14,37 @@ import (
 // HandleFunc
 //
 
-type HandleFunc func(context *Context) bool
+type HandleFunc func(restContext *Context) (bool, error)
 
-// HandleFunc signature
-func Handled(context *Context) bool {
-	return true
+func GetHandleFunc(value any, jsContext *commonjs.Context) (HandleFunc, error) {
+	var err error
+	if value, jsContext, err = commonjs.Unbind(value, jsContext); err != nil {
+		return nil, err
+	}
+
+	switch handler := value.(type) {
+	case HandleFunc:
+		return handler, nil
+
+	case Handler:
+		return handler.Handle, nil
+
+	case goja.Value, commonjs.ExportedJavaScriptFunc:
+		return func(restContext *Context) (bool, error) {
+			if handled, err := jsContext.Environment.Call(handler, restContext); err == nil {
+				if handled_, ok := handled.(bool); ok {
+					return handled_, nil
+				} else {
+					return false, nil
+				}
+			} else {
+				return false, err
+			}
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("not a handler function: %T", value)
+	}
 }
 
 //
@@ -25,46 +52,26 @@ func Handled(context *Context) bool {
 //
 
 type Handler interface {
-	Handle(context *Context) bool
-}
-
-func GetHandleFunc(value interface{}, jsContext *commonjs.Context) (HandleFunc, error) {
-	if bind, ok := value.(commonjs.Bind); ok {
-		var err error
-		if value, jsContext, err = bind.Unbind(); err != nil {
-			return nil, err
-		}
-	}
-
-	if handler, ok := value.(Handler); ok {
-		return handler.Handle, nil
-	} else if function, ok := value.(commonjs.JavaScriptFunc); ok {
-		// Wrap JavaScript function
-		return func(context *Context) bool {
-			handled := jsContext.Environment.Call(function, context)
-			if handled_, ok := handled.(bool); ok {
-				return handled_
-			} else {
-				return false
-			}
-		}, nil
-	} else {
-		return nil, fmt.Errorf("not a handler or a function: %T", value)
-	}
+	Handle(restContext *Context) (bool, error) // HandleFunc signature
 }
 
 //
-// DefaultNotFound
+// NotFoundHandler
 //
 
-var DefaultNotFound defaultNotFound
+// ([HandleFunc] signature)
+func HandleNotFound(restContext *Context) (bool, error) {
+	restContext.Response.Header = make(http.Header)
+	restContext.Response.Buffer = bytes.NewBuffer(util.StringToBytes("404 Not Found\n"))
+	restContext.Response.Status = http.StatusNotFound
+	return true, nil
+}
 
-type defaultNotFound struct{}
+//
+// RedirectTrailingSlashHandler
+//
 
-// Handler interface
-// HandleFunc signature
-func (self defaultNotFound) Handle(context *Context) bool {
-	context.Response.Buffer = bytes.NewBuffer(util.StringToBytes("404 Not Found\n"))
-	context.Response.Status = http.StatusNotFound
-	return true
+// ([HandleFunc] signature)
+func HandleRedirectTrailingSlash(restContext *Context) (bool, error) {
+	return true, restContext.RedirectTrailingSlash(0)
 }

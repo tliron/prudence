@@ -1,0 +1,12 @@
+hi:
+  title: Hello
+  content: |-
+    this is the page
+    ===============
+
+    Content
+
+hi/ho:
+  title: Hewwo
+  content: |-
+    lalala

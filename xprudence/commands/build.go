@@ -32,7 +32,7 @@ func init() {
 	buildCommand.Flags().StringVarP(&version, "version", "e", "", "Prudence version (leave empty to use the latest version)")
 	buildCommand.Flags().StringVarP(&local, "local", "c", "", "path to local Prudence source")
 	buildCommand.Flags().StringVarP(&output, "output", "o", "", "output directory (defaults to $GOBIN or $GOPATH/bin or $HOME/go/bin)")
-	buildCommand.Flags().StringVarP(&executable, "executable", "x", "prudence", "Prudence executable name")
+	buildCommand.Flags().StringVarP(&executable, "executable", "x", "prudence-custom", "Prudence executable name")
 	buildCommand.Flags().StringVarP(&go_, "go", "g", "go", "go binary")
 	buildCommand.Flags().StringVarP(&work, "work", "w", "", "work directory (leave empty to create a temporary directory)")
 }
@@ -57,6 +57,7 @@ import (
 var main2 = `)
 
 func main() {
+	util.ExitOnSignals()
 	commands.Execute()
 	util.Exit(0)
 }
@@ -76,12 +77,13 @@ func Build() {
 	Command(rootDirectory, nil, go_, "mod", "init", "github.com/tliron/prudence-x")
 
 	if local != "" {
+		log.Infof("using Prudence source code at %q", local)
 		replacements["github.com/tliron/prudence"] = local
 	} else if version != "" {
-		log.Infof("getting Prudence version %q", version)
+		log.Infof("downloading Prudence source code version %q", version)
 		Command(rootDirectory, nil, go_, "get", "github.com/tliron/prudence@"+version)
 	} else {
-		log.Info("getting latest version of Prudence")
+		log.Info("getting latest version of Prudence source code")
 		Command(rootDirectory, nil, go_, "get", "github.com/tliron/prudence")
 		version = Command(rootDirectory, nil, go_, "list", "-m", "-f", "{{ .Version }}", "github.com/tliron/prudence")
 		version = strings.TrimSpace(version)
@@ -167,9 +169,9 @@ func CreateMain(dir string) {
 	util.FailOnError(err)
 
 	for _, module := range modules {
-		module_ := strings.SplitN(module, "@", 2)
-		fmt.Fprintf(file, "\t_ %q\n", module_[0])
-		log.Infof("added module %q", module_[0])
+		module_, _, _ := strings.Cut(module, "@")
+		fmt.Fprintf(file, "\t_ %q\n", module_)
+		log.Infof("added module %q", module_)
 	}
 
 	_, err = file.WriteString(main2)

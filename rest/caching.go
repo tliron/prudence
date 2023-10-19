@@ -2,7 +2,7 @@ package rest
 
 import (
 	"bytes"
-	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/tliron/go-ard"
@@ -10,7 +10,7 @@ import (
 )
 
 func (self *Context) NewCacheKey() platform.CacheKey {
-	return platform.CacheKey(fmt.Sprintf("%s|%s|%s|%s", self.CacheKey, self.Response.ContentType, self.Response.CharSet, self.Response.Language))
+	return platform.CacheKey(self.CacheKey + platform.CACHE_KEY_SEPARATOR + self.Response.ContentType + platform.CACHE_KEY_SEPARATOR + self.Response.CharSet + platform.CACHE_KEY_SEPARATOR + self.Response.Language)
 }
 
 func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepresentation {
@@ -18,8 +18,8 @@ func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepr
 
 	if withBody {
 		contentEncoding := self.Response.Header.Get(HeaderContentEncoding)
-		if encodingType := GetEncodingType(contentEncoding); encodingType != platform.EncodingTypeUnsupported {
-			body[encodingType] = self.Response.Buffer.Bytes()
+		if encoding := platform.GetEncodingFromHeader(contentEncoding); encoding != platform.EncodingTypeUnsupported {
+			body[encoding] = self.Response.Buffer.Bytes()
 		} else {
 			self.Log.Warningf("unsupported encoding: %s", contentEncoding)
 		}
@@ -31,7 +31,7 @@ func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepr
 		case HeaderCacheControl, HeaderServer, HeaderPrudenceCached:
 			// Skip
 		default:
-			headers[name] = ard.SimpleCopy(values).([]string)
+			headers[name] = ard.Copy(values).([]string)
 		}
 	}
 
@@ -44,7 +44,7 @@ func (self *Context) NewCachedRepresentation(withBody bool) *platform.CachedRepr
 		Groups:     groups,
 		Body:       body,
 		Headers:    headers,
-		Expiration: time.Now().Add(time.Duration(self.CacheDuration * 1000000000.0)), // seconds to nanoseconds
+		Expiration: time.Now().Add(time.Duration(self.CacheDuration * float64(time.Second))),
 	}
 }
 
@@ -58,7 +58,7 @@ func (self *Context) NewCachedRepresentationFromBody(encoding platform.EncodingT
 		Groups:     groups,
 		Body:       map[platform.EncodingType][]byte{encoding: body},
 		Headers:    nil,
-		Expiration: time.Now().Add(time.Duration(self.CacheDuration * 1000000000.0)), // seconds to nanoseconds
+		Expiration: time.Now().Add(time.Duration(self.CacheDuration * float64(time.Second))),
 	}
 }
 
@@ -66,10 +66,17 @@ func (self *Context) LoadCachedRepresentation() (platform.CacheKey, *platform.Ca
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
 		key := self.NewCacheKey()
 		if cached, ok := cacheBackend.LoadRepresentation(key); ok {
-			self.Log.Debugf("cache hit: %s, %s", key, cached)
+			self.Log.Debug("hit",
+				"_scope", "cache",
+				"key", key,
+				"encodings", cached.String(),
+			)
 			return key, cached, true
 		} else {
-			self.Log.Debugf("cache miss: %s", key)
+			self.Log.Debug("miss",
+				"_scope", "cache",
+				"key", key,
+			)
 			return "", nil, false
 		}
 	} else {
@@ -81,7 +88,10 @@ func (self *Context) DeleteCachedRepresentation() {
 	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
 		key := self.NewCacheKey()
 		cacheBackend.DeleteRepresentation(key)
-		self.Log.Debugf("representation deleted: %s", key)
+		self.Log.Debug("deleted",
+			"_scope", "cache",
+			"key", key,
+		)
 	}
 }
 
@@ -90,7 +100,11 @@ func (self *Context) StoreCachedRepresentation(withBody bool) {
 		key := self.NewCacheKey()
 		cached := self.NewCachedRepresentation(withBody)
 		cacheBackend.StoreRepresentation(key, cached)
-		self.Log.Debugf("representation stored: %s|%s", key, cached)
+		self.Log.Debug("stored",
+			"_scope", "cache",
+			"key", key,
+			"encodings", cached.String(),
+		)
 	}
 }
 
@@ -99,14 +113,22 @@ func (self *Context) StoreCachedRepresentationFromBody(encoding platform.Encodin
 		key := self.NewCacheKey()
 		cached := self.NewCachedRepresentationFromBody(encoding, body)
 		cacheBackend.StoreRepresentation(key, cached)
-		self.Log.Debugf("representation stored: %s|%s", key, cached)
+		self.Log.Debug("stored",
+			"_scope", "cache",
+			"key", key,
+			"encodings", cached.String(),
+		)
 	}
 }
 
-func (self *Context) GetCachedRepresentationBody(cached *platform.CachedRepresentation) ([]byte, bool) {
+func (self *Context) GetCachedRepresentationBody(cached *platform.CachedRepresentation) ([]byte, platform.EncodingType, bool) {
 	encodingPreferences := ParseEncodingPreferences(self.Request.Header.Get(HeaderAcceptEncoding))
-	type_ := encodingPreferences.NegotiateBest(self)
-	return cached.GetBody(type_)
+	encoding := encodingPreferences.NegotiateBest(self)
+	if body, changed := cached.GetBody(encoding); body != nil {
+		return body, encoding, changed
+	} else {
+		return nil, platform.EncodingTypeUnsupported, false
+	}
 }
 
 func (self *Context) PresentCachedRepresentation(cached *platform.CachedRepresentation, withBody bool) bool {
@@ -130,11 +152,14 @@ func (self *Context) PresentCachedRepresentation(cached *platform.CachedRepresen
 	}
 
 	// Match client-side caching with server-side caching
-	maxAge := int(cached.TimeToLive())
-	self.Response.Header.Set(HeaderCacheControl, fmt.Sprintf("max-age=%d", maxAge))
+	maxAge := int64(cached.TimeToLive())
+	self.Response.Header.Set(HeaderCacheControl, "max-age="+strconv.FormatInt(maxAge, 10))
 
 	if withBody {
-		body, changed := self.GetCachedRepresentationBody(cached)
+		body, encoding, changed := self.GetCachedRepresentationBody(cached)
+		if encodingHeader := encoding.Header(); encodingHeader != "" {
+			header.Set(HeaderContentEncoding, encodingHeader)
+		}
 		self.Response.Buffer = bytes.NewBuffer(body)
 		return changed
 	}
@@ -142,11 +167,21 @@ func (self *Context) PresentCachedRepresentation(cached *platform.CachedRepresen
 	return false
 }
 
-func (self *Context) WriteCachedRepresentation(cached *platform.CachedRepresentation) (bool, int, error) {
+func (self *Context) WriteCachedRepresentation(cached *platform.CachedRepresentation) (bool, error) {
 	if body, changed := cached.GetBody(platform.EncodingTypeIdentity); body != nil {
-		n, err := self.Write(body)
-		return changed, n, err
+		return changed, self.Write(body)
 	} else {
-		return false, 0, nil
+		return false, nil
+	}
+}
+
+func (self *Context) UpdateCachedRepresentation(key platform.CacheKey, cached *platform.CachedRepresentation) {
+	if cacheBackend := platform.GetCacheBackend(); cacheBackend != nil {
+		cacheBackend.StoreRepresentation(key, cached)
+		self.Log.Debug("updated",
+			"_scope", "cache",
+			"key", key,
+			"encodings", cached.String(),
+		)
 	}
 }

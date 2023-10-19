@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/tliron/commonlog"
 	"github.com/tliron/kutil/util"
 )
 
@@ -17,11 +18,11 @@ import (
 type Request struct {
 	Host    string
 	Port    int
+	Path    string
 	Header  http.Header
 	Method  string
 	Query   url.Values
 	Cookies []*http.Cookie
-	Body    string
 
 	Direct *http.Request
 }
@@ -37,21 +38,51 @@ func NewRequest(request *http.Request) *Request {
 	self := Request{
 		Host:    host,
 		Port:    port,
-		Header:  request.Header,
+		Path:    strings.TrimPrefix(request.URL.Path, "/"),
+		Header:  request.Header.Clone(),
 		Method:  request.Method,
-		Query:   request.URL.Query(),
-		Cookies: request.Cookies(),
+		Query:   request.URL.Query(), // will be a new map
+		Cookies: request.Cookies(),   // will be a new array
 		Direct:  request,
 	}
 
-	if request.Body != nil {
-		defer request.Body.Close()
-		if bytes, err := io.ReadAll(request.Body); err == nil {
-			self.Body = util.BytesToString(bytes)
-		}
+	return &self
+}
+
+func (self *Request) Clone() *Request {
+	query := make(url.Values)
+	for name, values := range self.Query {
+		query[name] = append(values[:0:0], values...)
 	}
 
-	return &self
+	return &Request{
+		Host:    self.Host,
+		Port:    self.Port,
+		Path:    self.Path,
+		Header:  self.Header.Clone(),
+		Method:  self.Method,
+		Query:   CloneURLValues(self.Query),
+		Cookies: CloneCookies(self.Cookies),
+		Direct:  self.Direct,
+	}
+}
+
+func (self *Request) Body() ([]byte, error) {
+	if self.Direct.Body != nil {
+		defer commonlog.CallAndLogWarning(self.Direct.Body.Close, "Request.Body", log)
+		// TODO: limit size of requests
+		return io.ReadAll(self.Direct.Body)
+	} else {
+		return nil, nil
+	}
+}
+
+func (self *Request) BodyAsString() (string, error) {
+	if body, err := self.Body(); err == nil {
+		return util.BytesToString(body), nil
+	} else {
+		return "", err
+	}
 }
 
 func (self *Request) GetCookie(name string) *http.Cookie {

@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+
+go run "$HERE/start.go" "$@"

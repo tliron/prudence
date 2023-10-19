@@ -1,0 +1,4 @@
+Prudence: Plugins Example
+=========================
+
+TODO

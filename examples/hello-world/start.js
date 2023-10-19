@@ -2,7 +2,7 @@
 // You can send arguments to your program via "prudence run --argument=name=value"
 
 for (let name in prudence.arguments) {
-    prudence.log.infof('argument: %s = %s', name, prudence.arguments[name]);
+    jst.log.infof('argument: %s = %s', name, prudence.arguments[name]);
 }
 
 // Setting a cache is a good idea, even if it's just the in-memory cache
@@ -33,7 +33,7 @@ else
 prudence.setScheduler(new prudence.LocalScheduler());
 
 prudence.schedule('1/10 * * * * *', function() {
-    prudence.log.info('scheduled hello!');
+    jst.log.info('scheduled hello!');
 });
 
 // "prudence.start" can accept a single server or a list of servers

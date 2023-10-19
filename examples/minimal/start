@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+HERE=$(dirname "$(readlink --canonicalize "$BASH_SOURCE")")
+
+prudence run "$HERE/start.js" "$@"

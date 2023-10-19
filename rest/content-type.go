@@ -1,9 +1,7 @@
 package rest
 
 import (
-	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -19,17 +17,11 @@ type ContentType struct {
 
 func NewContentType(name string) ContentType {
 	self := ContentType{Name: name}
-
-	s := strings.SplitN(name, "/", 2)
-	self.Type = s[0]
-	if len(s) == 2 {
-		self.SubType = s[1]
-	}
-
+	self.Type, self.SubType, _ = strings.Cut(name, "/")
 	return self
 }
 
-// fmt.Stringify interface
+// ([fmt.Stringify] interface)
 func (self ContentType) String() string {
 	return self.Name
 }
@@ -44,23 +36,14 @@ type ContentTypePreference struct {
 }
 
 func ParseContentTypePreference(text string) (ContentTypePreference, error) {
-	self := ContentTypePreference{Weight: 1.0}
-
-	s := strings.SplitN(text, ";", 2)
-	self.ContentType = NewContentType(s[0])
-
-	// Annotation
-	if len(s) == 2 {
-		annotationText := s[1]
-		if strings.HasPrefix(annotationText, "q=") {
-			var err error
-			if self.Weight, err = strconv.ParseFloat(annotationText[2:], 64); err != nil {
-				return self, err
-			}
-		}
+	if preference, err := ParsePreference(text); err == nil {
+		return ContentTypePreference{
+			ContentType: NewContentType(preference.Name),
+			Weight:      preference.Weight,
+		}, nil
+	} else {
+		return ContentTypePreference{}, err
 	}
-
-	return self, nil
 }
 
 func (self *ContentTypePreference) Matches(contentType ContentType) bool {
@@ -78,9 +61,9 @@ func (self *ContentTypePreference) Matches(contentType ContentType) bool {
 	return true
 }
 
-// fmt.Stringify interface
+// ([fmt.Stringify] interface)
 func (self ContentTypePreference) String() string {
-	return fmt.Sprintf("%s;q=%g", self.Name, self.Weight)
+	return Preference{self.Name, self.Weight}.String()
 }
 
 //
@@ -110,17 +93,17 @@ func ParseContentTypePreferences(text string) ContentTypePreferences {
 	return self
 }
 
-// sort.Interface interface
+// ([sort.Interface] interface)
 func (self ContentTypePreferences) Len() int {
 	return len(self)
 }
 
-// sort.Interface interface
+// ([sort.Interface] interface)
 func (self ContentTypePreferences) Less(i int, j int) bool {
 	return self[i].Weight < self[j].Weight
 }
 
-// sort.Interface interface
+// ([sort.Interface] interface)
 func (self ContentTypePreferences) Swap(i int, j int) {
 	self[i], self[j] = self[j], self[i]
 }

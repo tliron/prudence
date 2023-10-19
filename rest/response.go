@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/tliron/go-ard"
+	"github.com/tliron/prudence/platform"
 )
 
 //
@@ -13,12 +14,13 @@ import (
 //
 
 type Response struct {
-	Status      int
-	Header      http.Header
-	Cookies     []*http.Cookie
-	ContentType string
-	CharSet     string
-	Language    string
+	Status       int
+	Header       http.Header
+	StaticHeader http.Header
+	Cookies      []*http.Cookie
+	ContentType  string
+	CharSet      string
+	Language     string
 
 	Signature     string
 	WeakSignature bool
@@ -31,9 +33,29 @@ type Response struct {
 
 func NewResponse(responseWriter http.ResponseWriter) *Response {
 	return &Response{
-		Header: make(http.Header),
-		Direct: responseWriter,
-		Buffer: bytes.NewBuffer(nil),
+		Header:       make(http.Header),
+		StaticHeader: make(http.Header),
+		CharSet:      "utf-8",
+		Direct:       responseWriter,
+		Buffer:       bytes.NewBuffer(nil),
+	}
+}
+
+func (self *Response) Clone() *Response {
+	return &Response{
+		Status:        self.Status,
+		Header:        self.Header.Clone(),
+		StaticHeader:  self.StaticHeader.Clone(),
+		Cookies:       CloneCookies(self.Cookies),
+		ContentType:   self.ContentType,
+		CharSet:       self.CharSet,
+		Language:      self.Language,
+		Signature:     self.Signature,
+		WeakSignature: self.WeakSignature,
+		Timestamp:     self.Timestamp,
+		Buffer:        self.Buffer,
+		Bypass:        self.Bypass,
+		Direct:        self.Direct,
 	}
 }
 
@@ -43,7 +65,7 @@ func (self *Response) Reset() {
 }
 
 func (self *Response) AddCookie(config ard.StringMap) error {
-	if cookie, err := CreateCookie(config, nil); err == nil {
+	if cookie, err := platform.Create(nil, "Cookie", config); err == nil {
 		self.Cookies = append(self.Cookies, cookie.(*http.Cookie))
 		return nil
 	} else {
@@ -63,6 +85,11 @@ func (self *Response) flush() error {
 	}
 
 	header := self.Direct.Header()
+	for name, values := range self.StaticHeader {
+		for _, value := range values {
+			header.Add(name, value)
+		}
+	}
 	for name, values := range self.Header {
 		for _, value := range values {
 			header.Add(name, value)
@@ -73,9 +100,17 @@ func (self *Response) flush() error {
 		http.SetCookie(self.Direct, cookie)
 	}
 
-	self.Direct.WriteHeader(status)
-	_, err := self.Direct.Write(self.Buffer.Bytes())
-	return err
+	if self.Buffer.Len() == 0 {
+		/*if status == http.StatusOK {
+			status = http.StatusNoContent // 204
+		}*/
+		self.Direct.WriteHeader(status)
+		return nil
+	} else {
+		self.Direct.WriteHeader(status)
+		_, err := self.Direct.Write(self.Buffer.Bytes())
+		return err
+	}
 }
 
 func (self *Response) eTag(fromHeader bool) string {
@@ -96,11 +131,8 @@ func (self *Response) eTag(fromHeader bool) string {
 
 func (self *Response) lastModified(fromHeader bool) time.Time {
 	if fromHeader {
-		if lastModified, err := http.ParseTime(self.Header.Get(HeaderLastModified)); err == nil {
-			return lastModified
-		} else {
-			return time.Time{}
-		}
+		lastModified, _ := GetTimeHeader(HeaderLastModified, self.Header)
+		return lastModified
 	} else {
 		return self.Timestamp
 	}
@@ -110,11 +142,7 @@ func (self *Response) setContentType() {
 	// Content-Type
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
 	if self.ContentType != "" {
-		if self.CharSet != "" {
-			self.Header.Set(HeaderContentType, self.ContentType+";charset="+self.CharSet)
-		} else {
-			self.Header.Set(HeaderContentType, self.ContentType)
-		}
+		SetContentTypeHeader(self.Header, self.ContentType, self.CharSet)
 	}
 }
 
@@ -130,46 +158,6 @@ func (self *Response) setLastModified() {
 	// Last-Modified
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
 	if !self.Timestamp.IsZero() {
-		self.Header.Set(HeaderLastModified, self.Timestamp.Format(http.TimeFormat))
-	}
-}
-
-//
-// ResponseWriter
-//
-
-// Circumvents the built-in 404 response
-// See: https://stackoverflow.com/a/47286697
-
-type ResponseWriterWrapper struct {
-	http.ResponseWriter
-	context *Context
-}
-
-func NewResponseWriterWrapper(context *Context) *ResponseWriterWrapper {
-	return &ResponseWriterWrapper{
-		ResponseWriter: context.Response.Direct,
-		context:        context,
-	}
-}
-
-// http.ResponseWriter interface
-func (self *ResponseWriterWrapper) WriteHeader(status int) {
-	// Store response in context
-	self.context.Response.Status = status
-
-	// Don't write the 404 header
-	if status != http.StatusNotFound {
-		self.ResponseWriter.WriteHeader(status)
-	}
-}
-
-// http.ResponseWriter interface
-func (self *ResponseWriterWrapper) Write(p []byte) (int, error) {
-	if self.context.Response.Status != http.StatusNotFound {
-		return self.ResponseWriter.Write(p)
-	} else {
-		// Don't write the 404 response but pretend that we did
-		return len(p), nil
+		SetLastModifiedHeader(self.Header, self.Timestamp)
 	}
 }

@@ -2,19 +2,34 @@ package js
 
 import (
 	"github.com/tliron/commonjs-goja"
+	"github.com/tliron/commonlog"
 	"github.com/tliron/exturl"
-
-	_ "github.com/tliron/prudence/distributed"
-	_ "github.com/tliron/prudence/jst"
-	_ "github.com/tliron/prudence/local"
-	_ "github.com/tliron/prudence/memory"
-	_ "github.com/tliron/prudence/render"
-	_ "github.com/tliron/prudence/tiered"
+	"github.com/tliron/go-scriptlet/jst"
+	"github.com/tliron/go-scriptlet/markdown"
+	"github.com/tliron/go-scriptlet/minify"
+	prudencejst "github.com/tliron/prudence/js/jst"
+	"github.com/tliron/prudence/platform"
 )
 
-func NewEnvironment(urlContext *exturl.Context, path []exturl.URL, arguments map[string]string) *commonjs.Environment {
-	environment := commonjs.NewEnvironment(urlContext, path)
-	environment.Extensions = newExtensions(arguments)
-	environment.Precompile = precompile
+func init() {
+	jst.RegisterDefaultRenderers()
+	markdown.RegisterDefaultRenderers()
+	minify.RegisterDefaultRenderers()
+
+	prudencejst.RegisterDefaultSugar()
+}
+
+var log = commonlog.GetLogger("prudence.js")
+
+func NewEnvironment(arguments map[string]string, urlContext *exturl.Context, basePaths ...exturl.URL) *commonjs.Environment {
+	environment := jst.NewDefaultEnvironment(log, urlContext, basePaths...)
+
+	environment.Extensions = append(environment.Extensions, commonjs.Extension{
+		Name:   "prudence",
+		Create: CreatePrudenceExtension,
+	})
+
+	environment.Extensions = append(environment.Extensions, commonjs.NewExtensions(platform.Extensions)...)
+
 	return environment
 }

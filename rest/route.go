@@ -1,14 +1,12 @@
 package rest
 
 import (
+	"net/http"
+
 	"github.com/tliron/commonjs-goja"
 	"github.com/tliron/go-ard"
 	"github.com/tliron/prudence/platform"
 )
-
-func init() {
-	platform.RegisterType("Route", CreateRoute)
-}
 
 //
 // Route
@@ -18,63 +16,79 @@ func init() {
 //
 
 type Route struct {
-	Name          string
-	PathTemplates PathTemplates
-	Handler       HandleFunc
+	Name                        string
+	PathTemplates               PathTemplates
+	RedirectTrailingSlashStatus int
+	Variables                   map[string]any
+	Handler                     HandleFunc
 }
 
 func NewRoute(name string) *Route {
 	return &Route{
-		Name: name,
+		Name:                        name,
+		RedirectTrailingSlashStatus: http.StatusMovedPermanently, // 301
+		Variables:                   make(map[string]any),
 	}
 }
 
-// platform.CreateFunc signature
-func CreateRoute(config ard.StringMap, context *commonjs.Context) (interface{}, error) {
-	var self Route
+// ([platform.CreateFunc] signature)
+func CreateRoute(jsContext *commonjs.Context, config ard.StringMap) (any, error) {
+	config_ := ard.With(config).ConvertSimilar().NilMeansZero()
 
-	config_ := ard.NewNode(config)
-	self.Name, _ = config_.Get("name").NilMeansZero().String()
-	paths := platform.AsStringList(config_.Get("paths").Value)
+	name, _ := config_.Get("name").String()
+
+	self := NewRoute(name)
+
 	var err error
-	if self.PathTemplates, err = NewPathTemplates(paths...); err != nil {
-		return nil, err
-	}
-	if handler := config_.Get("handler").Value; handler != nil {
-		if self.Handler, err = GetHandleFunc(handler, context); err != nil {
+	if paths := platform.AsStringList(config_.Get("paths")); len(paths) > 0 {
+		if self.PathTemplates, err = NewPathTemplates(paths...); err != nil {
 			return nil, err
 		}
 	}
 
-	return &self, nil
+	if redirectTrailingSlashStatus, ok := config_.Get("redirectTrailingSlashStatus").UnsignedInteger(); ok {
+		self.RedirectTrailingSlashStatus = int(redirectTrailingSlashStatus)
+	}
+
+	if variables, ok := config_.Get("variables").StringMap(); ok {
+		self.Variables = variables
+	}
+
+	if handler := config_.Get("handler"); handler != ard.NoNode {
+		if self.Handler, err = GetHandleFunc(handler.Value, jsContext); err != nil {
+			return nil, err
+		}
+	}
+
+	return self, nil
 }
 
-// Handler interface
-// HandleFunc signature
-func (self *Route) Handle(context *Context) bool {
-	if matches := self.Match(context.Path); matches != nil {
-		if context_ := context.AppendName(self.Name); context == context_ {
-			context = context.Copy()
-		} else {
-			context = context_
-		}
+// ([Handler] interface, [HandleFunc] signature)
+func (self *Route) Handle(restContext *Context) (bool, error) {
+	if matches := self.Match(restContext.Request.Path); matches != nil {
+		restContext = restContext.AppendName(self.Name, true)
+
+		ard.Merge(restContext.Variables, self.Variables, false)
 
 		for key, value := range matches {
 			switch key {
 			case PathVariable:
-				context.Path = value
+				// Special handling for "*"
+				restContext.Request.Path = value
 
 			default:
-				context.Variables[key] = value
+				restContext.Variables[key] = value
 			}
 		}
 
 		if self.Handler != nil {
-			return self.Handler(context)
+			return self.Handler(restContext)
 		}
+	} else if self.PathTemplates.MatchAnyRedirectTrailingSlash(restContext.Request.Path) {
+		return true, restContext.RedirectTrailingSlash(self.RedirectTrailingSlashStatus)
 	}
 
-	return false
+	return false, nil
 }
 
 func (self *Route) Match(path string) map[string]string {

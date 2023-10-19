@@ -3,37 +3,39 @@ package local
 import (
 	contextpkg "context"
 	"sync/atomic"
+
+	"github.com/tliron/prudence/platform"
 )
 
 //
 // FuncJob
 //
 
-var nextKey int64
+var nextKey uint64
 
 type FuncJob struct {
-	key int
-	f   func()
+	id uint64
+	f  platform.JobFunc
 }
 
-func NewFuncJob(f func()) *FuncJob {
+func NewFuncJob(f platform.JobFunc) *FuncJob {
 	return &FuncJob{
-		key: int(atomic.AddInt64(&nextKey, 1)),
-		f:   f,
+		id: atomic.AddUint64(&nextKey, 1),
+		f:  f,
 	}
 }
 
-// quartz.Job interface
+// ([quartz.Job] interface)
 func (self *FuncJob) Execute(context contextpkg.Context) {
 	self.f()
 }
 
-// quartz.Job interface
+// ([quartz.Job] interface)
 func (self *FuncJob) Description() string {
 	return "Prudence"
 }
 
-// quartz.Job interface
+// ([quartz.Job] interface)
 func (self *FuncJob) Key() int {
-	return self.key
+	return int(self.id)
 }

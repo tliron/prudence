@@ -56,46 +56,50 @@ for more information.
 Let's create a plugin that exposes the [BadgerDB](https://github.com/dgraph-io/badger) API to
 JavaScript:
 
-    package plugin
+```go
+package plugin
 
-    import (
-        badger "github.com/dgraph-io/badger/v3"
-        "github.com/tliron/prudence/platform"
-    )
+import (
+    badger "github.com/dgraph-io/badger/v3"
+    "github.com/tliron/prudence/platform"
+)
 
-    func init() {
-        platform.RegisterAPI("badger", API{})
-    }
+func init() {
+    platform.RegisterAPI("badger", API{})
+}
 
-    func (self API) Open(path string) (*badger.DB, error) {
-        return badger.Open(badger.DefaultOptions(path))
-    }
+func (self API) Open(path string) (*badger.DB, error) {
+    return badger.Open(badger.DefaultOptions(path))
+}
+```
 
 That's really all there is to it! "badger.open" will return a database instance and all its
 methods and types should work fine in JavaScript, including sophisticated things like passing
 JavaScript functions to Go code:
 
-    const db = badger.open(prudence.joinFilePath(__dirname, 'db'));
+```javascript
+const db = badger.open(prudence.joinFilePath(__dirname, 'db'));
 
-    exports.counter = function(context) {
-        var counter;
+exports.counter = function(context) {
+    var counter;
 
-        db.update(function(txn) {
-            try {
-                txn.get('counter').value(function(value) {
-                    counter = parseInt(prudence.bytesToString(value));
-                    return null;
-                });
-            } catch (e) {
-                counter = 0;
-            }
+    db.update(function(txn) {
+        try {
+            txn.get('counter').value(function(value) {
+                counter = parseInt(prudence.bytesToString(value));
+                return null;
+            });
+        } catch (e) {
+            counter = 0;
+        }
 
-            txn.set('counter', prudence.stringToBytes(counter + 1));
-            return null;
-        });
+        txn.set('counter', prudence.stringToBytes(counter + 1));
+        return null;
+    });
 
-        return counter;
-    };
+    return counter;
+};
+```
 
 
 Custom Types
@@ -104,18 +108,20 @@ Custom Types
 Prudence has built-in types like "Server", "Router", "Static", "MemoryCache", etc., and you can add your
 own. To do this, you need to register a "create" function:
 
-    import "github.com/tliron/commonjs-goja"
+```go
+import "github.com/tliron/commonjs-goja"
 
-    func init() {
-        platform.RegisterType("MyType", CreateMyType)
-    }
+func init() {
+    platform.RegisterType("MyType", CreateMyType)
+}
 
-    type MyType struct{}
+type MyType struct{}
 
-    // platform.CreateFunc signature
-    func CreateMyType(config map[string]interface{}, context *commonjs.Context) (interface{}, error) {
-        return MyType{}
-    }
+// ([platform.CreateFunc] signature)
+func CreateMyType(jsContext *commonjs.Context, config map[string]any) (any, error) {
+    return MyType{}
+}
+```
 
 The "config" argument contains the arbitrary data provided in JavaScript's "new". If not provided
 it will be an empty map (not a "nil" value). The "context" argument provides access to the JavaScript
@@ -130,17 +136,19 @@ do. However, you're likely going to be interacting with the Prudence platform in
 If your type implements the "rest.Handler" interface then it can be used as a handler anywhere in
 Prudence, just like "Router", "Resource", and "Static". Example:
 
-    import "github.com/tliron/prudence/rest"
+```go
+import "github.com/tliron/prudence/rest"
 
-    type MyType struct{
-        message string
-    }
+type MyType struct{
+    message string
+}
 
-    // rest.Handler interface
-    func (self MyType) Handle(context *rest.Context) bool {
-        context.WriteString(self.message + "\n")
-        return true
-    }
+// ([rest.Handler] interface)
+func (self MyType) Handle(restContext *rest.Context) bool {
+    restContext.WriteString(self.message + "\n")
+    return true
+}
+```
 
 ### Startables
 
@@ -152,76 +160,82 @@ Note that "prudence.start" expects your "Start" implementation to be *blocking*.
 a goroutine for you. That means that you likely should not create another goroutine in "Start".
 Example:
 
-    import "context"
+```go
+import "context"
 
-    type MyType struct{
-        stop chan bool
-    }
+type MyType struct{
+    stop chan bool
+}
 
-    // platform.Startable interface
-    func (self MyType) Start() error {
-        <-self.stop // block until a value is sent
-        return nil
-    }
+// ([platform.Startable] interface)
+func (self MyType) Start() error {
+    <-self.stop // block until a value is sent
+    return nil
+}
 
-    // platform.Startable interface
-    func (self MyType) Stop(stopContext context.Context) error {
-        stop <- true // send a value (and unblock "Start")
-        return nil
-    }
+// ([platform.Startable] interface)
+func (self MyType) Stop(stopContext context.Context) error {
+    stop <- true // send a value (and unblock "Start")
+    return nil
+}
+```
 
 ### Cache Backends
 
-If your type implements the "platform.CacheBackend" interface then it can be used as an argument
-for "prudence.setCacheBackend".
+If your type implements the `platform.CacheBackend` interface then it can be used as an argument
+for `prudence.setCacheBackend`.
 
-Note that only the "LoadRepresentation" method is expected to be synchronous, meaning that it must
-return a "CachedRepresentation" if it exists in the cache. The other methods can (and perhaps should)
+Note that only the `LoadRepresentation` method is expected to be synchronous, meaning that it must
+return a `CachedRepresentation` if it exists in the cache. The other methods can (and perhaps should)
 be asynchronous, meaning that they can return quickly and do the actual work in the background.
 
-Also note that your cache backend type can *also* implement the "platform.Startable" interface, as above.
-Doing so will automatically have it included in the call to "prudence.start". This is useful for cache
+Also note that your cache backend type can *also* implement the `platform.Startable` interface, as above.
+Doing so will automatically have it included in the call to `prudence.start`. This is useful for cache
 backends that have a service running in the background.
 
 Example using an imaginary database:
 
-    // platform.CacheBackend interface
-    func (self MyType) LoadRepresentation(key platform.CacheKey) (*platform.CachedRepresentation, bool) {
-        if value, ok := db.Get("rep:" + key); ok {
-            return unpackCachedRepresentaiton(value), true
-        } else {
-            return nil, false
+```go
+// ([platform.CacheBackend] interface)
+func (self MyType) LoadRepresentation(key platform.CacheKey) (*platform.CachedRepresentation, bool) {
+    if value, ok := db.Get("rep:" + key); ok {
+        return unpackCachedRepresentaiton(value), true
+    } else {
+        return nil, false
+    }
+}
+
+// ([platform.CacheBackend] interface)
+func (self MyType) StoreRepresentation(key platform.CacheKey, cached *platform.CachedRepresentation) {
+    go func() {
+        db.Set("rep:" + key, packCachedRepresentation(cached))
+        for _, name := range cached.Groups {
+            db.AddToList("grp:" + name, key)
         }
-    }
+    }()
+}
 
-    // platform.CacheBackend interface
-    func (self MyType) StoreRepresentation(key platform.CacheKey, cached *platform.CachedRepresentation) {
-        go func() {
-            db.Set("rep:" + key, packCachedRepresentation(cached))
-            for _, name := range cached.Groups {
-                db.AddToList("grp:" + name, key)
+// ([platform.CacheBackend] interface)
+func (self MyType) DeleteRepresentation(key platform.CacheKey) {
+    go func() {
+        db.Delete("rep:" + key)
+    }()
+}
+
+// ([platform.CacheBackend] interface)
+func (self MyType) DeleteGroup(name platform.CacheKey) {
+    go func() {
+        if list, ok := db.GetList("grp:" + name); ok {
+            for _, key := range list {
+                db.Delete("rep:" + key)
             }
-        }()
-    }
+            db.Delete("grp: " + name)
+        }
+    }()
+}
+```
 
-    // platform.CacheBackend interface
-    func (self MyType) DeleteRepresentation(key platform.CacheKey) {
-        go func() {
-            db.Delete("rep:" + key)
-        }()
-    }
-
-    // platform.CacheBackend interface
-    func (self MyType) DeleteGroup(name platform.CacheKey) {
-        go func() {
-            if list, ok := db.GetList("grp:" + name); ok {
-                for _, key := range list {
-                    db.Delete("rep:" + key)
-                }
-                db.Delete("grp: " + name)
-            }
-        }()
-    }
+TODO: see other repo
 
 
 JST Sugar
@@ -249,23 +263,26 @@ putting a `/` just before the end delimiter: `/%>`.
 
 Example:
 
-    func init() {
-        platform.RegisterTag("~", EncodeInBed)
-    }
+```go
+func init() {
+    platform.RegisterTag("~", EncodeInBed)
+}
 
-    // platform.HandleTagFunc signature
-    func EncodeInBed(context *platform.JSTContext, code string) bool {
-        code = code[1:]
-        context.WriteLiteral(strings.TrimSpace(code) + " in bed")
-        return false
-    }
+// platform.HandleTagFunc signature
+func EncodeInBed(context *platform.JSTContext, code string) bool {
+    code = code[1:]
+    context.WriteLiteral(strings.TrimSpace(code) + " in bed")
+    return false
+}
+```
 
 And then using it in JST:
 
-    <div>
-        <%~ I like to watch TV %>
-    </div>
-
+```
+<div>
+    <%~ I like to watch TV %>
+</div>
+```
 
 Renderers
 ---------
@@ -274,16 +291,18 @@ The Prudence renderer API is quite straightforward: it accepts text as input and
 as output. What the [renderer](../render/README.md) actually does, of course, can be quite
 sophisticated. It could be an entire language implementation. Here's a trivial example:
 
-    import "github.com/tliron/commonjs-goja"
+```go
+import "github.com/tliron/commonjs-goja"
 
-    func init() {
-        platform.RegisterRenderer("doublespace", RenderDoubleSpace)
-    }
+func init() {
+    platform.RegisterRenderer("doublespace", RenderDoubleSpace)
+}
 
-    // platform.RenderFunc signature
-    func RenderDoubleSpace(content string, context *commonjs.Context) (string, error) {
-        return strings.ReplaceAll(context, " ", "  "), nil
-    }
+// ([platform.RenderFunc] signature)
+func RenderDoubleSpace(content string, jsContext *commonjs.Context) (string, error) {
+    return strings.ReplaceAll(jsContext, " ", "  "), nil
+}
+```
 
 Note that the JavaScript context is provided as an argument. This is to allow sophisticated
 renderers to integrate with the resolver, module, etc.

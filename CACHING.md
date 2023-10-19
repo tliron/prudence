@@ -12,9 +12,10 @@ cover all the expected functionality.
 
 This guide is not about functionality. It's about optimizing for the massive scale. So, be warned:
 if you're unfamiliar with this problem domain, there's a bit of a learning curve. And, again, no
-need to reach for stars immediately. Always remember never to prematurely optimize: if your software
-is already working well then there's no reason to change it. Optimizations always come with costs and
-the overhead required by caching might even do more harm than good, especially if applied blindly.
+need to reach for stars immediately. Always remember never to prematurely optimize: if your Prudence
+application is already working well then there's no reason to change it. Optimizations always come
+with costs and the overhead required by caching might even do more harm than good, especially if
+applied blindly.
 
 OK, so now that you know what this guide is about, let's dig into it.
 
@@ -34,31 +35,37 @@ hammering your backend.
 Let's set up a cache. Add this to your `start.js` *before* you create and start the
 server:
 
-    prudence.setCache(new prudence.MemoryCache());
+```javascript
+prudence.setCache(new prudence.MemoryCache());
+```
 
-This in-memory cache will suffice for testing and can also be great for smaller web
-sites. However, high-availability applications will likely need a distributed cache backend.
-Included in Prudence is a simple but powerful distributed memory cache. Here is an example of
-setting it up with automatic Kubernetes in-cluster discovery:
+This in-memory cache will suffice for testing and can also be great for smaller sites. However,
+high-availability applications will likely need a distributed cache backend. Included in Prudence
+is a simple but powerful distributed memory cache. Here is an example of setting it up with automatic
+Kubernetes in-cluster discovery:
 
-    prudence.setCache(new prudence.DistributedCache({
-        local: new prudence.MemoryCache(),
-        kubernetes: {
-            namespace: 'workspace',
-            selector: 'app.kubernetes.io/instance=prudence-hello-world'
-        }
-    }));
+```javascript
+prudence.setCache(new prudence.DistributedCache({
+    local: new prudence.MemoryCache(),
+    kubernetes: {
+        namespace: 'workspace',
+        selector: 'app.kubernetes.io/instance=prudence-hello-world'
+    }
+}));
+```
 
 It is also possible to set up Prudence with tiered caching, so that a cheaper cache will be
 preferred to a costly one. This is a best practice when using a persistent cache that saves data
 to storage, which is orders of magnitude slower than memory:
 
-    prudence.setCache(new prudence.TieredCache({
-        caches: [
-            new prudence.MemoryCache(),      // first tier
-            new prudence.MyPersistentCache() // second tier
-        ]
-    }));
+```javascript
+prudence.setCache(new prudence.TieredCache({
+    caches: [
+        new prudence.MemoryCache(),      // first tier
+        new prudence.MyPersistentCache() // second tier
+    ]
+}));
+```
 
 ### Cache Duration
 
@@ -95,42 +102,46 @@ be stored anywhere.
 
 We'll discuss client-side caching in more detail in the next section.
 
-### "construct"
+### "prepare"
 
 Now, we remember that our `html.jst` is just one big "present" function, and it's
 fine to configure caching there. However, there is a better place to put it. Let's
-edit our `json.js` file and add an additional hook function, "construct":
+edit our `json.js` file and add an additional hook function, "prepare":
 
-    exports.construct = function(context) {
-        context.cacheKey = 'myapp.person.' + context.variables.name;
-        context.response.contentType = 'application/json';
-    };
+```javascript
+exports.prepare = function() {
+    this.cacheKey = 'myapp.person.' + this.variables.name;
+    this.response.contentType = 'application/json';
+};
+```
 
 You'll notice that we were already setting the content type in the "present" function.
-However, now that we have a "construct" function it is the better place for it, so
+However, now that we have a "prepare" function it is the better place for it, so
 you can delete that line from "present":
 
-    exports.present = function(context) {
-        const data = {name: context.variables.name};
-        context.writeJson(data);
-        context.cacheDuration = 5;
-    };
+```javascript
+exports.present = function() {
+    const data = {name: this.variables.name};
+    this.writeJson(data);
+    this.cacheDuration = 5;
+};
+```
 
 As for "cacheDuration", you can set it anywhere. However, it might make most sense to
 set it in "present", because that's were we usually retrieve our data, the contents of
 which may affect our decision about how long it should be cached, if at all.
 
-The "construct" hook is very powerful. If it exists, it is called by Prudence *before*
+The "prepare" hook is very powerful. If it exists, it is called by Prudence *before*
 trying the cache. So, this is where we can set the parameters that tell Prudence how
 to retrieve from (and store in) the cache. That's why we need to set the content type
 here: Prudence stores each content type as a separate cache entry (obviously, because
 they would be different representations).
 
-Also note that "construct" is called before the "erase", "modify", and "call" hooks.
+Also note that "prepare" is called before the "erase", "modify", and "call" hooks.
 
 ### Cache Keys
 
-We've also modified the cache key in our "construct". By default the cache key is the
+We've also modified the cache key in our "prepare". By default the cache key is the
 complete URL, which is a sensible default, but might not be the most efficient.
 
 Consider a situation in which this page has multiple, equivalent URLs. For example,
@@ -146,24 +157,26 @@ indeed from other applications using the same cache backend.
 
 ### JST
 
-You might be wondering how we can add a "construct" hook when using a JST file, which
+You might be wondering how we can add a "prepare" hook when using a JST file, which
 only has a "present" function. Instead of the "functions" property we can use properties
 named for the individual hooks. `resource.js` could look something like this:
 
-    exports.handler = new prudence.Resource({
-        facets: {
-            paths: '{name}',
-            representations: {
-                contentTypes: 'text/html',
-                construct: bind('./html', 'construct'),
-                present: bind('./html.jst', 'present')
-            }
+```javascript
+exports.handler = new prudence.Resource({
+    facets: {
+        paths: '{name}',
+        representations: {
+            contentTypes: 'text/html',
+            prepare: bind('./html', 'prepare'),
+            present: bind('./html.jst', 'present')
         }
-    });
+    }
+});
+```
 
 Note that you don't have to use "require" and even an inline function would work:
 
-    construct: function(context) { context.cacheKey = 'person'; }
+    prepare: function(context) { context.cacheKey = 'person'; }
 
 ### Cache Composition
 
@@ -173,17 +186,17 @@ more powerful:
     <%& 'list.jst' %>
 
 It is used to insert not a raw file but another representation. This means calling the
-"present" hook, and indeed also calling "construct" and "describe" (see below) if it has them.
+"present" hook, and indeed also calling "prepare" and "describe" (see below) if it has them.
 This is useful not just for making your code more modular, but also for creating a more
 fine-grained caching scheme, because that other representation may also be cached, indeed
 with its own cache key and cache duration. Thus, if many different pages use that same
 building block they might not have to regenerate it each time.
 
-Because JST files only have "present" and do not have a "construct", the sugar allows you
+Because JST files only have "present" and do not have a "prepare", the sugar allows you
 to optionally add a cache key. Note that this is the key for the embedded representation,
 not the containing one:
 
-    <%& 'list.jst', 'person.list.' + context.variables.name %>
+    <%& 'list.jst', 'person.list.' + this.variables.name %>
 
 ### Cache Groups
 
@@ -200,21 +213,25 @@ feature to tackle it: cache groups. These are strings that can be assigned to a 
 *addition* to its cache key. They are not used for retrieving cache entries, only for deleting
 them to ensure that there is no out-of-date data.
 
-You can add any number of cache groups in "construct":
+You can add any number of cache groups in "prepare":
 
-    exports.construct = function(context) {
-        ...
-        context.cacheGroups.push('person.resource' + context.variables.name);
-    };
+```javascript
+exports.prepare = function() {
+    ...
+    this.cacheGroups.push('person.resource' + this.variables.name);
+};
+```
 
 And then invalidate the group anywhere in your code (usually in "erase", "modify", or "call"
 hooks):
 
-    exports.modify = function(context) {
-        ...
-        context.done = true;
-        prudence.invalidateCacheGroup('person.resource' + context.variables.name);
-    }
+```javascript
+exports.modify = function() {
+    ...
+    this.done = true;
+    prudence.invalidateCacheGroup('person.resource' + this.variables.name);
+};
+```
 
 If you assign the same cache group to all your resource's representations then all of them could
 be deleted from the cache with a single call!
@@ -242,9 +259,11 @@ and re-process the representation.
 This is another optional hook just for optimizing this functionality. Let's add a
 "describe" function to our `json.js`:
 
-    exports.describe = function(context) {
-        context.signature = prudence.hash(context.cacheKey);
-    };
+```javascript
+exports.describe = function() {
+    this.signature = prudence.hash(this.cacheKey);
+};
+```
 
 The main responsibiliy of the "describe" hook is to set either "signature" and/or
 "timestamp". The signature is sent to the client as an
@@ -269,7 +288,7 @@ changes, then conditional requests (from those clients who have the representati
 cached) will always return a 304: Not Modified.
 
 In this trivial example we are reusing our (server-side) cache key that we created in
-in the "construct" hook as our signature. We can do this only because we know for sure
+in the "prepare" hook as our signature. We can do this only because we know for sure
 that the resulting representation depends entirely and only on that "name" variable.
 Again, retrieving or calculating the signature for real-world data would likely be
 more costly.
@@ -293,7 +312,7 @@ Now that we've covered all three hooks, let's follow a request through them:
    the signature we provided from a previous request.
 2. So now the client sends a conditional request, with that signature, that is routed
    to our resource's only facet and then to our fallback JSON representation.
-3. The "construct" hook is called first. Prudence uses the cache key (and content type)
+3. The "prepare" hook is called first. Prudence uses the cache key (and content type)
    to check the server-side cache. If it's cached then we can check the cached
    signature against the signature provided by the client. If the signatures match
    we stop here, 304: Not Modified. If they don't match, we send the client our
@@ -305,8 +324,8 @@ Now that we've covered all three hooks, let's follow a request through them:
 5. The "present" hook generates a completely new representation. We return it to the
    client together with the signature we got from the call to "describe".
 6. Is our cacheDuration > 0? If so, we store this new representation in the cache using
-   the key set in "construct".
+   the key set in "prepare".
 
 If you've followed the above carefully you can see that in "present" you can always
 assume that "describe" was previously called and that in "describe" you can always assume
-that "construct" was previously called.
+that "prepare" was previously called.

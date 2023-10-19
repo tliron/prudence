@@ -68,7 +68,7 @@ func (self CacheGroups) Prune(getExpiration GetExpirationFunc) {
 	for name, group := range self {
 		group.Prune(getExpiration)
 		if group.Expired() {
-			log.Debugf("pruning group: %s", name)
+			log.Debug("pruning group", "group", name)
 			delete(self, name)
 		}
 	}

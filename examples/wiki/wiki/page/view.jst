@@ -1,0 +1,25 @@
+<%
+const backend = require('../backend/backend');
+const pages = new backend.Pages(this);
+const e = util.escapeHtml;
+
+this.variables.page = pages.get();
+
+if (!this.variables.page) {
+    this.response.status = 404;
+    return;
+}
+
+const title = this.variables.page.title;
+const content = this.variables.page.content;
+%>
+<%! 'main' %>
+<h1><%= e(title) %></h1>
+<%^ 'markdown' %>
+<%= content %>
+<%^^%>
+<div>
+    <a href="<%= pages.editUrl() %>">Edit</a>
+</div>
+<%!!%>
+<%& './fragments/page.jst' %>
